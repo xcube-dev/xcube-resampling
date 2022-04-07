@@ -1,0 +1,18 @@
+name: xcube-resampling
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python
+  - python >=3.8
+  # Required
+  - dask >=2021.6
+  - dask-image >=0.6
+  - deprecated >=1.2
+  - numba >=0.52
+  - numpy >=1.16
+  - pyproj >=3.0
+  # Testing
+  - flake8 >=3.7
+  - pytest >=4.4
+  - pytest-cov >=2.6
