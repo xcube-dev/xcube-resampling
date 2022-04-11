@@ -23,7 +23,7 @@ import unittest
 import pyproj
 import numpy as np
 import dask.array as da
-from xcube_resampling.grid import Axis, Grid
+from xcube_resampling.grid import Grid
 from xcube_resampling.reprojector import Reprojector
 
 # noinspection PyTypeChecker
@@ -40,23 +40,12 @@ class ResamplingTest(unittest.TestCase):
         #self._client.close()
         pass
 
-    def test_axis(self):
-        g = Axis(10.0, 2.0, 4)
-        c = g.to_coords()
-        h = Axis.from_coords(c)
-        assert h.start == g.start
-        assert h.step == g.step
-        assert h.count == g.count
-        assert c[-1] == 17.0
-        print(c)
-        print(h)
-
     def test_corners(self):
         src_crs = pyproj.CRS(4326)
         target_crs = pyproj.CRS(3035)
         trafo = pyproj.Transformer.from_crs(src_crs, target_crs, always_xy=True)
-        y = [53.6,53.0]
         x = [10.0,11.0]
+        y = [53.6,53.0]
         result = trafo.transform(x, y)
         assert int(result[0][0]) == 4321000
         assert int(result[1][0]) == 3388043
@@ -65,19 +54,18 @@ class ResamplingTest(unittest.TestCase):
     def test_target_grid(self):
         src_crs = pyproj.CRS(4326)
         target_crs = pyproj.CRS(3035)
-        trafo = pyproj.Transformer.from_crs(src_crs, target_crs, always_xy=True)
-        src_j_1d = np.array([53.5,53.3,53.1])
         src_i_1d = np.array([10.1,10.3,10.5,10.7,10.9,11.1])
-        src_grid = Grid(src_crs, Axis.from_coords(src_j_1d), Axis.from_coords(src_i_1d))
+        src_j_1d = np.array([53.5,53.3,53.1])
+        src_grid = Grid.from_coords(src_crs, (src_i_1d, src_j_1d))
         r = Reprojector(src_grid)
         r.create_transformer(target_crs)
-        r.create_covering_target_grid(-10000.0, 10000.0, -20000.0, 20000.0)
-        assert r.target_grid.rows.start == 3390000
-        assert r.target_grid.rows.step == -10000
-        assert r.target_grid.rows.count == 7
-        assert r.target_grid.cols.start == 4320000
-        assert r.target_grid.cols.step == 10000
-        assert r.target_grid.cols.count == 8
+        r.create_covering_target_grid((10000.0, -10000.0), (20000.0, -20000.0))
+        assert r.target_grid.x_min == 4320000
+        assert r.target_grid.x_res == 10000
+        assert r.target_grid.width == 8
+        assert r.target_grid.y_min == 3390000
+        assert r.target_grid.y_res == -10000
+        assert r.target_grid.height == 7
         print(r.target_grid)
 
     def test_source_pixels_of(self):
@@ -88,77 +76,75 @@ class ResamplingTest(unittest.TestCase):
         trafo = pyproj.Transformer.from_crs(src_crs, target_crs, always_xy=True)
         src_j_1d = np.array([53.5, 53.3, 53.1])
         src_i_1d = np.array([10.1, 10.3, 10.5, 10.7, 10.9, 11.1])
-        src_rows = Axis.from_coords(src_j_1d)
-        src_cols = Axis.from_coords(src_i_1d)
-        src_grid = Grid(src_crs, src_rows, src_cols, 2, 2)
-        index = Reprojector.source_pixels_of(target_y,
-                                             target_x,
+        src_grid = Grid.from_coords(src_crs, (src_i_1d, src_j_1d), (2, 2))
+        index = Reprojector.source_pixels_of(target_x,
+                                             target_y,
                                              trafo=trafo,
                                              src_grid=src_grid)
         assert index.shape[0] == 2  # two layers j and i
         assert index[0][0][0] == 0
-        assert index[0][0][1] == 0
+        assert index[0][0][1] == 1
         assert index[0][1][0] == 0
-        assert index[0][1][1] == 0
+        assert index[0][1][1] == 1
         assert index[1][0][0] == 0
-        assert index[1][0][1] == 1
+        assert index[1][0][1] == 0
         assert index[1][1][0] == 0
-        assert index[1][1][1] == 1
+        assert index[1][1][1] == 0
         print(index)
 
     def test_inverse_index(self):
         src_crs = pyproj.CRS(4326)
         target_crs = pyproj.CRS(3035)
-        src_j_1d = np.array([53.5, 53.3, 53.1])
         src_i_1d = np.array([10.1, 10.3, 10.5, 10.7, 10.9, 11.1])
-        src_rows = Axis.from_coords(src_j_1d)
-        src_cols = Axis.from_coords(src_i_1d)
-        src_grid = Grid(src_crs, src_rows, src_cols, 2, 2)
+        src_j_1d = np.array([53.5, 53.3, 53.1])
+        src_grid = Grid.from_coords(src_crs, (src_i_1d, src_j_1d), (2, 2))
         r = Reprojector(src_grid)
         r.create_transformer(target_crs)
-        r.create_covering_target_grid(-10000.0, 10000.0, -20000.0, 20000.0)
-        result = r.create_inverse_pixel_index()
-        assert result.shape[0] == 2
-        assert result[0][0][0] == 0  # j
-        assert result[1][0][0] == 0  # i
-        assert result[0][-1][-1] == 2
-        assert result[1][-1][-1] == 5
-        assert result[1][0][0] == 0
-        assert result[1][0][1] == 1
-        assert result[1][0][2] == 1
-        assert result[1][0][3] == 2
-        assert result[1][0][4] == 3
-        assert result[1][0][5] == 4
-        assert result[1][0][6] == 4
-        assert result[1][0][7] == 5
+        r.create_covering_target_grid((10000.0, -10000.0), (20000.0, -20000.0))
+        print(r.target_grid)
+        result = r.create_inverse_pixel_index().compute()
         print(result)
+        assert result.shape[0] == 2
+        assert result[1][0][0] == 0  # j
+        assert result[0][0][0] == 0  # i
+        assert result[1][-1][-1] == 2
+        assert result[0][-1][-1] == 5
+        assert result[0][0][0] == 0
+        assert result[0][0][1] == 1
+        assert result[0][0][2] == 1
+        assert result[0][0][3] == 2
+        assert result[0][0][4] == 3
+        assert result[0][0][5] == 4
+        assert result[0][0][6] == 4
+        assert result[0][0][7] == 5
 
     def test_reproject_tiles(self):
         measurements = da.from_array([[[[1.0,2.0],[7.0,8.0]]]], chunks=(1,1,2,2))
         #measurements = np.array([[[[1.0,2.0],[7.0,8.0]]]])
         tiles = np.array([0])
         num_tiles_i = 2
-        src_grid = Grid(pyproj.CRS(4326), Axis(53.6, -0.2, 3), Axis(10.0, 0.2, 6), 2, 2)
-        result = Reprojector.reproject_tiles_to_block(np.array([[0,0],[0,0]]),
-                                                      np.array([[0,1],[0,1]]),
+        src_grid = Grid(pyproj.CRS(4326), (10.0, 53.6), (0.2, -0.2), (6, 3), (2, 2))
+        result = Reprojector.reproject_tiles_to_block(np.array([[0,1],[0,1]]),
+                                                      np.array([[0,0],[0,0]]),
                                                       src_grid,
                                                       num_tiles_i,
                                                       tiles,
                                                       *measurements)
-        # TODO add assertions
+        assert result[0][0][0] == 1,0
+        assert result[0][0][1] == 2,0
+        assert result[0][1][0] == 1.0
+        assert result[0][1][1] == 2.0
         print(result)
 
     def test_reproject_with_index(self):
         src_crs = pyproj.CRS(4326)
         target_crs = pyproj.CRS(3035)
-        src_j_1d = np.array([53.5, 53.3, 53.1])
         src_i_1d = np.array([10.1, 10.3, 10.5, 10.7, 10.9, 11.1])
-        src_rows = Axis.from_coords(src_j_1d)
-        src_cols = Axis.from_coords(src_i_1d)
-        src_grid = Grid(src_crs, src_rows, src_cols, 2, 2)
+        src_j_1d = np.array([53.5, 53.3, 53.1])
+        src_grid = Grid.from_coords(src_crs, (src_i_1d, src_j_1d), (2, 2))
         r = Reprojector(src_grid)
         r.create_transformer(target_crs)
-        r.create_covering_target_grid(-10000.0, 10000.0, -20000.0, 20000.0)
+        r.create_covering_target_grid((10000.0, -10000.0), (20000.0, -20000.0))
         r.create_inverse_pixel_index()
         measurements = [da.from_array([[1.0,2.0,3.0,4.0,5.0,6.0],
                                        [7.0,8.0,9.0,10.0,11.0,12.0],
@@ -177,8 +163,8 @@ class ResamplingTest(unittest.TestCase):
             pyproj.CRS(4326),
             (2, 2),
             pyproj.CRS(3035),
-            (-10000.0, 10000.0),
-            (-20000.0, 20000.0),
+            (10000.0, -10000.0),
+            (20000.0, -20000.0),
             *measurements)
         result = repro.compute()
         print(result)
