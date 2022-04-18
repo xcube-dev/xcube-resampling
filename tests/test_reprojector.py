@@ -69,13 +69,13 @@ class ResamplingTest(unittest.TestCase):
         print(r.target_grid)
 
     def test_source_pixels_of(self):
-        target_y = np.array([[3385000], [3375000]])
         target_x = np.array([[4325000, 4335000]])
+        target_y = np.array([[3385000], [3375000]])
         src_crs = pyproj.CRS(4326)
         target_crs = pyproj.CRS(3035)
         trafo = pyproj.Transformer.from_crs(src_crs, target_crs, always_xy=True)
-        src_j_1d = np.array([53.5, 53.3, 53.1])
         src_i_1d = np.array([10.1, 10.3, 10.5, 10.7, 10.9, 11.1])
+        src_j_1d = np.array([53.5, 53.3, 53.1])
         src_grid = Grid.from_coords(src_crs, (src_i_1d, src_j_1d), (2, 2))
         index = Reprojector.source_pixels_of(target_x,
                                              target_y,
