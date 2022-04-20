@@ -133,7 +133,7 @@ class Rectifier:
                                            dst_grid=self.dst_grid,
                                            new_axis=0,
                                            dtype=np.int32,
-                                           meta=np.array((), dtype=np.int32),
+                                           #meta=np.array((), dtype=np.int32),
                                            name=self.name + "_forward")
         return self.forward_index
 
@@ -184,6 +184,7 @@ class Rectifier:
     def dst_bboxes_of_src_block(forward_index_block: np.ndarray,
                                 dst_grid: Grid = None,
                                 src_tile_size: Tuple[int, int] = None,
+                                src_size: Tuple[int, int] = None,
                                 block_id: Tuple[int, int] = None):
         """
         Determines for one source block the source bounding box for each dst block
@@ -192,25 +193,28 @@ class Rectifier:
         :param forward_index_block: source block of pixel coordinates of source pixels in dst grid
                                     shape (2, src_tile_height, src_tile_width), sequence i, j
         :param dst_grid: dst number of blocks and their sizes
-        :param src_tile_size: source tile size, to determine source offset of the block
+        :param src_tile_size: source tile size, to determine source offset of the block, sequence lat, lon
         :param block_id source block row and block column
         :return: numpy array of shape (4, num_dst_tiles_y, num_dst_tiles_x, 1, 1) with imin, jmin, imax, jmax
         """
         # offset of source block this call is done for
-        src_block_offset_col = block_id[1] * src_tile_size
-        src_block_offset_row = block_id[0] * src_tile_size
+        src_block_offset_col = block_id[-1] * src_tile_size[1]
+        src_block_offset_row = block_id[-2] * src_tile_size[0]
         # identity array of src rows and cols of the block, starting from 0
-        src_local_cols = np.arange(src_tile_size[0])
-        src_local_rows = np.arange(src_tile_size[1]).reshape((src_tile_size[1], 1))
+        num_rows = forward_index_block.shape[-2]
+        num_cols = forward_index_block.shape[-1]
+        src_local_cols = np.tile(np.arange(num_cols), (num_rows, 1))
+        src_local_rows = np.tile(np.arange(num_rows), (num_cols, 1)).transpose()
         # vectors of all dst block borders in pixel coordinates
         dst_left = np.arange(0, dst_grid.width, dst_grid.tile_width)
-        dst_right = np.hstack(dst_left[1:], np.array([dst_grid.width]))
+        dst_right = np.hstack([dst_left[1:], np.array([dst_grid.width])])
         dst_down = np.arange(0, dst_grid.height, dst_grid.tile_height)
-        dst_up = np.hstack(dst_down[1:], np.array([dst_grid.height]))
+        dst_up = np.hstack([dst_down[1:], np.array([dst_grid.height])])
         # number of dst blocks
         dst_num_blocks_i = math.ceil(dst_grid.width / dst_grid.tile_width)
         dst_num_blocks_j = math.ceil(dst_grid.height / dst_grid.tile_height)
-        result_boxes = np.empty(shape=(4, range(dst_num_blocks_j), range(dst_num_blocks_i), 1, 1), dtype=np.int32)
+        result_boxes = np.empty((4, dst_num_blocks_j, dst_num_blocks_i, 1, 1), dtype=np.int32)
+        result_boxes[:] = -1
         # TODO replace the two loops by dimensions of the inside arrays and dst arrays
         for dst_block_j in range(dst_num_blocks_j):
             # filter condition that forward index is between dst block borders
@@ -226,10 +230,10 @@ class Rectifier:
                 src_block_rows = src_local_rows[inside_block_j & inside_block_i] + src_block_offset_row
                 src_block_cols = src_local_cols[inside_block_j & inside_block_i] + src_block_offset_col
                 # determine min and max of src block row and col inside dst block
-                result_boxes[0, dst_block_j, dst_block_i, 1, 1] = np.nanmin(src_block_cols)
-                result_boxes[1, dst_block_j, dst_block_i, 1, 1] = np.nanmin(src_block_rows)
-                result_boxes[2, dst_block_j, dst_block_i, 1, 1] = np.nanmax(src_block_cols)
-                result_boxes[3, dst_block_j, dst_block_i, 1, 1] = np.nanmax(src_block_rows)
+                result_boxes[0, dst_block_j, dst_block_i, 0, 0] = np.min(src_block_cols) if len(src_block_cols) > 0 else src_size[1]
+                result_boxes[1, dst_block_j, dst_block_i, 0, 0] = np.min(src_block_rows) if len(src_block_rows) > 0 else src_size[0]
+                result_boxes[2, dst_block_j, dst_block_i, 0, 0] = np.max(src_block_cols) + 1 if len(src_block_cols) > 0 else -1
+                result_boxes[3, dst_block_j, dst_block_i, 0, 0] = np.max(src_block_rows) + 1 if len(src_block_rows) > 0 else -1
         return result_boxes
 
     @staticmethod
@@ -257,32 +261,32 @@ class Rectifier:
         # stacked subset stack the fractional pixel coordinates of the four points P0 .. P3
         # stacked_subset_i and _j are in the extent of the source subset.
         # stacked_subset_i and _j contain shifted fractional pixel coordinates in the dst grid.
-        extended_subset_i = np.hstack(subset_i, subset_i[:,-1])
-        extended_subset_i = np.vstack(extended_subset_i, extended_subset_i[-1,:])
-        extended_subset_j = np.hstack(subset_j, subset_j[:,-1])
-        extended_subset_j = np.vstack(extended_subset_j, extended_subset_j[-1,:])
-        stacked_subset_i = np.stack(extended_subset_i[:-1,:-1],
+        extended_subset_i = np.hstack([subset_i, subset_i[:,-1:]])
+        extended_subset_i = np.vstack([extended_subset_i, extended_subset_i[-1:,:]])
+        extended_subset_j = np.hstack([subset_j, subset_j[:,-1:]])
+        extended_subset_j = np.vstack([extended_subset_j, extended_subset_j[-1:,:]])
+        stacked_subset_i = np.stack((extended_subset_i[:-1,:-1],
                                     extended_subset_i[:-1,1:],
                                     extended_subset_i[1:,:-1],
-                                    extended_subset_i[1:,1:])
-        stacked_subset_j = np.stack(extended_subset_j[:-1,:-1],
+                                    extended_subset_i[1:,1:]))
+        stacked_subset_j = np.stack((extended_subset_j[:-1,:-1],
                                     extended_subset_j[:-1,1:],
                                     extended_subset_j[1:,:-1],
-                                    extended_subset_j[1:,1:])
+                                    extended_subset_j[1:,1:]))
         return (stacked_subset_i, stacked_subset_j) 
         
     @staticmethod
     def bboxes_of_triangles(four_points_i: np.ndarray, four_points_j: np.ndarray, dst_grid: Grid):
         is_inside_dst_block = (four_points_i[0] >= 0.0) & (four_points_j[0] >= 0.0) & (four_points_i[0] <= dst_grid.tile_width) & (four_points_j[0] <= dst_grid.tile_height)
-        bboxes_min_i = np.floor(np.min(four_points_i, axis=0))
-        bboxes_min_j = np.floor(np.min(four_points_j, axis=0))
-        bboxes_max_i = np.floor(np.max(four_points_i, axis=0))
-        bboxes_max_j = np.floor(np.max(four_points_j, axis=0))
+        bboxes_min_i = np.floor(np.min(four_points_i, axis=0)).astype(int)
+        bboxes_min_j = np.floor(np.min(four_points_j, axis=0)).astype(int)
+        bboxes_max_i = np.floor(np.max(four_points_i, axis=0)).astype(int)
+        bboxes_max_j = np.floor(np.max(four_points_j, axis=0)).astype(int)
         bboxes_width = bboxes_max_i - bboxes_min_i + 1
         bboxes_height = bboxes_max_j - bboxes_min_j + 1
         # determine maximum bbox size of all pairs of triangles
-        bboxes_max_width = np.max(bboxes_width[is_inside_dst_block])
-        bboxes_max_height = np.max(bboxes_height[is_inside_dst_block])
+        bboxes_max_width = np.max(bboxes_width[is_inside_dst_block]).astype(int)
+        bboxes_max_height = np.max(bboxes_height[is_inside_dst_block]).astype(int)
         return (bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height)
 
     @staticmethod
@@ -304,9 +308,9 @@ class Rectifier:
         :return: inverse pixel index with fractional source pixel index for each dst block pixel
         """
         # generate four points with two triangles for the src subset in dst pixel fractional coordinates
-        four_points_i, four_points_j = self.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, block_id)
+        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, block_id)
         # create small bboxes for the four points
-        bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height = self.bboxes_of_triangles(four_points_i, frour_points_j, dst_grid)
+        bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height = Rectifier.bboxes_of_triangles(four_points_i, four_points_j, dst_grid)
         # create source subset identity vector for rows and columns
         src_id_col = np.arange(src_subset_lon_lat.shape[1])
         src_id_row = np.arange(src_subset_lon_lat.shape[0])
@@ -362,7 +366,7 @@ class Rectifier:
                     src_id_col[is_inside_triangle_b] + src_offset[0] + ub[is_inside_triangle_b]
                 result_row[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
                     src_id_row[is_inside_triangle_b] + src_offset[1] + vb[is_inside_triangle_b]
-        result = np.stack(result_col, result_row)
+        result = np.stack((result_col, result_row))
         return result
 
     def create_inverse_pixel_index(self) -> da.Array:
@@ -372,14 +376,16 @@ class Rectifier:
                                         self.forward_index,
                                         dst_grid=self.dst_grid,
                                         src_tile_size=self.src_lat.chunksize,
+                                        src_size=self.src_lat.shape,
+                                        drop_axis=0,
                                         new_axis=[0,1,2],
                                         meta=np.array([], dtype=np.int32),
                                         name=self.name + "_bboxes").compute()
-        bbox_blocks = np.stack(np.nanmin(bbox_blocks_raw[0], axis=(2,3)),
-                               np.nanmin(bbox_blocks_raw[1], axis=(2,3)),
-                               np.nanmax(bbox_blocks_raw[2], axis=(2,3)),
-                               np.nanmax(bbox_blocks_raw[3], axis=(2,3)))
-        src_lon_lat = da.stack(self.src_lon, self.src_lat)
+        bbox_blocks = np.stack((np.nanmin(bbox_blocks_raw[0], axis=(2,3)),
+                                np.nanmin(bbox_blocks_raw[1], axis=(2,3)),
+                                np.nanmax(bbox_blocks_raw[2], axis=(2,3)),
+                                np.nanmax(bbox_blocks_raw[3], axis=(2,3))))
+        src_lon_lat = da.stack((self.src_lon, self.src_lat))
         # create graph with one call per dst block
         layer = dict()
         dependencies = []
@@ -391,7 +397,8 @@ class Rectifier:
                 # determine src box that covers dst block plus buffer
                 src_offset_i = bbox_blocks[0, tj, ti]
                 src_offset_j = bbox_blocks[1, tj, ti]
-                src_subset_lon_lat = src_lon_lat[src_offset_j:bbox_blocks[3, tj, ti],
+                src_subset_lon_lat = src_lon_lat[:,
+                                                 src_offset_j:bbox_blocks[3, tj, ti],
                                                  src_offset_i:bbox_blocks[2, tj, ti]]
                 # compose call for blockwise inverse index
                 src_id = (self.name+'_src', 0, tj, ti)
