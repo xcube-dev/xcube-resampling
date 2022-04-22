@@ -158,7 +158,7 @@ class RectificationTest(unittest.TestCase):
         src_lon_lat = da.stack((self.src_lon, self.src_lat))
         src_subset_lon_lat = src_lon_lat[:, 0:4, 0:2]
         src_subset_lon_lat = src_subset_lon_lat.compute()
-        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, self.dst_grid, (0, 0))
+        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, self.dst_grid, r.trafo, (0, 0))
         # result is an array of the extent of the subset 4 x 2 with i, j for each of the four points
         assert four_points_i.shape == (4, 3, 1)
         assert four_points_j.shape == (4, 3, 1)
@@ -211,6 +211,7 @@ class RectificationTest(unittest.TestCase):
         index = Rectifier.inverse_index_of_dst_block_with_src_subset(src_subset_lon_lat,
                                                                      (bbox_blocks[0, tj, ti] + 0.5, bbox_blocks[1, tj, ti] + 0.5),
                                                                      self.dst_grid,
+                                                                     r.trafo,
                                                                      (tj, ti))
         np.testing.assert_almost_equal(index, [[[np.nan, np.nan], [np.nan, 1.11842105]],
                                                [[np.nan, np.nan], [np.nan, 1.92763158]]], decimal=3)
@@ -242,6 +243,7 @@ class RectificationTest(unittest.TestCase):
         index = Rectifier.inverse_index_of_dst_block_with_src_subset(src_subset_lon_lat,
                                                                      (bbox_blocks[0, tj, ti] + 0.5, bbox_blocks[1, tj, ti] + 0.5),
                                                                      self.dst_grid,
+                                                                     r.trafo,
                                                                      (tj, ti))
         np.testing.assert_almost_equal(index, [[[1.513], [2.171]],
                                                [[0.519], [1.506]]], decimal=3)

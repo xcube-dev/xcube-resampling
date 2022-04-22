@@ -115,7 +115,10 @@ class Rectifier:
         :return: stack of i and j arrays for the block
         """
         # transform into source coordinates
-        dst_x, dst_y = trafo.transform(src_lon, src_lat)
+        if dst_grid.crs.is_geographic:
+            dst_x, dst_y = src_lon, src_lat
+        else:
+            dst_x, dst_y = trafo.transform(src_lon, src_lat)
         # convert to pixel positions
         # "floor" in fact rounds because transformed pixel centers are related to upper left corner
         dst_i = np.floor((dst_x - dst_grid.x_min) / dst_grid.x_res).astype(dtype=int)
@@ -128,13 +131,13 @@ class Rectifier:
         """
         Creates dst pixel index (integer) of each source pixel. 
         """
-        trafo = pyproj.Transformer.from_crs(pyproj.CRS(4326),
-                                            self.dst_grid.crs,
-                                            always_xy=True)
+        self.trafo = pyproj.Transformer.from_crs(pyproj.CRS(4326),
+                                                 self.dst_grid.crs,
+                                                 always_xy=True)
         self.forward_index = da.map_blocks(Rectifier.block_dst_pixels_of_src_block,
                                            self.src_lon,
                                            self.src_lat,
-                                           trafo=trafo,
+                                           trafo=self.trafo,
                                            dst_grid=self.dst_grid,
                                            new_axis=0,
                                            dtype=np.int32,
@@ -244,6 +247,7 @@ class Rectifier:
     @staticmethod
     def triangles_in_dst_pixel_grid(src_subset_lon_lat: np.ndarray,
                                     dst_grid: Grid,
+                                    trafo: pyproj.Transformer,
                                     block_id: Tuple[int, int]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Stacks the four points P0, P1, P2, P3 that form two triangles P0-P1-P2 and P3-P1-P2. 
@@ -256,14 +260,17 @@ class Rectifier:
                  with the extent of the source subset minus one in each direction
                  as fractional dst coordinates
         """
+        if dst_grid.crs.is_geographic:
+            src_x, src_y = src_subset_lon_lat[0], src_subset_lon_lat[1]
+        else:
+            src_x, src_y = trafo.transform(src_subset_lon_lat[0], src_subset_lon_lat[1])
         # determine fractional pixel positions of subset in dst grid
-        # TODO apply trafo from 4326 to dst CRS
         # subset_i and _j have the extent of the source subset.
         # subset_i and _j contain fractional pixel coordinates in the dst grid's coordinate system
         # subset_i and _j are fractions related to the upper left corner of the dst pixel
         # i.e. in case of 0.5 the source pixel matches a dst position
-        subset_i = (src_subset_lon_lat[0] - dst_grid.x_min) / dst_grid.x_res - block_id[1] * dst_grid.tile_width
-        subset_j = (src_subset_lon_lat[1] - dst_grid.y_min) / dst_grid.y_res - block_id[0] * dst_grid.tile_height
+        subset_i = (src_x - dst_grid.x_min) / dst_grid.x_res - block_id[1] * dst_grid.tile_width
+        subset_j = (src_y - dst_grid.y_min) / dst_grid.y_res - block_id[0] * dst_grid.tile_height
         # extend subset by one column and row, duplicate last column and row
         # stacked subset stack the fractional pixel coordinates of the four points P0 .. P3
         # stacked_subset_i and _j are in the extent of the source subset.
@@ -307,6 +314,7 @@ class Rectifier:
     def inverse_index_of_dst_block_with_src_subset(src_subset_lon_lat: np.ndarray,
                                                    src_offset: Tuple[float, float],
                                                    dst_grid: Grid,
+                                                   trafo: pyproj.Transformer,
                                                    block_id: Tuple[int, int]) -> np.array:
         """
         Determines inverse index col, row of fractional source image pixel coordinates for 
@@ -324,7 +332,7 @@ class Rectifier:
         if isinstance(src_subset_lon_lat, da.Array):
             src_subset_lon_lat = src_subset_lon_lat.compute()
         # generate four points with two triangles for the src subset in dst pixel fractional coordinates
-        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, block_id)
+        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, trafo, block_id)
         # create small bboxes for the four points
         bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height = Rectifier.bboxes_of_triangles(four_points_i, four_points_j, dst_grid)
         # create source subset identity vector for rows and columns
@@ -434,6 +442,7 @@ class Rectifier:
                                  src_id,
                                  (bbox_blocks[0, tj, ti] + 0.5, bbox_blocks[1, tj, ti] + 0.5),
                                  self.dst_grid,
+                                 self.trafo,
                                  (tj, ti))
         # compose dask array of reprojected results
         graph = HighLevelGraph.from_collections(self.name,
