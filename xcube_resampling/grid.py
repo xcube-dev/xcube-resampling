@@ -106,3 +106,4 @@ class Grid:
         """returns a 1d array of coordinate values located at pixel centres"""
         half_step = 0.5 * self.x_res
         return np.linspace(self.x_min + half_step, self.x_min + self.width * self.x_res - half_step, self.width)
+

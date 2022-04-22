@@ -75,6 +75,11 @@ class Rectifier:
     - src row, col are pixel positions of the source image
     - dst x, y are CRS coordinates of the destination image
     - dst i, j are pixel positions of the destination image
+    Parameter sequence convention:
+    - Arrays are structured row-column, with col being the inner loop.
+    - Stacks of coordinate arrays are x-y, lon-lat. Same for stacks of index arrays i-j, col-row.
+    - block_id parameters are (j, i), i.e. in the sequence of array dimensions, as in map_blocks.
+    - All other parameters are x-first, i.e. i, j etc.
     """
     def __init__(self,
                  src_lon: da.Array,
@@ -194,7 +199,7 @@ class Rectifier:
                                     shape (2, src_tile_height, src_tile_width), sequence i, j
         :param dst_grid: dst number of blocks and their sizes
         :param src_tile_size: source tile size, to determine source offset of the block, sequence lat, lon
-        :param block_id source block row and block column
+        :param block_id source block row and block column, in this sequence
         :return: numpy array of shape (4, num_dst_tiles_y, num_dst_tiles_x, 1, 1) with imin, jmin, imax, jmax
         """
         # offset of source block this call is done for
@@ -229,11 +234,11 @@ class Rectifier:
                 # mask src row and col by those inside dst block
                 src_block_rows = src_local_rows[inside_block_j & inside_block_i] + src_block_offset_row
                 src_block_cols = src_local_cols[inside_block_j & inside_block_i] + src_block_offset_col
-                # determine min and max of src block row and col inside dst block
-                result_boxes[0, dst_block_j, dst_block_i, 0, 0] = np.min(src_block_cols) if len(src_block_cols) > 0 else src_size[1]
-                result_boxes[1, dst_block_j, dst_block_i, 0, 0] = np.min(src_block_rows) if len(src_block_rows) > 0 else src_size[0]
-                result_boxes[2, dst_block_j, dst_block_i, 0, 0] = np.max(src_block_cols) + 1 if len(src_block_cols) > 0 else -1
-                result_boxes[3, dst_block_j, dst_block_i, 0, 0] = np.max(src_block_rows) + 1 if len(src_block_rows) > 0 else -1
+                # determine min and max of src block row and col inside dst block, add 1 src pixel margin in each direction
+                result_boxes[0, dst_block_j, dst_block_i, 0, 0] = max(np.min(src_block_cols) - 1, 0) if len(src_block_cols) > 0 else src_size[1]
+                result_boxes[1, dst_block_j, dst_block_i, 0, 0] = max(np.min(src_block_rows) - 1, 0) if len(src_block_rows) > 0 else src_size[0]
+                result_boxes[2, dst_block_j, dst_block_i, 0, 0] = min(np.max(src_block_cols) + 2, src_size[1]) if len(src_block_cols) > 0 else -1
+                result_boxes[3, dst_block_j, dst_block_i, 0, 0] = min(np.max(src_block_rows) + 2, src_size[0]) if len(src_block_rows) > 0 else -1
         return result_boxes
 
     @staticmethod
@@ -246,8 +251,10 @@ class Rectifier:
         :param src_subset_lon_lat: lon and lat coordinates of source pixels of a subset 
                                    covering the dst block
         :param dst_grid: destination grid
-        :param block_id destination block coordinates
-        :return: pair i, j of stacks of the four points with the extent of the source subset
+        :param block_id destination block coordinates, j and i in this sequence
+        :return: pair i, j of stacks of the four points
+                 with the extent of the source subset minus one in each direction
+                 as fractional dst coordinates
         """
         # determine fractional pixel positions of subset in dst grid
         # TODO apply trafo from 4326 to dst CRS
@@ -255,43 +262,50 @@ class Rectifier:
         # subset_i and _j contain fractional pixel coordinates in the dst grid's coordinate system
         # subset_i and _j are fractions related to the upper left corner of the dst pixel
         # i.e. in case of 0.5 the source pixel matches a dst position
-        subset_i = (src_subset_lon_lat[0] - dst_grid.x_min - block_id[0] * dst_grid.tile_width) / dst_grid.x_res
-        subset_j = (src_subset_lon_lat[1] - dst_grid.y_min - block_id[1] * dst_grid.tile_height) / dst_grid.y_res
+        subset_i = (src_subset_lon_lat[0] - dst_grid.x_min) / dst_grid.x_res - block_id[1] * dst_grid.tile_width
+        subset_j = (src_subset_lon_lat[1] - dst_grid.y_min) / dst_grid.y_res - block_id[0] * dst_grid.tile_height
         # extend subset by one column and row, duplicate last column and row
         # stacked subset stack the fractional pixel coordinates of the four points P0 .. P3
         # stacked_subset_i and _j are in the extent of the source subset.
         # stacked_subset_i and _j contain shifted fractional pixel coordinates in the dst grid.
-        extended_subset_i = np.hstack([subset_i, subset_i[:,-1:]])
-        extended_subset_i = np.vstack([extended_subset_i, extended_subset_i[-1:,:]])
-        extended_subset_j = np.hstack([subset_j, subset_j[:,-1:]])
-        extended_subset_j = np.vstack([extended_subset_j, extended_subset_j[-1:,:]])
-        stacked_subset_i = np.stack((extended_subset_i[:-1,:-1],
-                                    extended_subset_i[:-1,1:],
-                                    extended_subset_i[1:,:-1],
-                                    extended_subset_i[1:,1:]))
-        stacked_subset_j = np.stack((extended_subset_j[:-1,:-1],
-                                    extended_subset_j[:-1,1:],
-                                    extended_subset_j[1:,:-1],
-                                    extended_subset_j[1:,1:]))
+        #extended_subset_i = np.hstack([subset_i, subset_i[:,-1:]])
+        #extended_subset_i = np.vstack([extended_subset_i, extended_subset_i[-1:,:]])
+        #extended_subset_j = np.hstack([subset_j, subset_j[:,-1:]])
+        #extended_subset_j = np.vstack([extended_subset_j, extended_subset_j[-1:,:]])
+        stacked_subset_i = np.stack((subset_i[:-1,:-1],
+                                    subset_i[:-1,1:],
+                                    subset_i[1:,:-1],
+                                    subset_i[1:,1:]))
+        stacked_subset_j = np.stack((subset_j[:-1,:-1],
+                                    subset_j[:-1,1:],
+                                    subset_j[1:,:-1],
+                                    subset_j[1:,1:]))
         return (stacked_subset_i, stacked_subset_j) 
         
     @staticmethod
     def bboxes_of_triangles(four_points_i: np.ndarray, four_points_j: np.ndarray, dst_grid: Grid):
-        is_inside_dst_block = (four_points_i[0] >= 0.0) & (four_points_j[0] >= 0.0) & (four_points_i[0] <= dst_grid.tile_width) & (four_points_j[0] <= dst_grid.tile_height)
+        is_inside_dst_block = (four_points_i[0] >= 0.0) \
+                              & (four_points_j[0] >= 0.0) \
+                              & (four_points_i[0] <= dst_grid.tile_width) \
+                              & (four_points_j[0] <= dst_grid.tile_height)
         bboxes_min_i = np.floor(np.min(four_points_i, axis=0)).astype(int)
         bboxes_min_j = np.floor(np.min(four_points_j, axis=0)).astype(int)
-        bboxes_max_i = np.floor(np.max(four_points_i, axis=0)).astype(int)
-        bboxes_max_j = np.floor(np.max(four_points_j, axis=0)).astype(int)
-        bboxes_width = bboxes_max_i - bboxes_min_i + 1
-        bboxes_height = bboxes_max_j - bboxes_min_j + 1
+        bboxes_max_i = np.ceil(np.max(four_points_i, axis=0)).astype(int)
+        bboxes_max_j = np.ceil(np.max(four_points_j, axis=0)).astype(int)
+        bboxes_width = bboxes_max_i - bboxes_min_i
+        bboxes_height = bboxes_max_j - bboxes_min_j
         # determine maximum bbox size of all pairs of triangles
-        bboxes_max_width = np.max(bboxes_width[is_inside_dst_block]).astype(int)
-        bboxes_max_height = np.max(bboxes_height[is_inside_dst_block]).astype(int)
+        if np.any(is_inside_dst_block):
+            bboxes_max_width = np.max(bboxes_width[is_inside_dst_block]).astype(int)
+            bboxes_max_height = np.max(bboxes_height[is_inside_dst_block]).astype(int)
+        else:
+            bboxes_max_width = 0
+            bboxes_max_height = 0
         return (bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height)
 
     @staticmethod
     def inverse_index_of_dst_block_with_src_subset(src_subset_lon_lat: np.ndarray,
-                                                   src_offset: Tuple[int, int],
+                                                   src_offset: Tuple[float, float],
                                                    dst_grid: Grid,
                                                    block_id: Tuple[int, int]) -> np.array:
         """
@@ -301,22 +315,34 @@ class Rectifier:
         High level graph function used in create_inverse_pixel_index.
         :param src_subset_lon_lat: lon and lat coordinates of source pixels of a subset 
                                    covering the dst block
-        :param src_offset: offset of src_subset_lon_lat in src pixel coordinates to be 
-                           added to inverse index
+        :param src_offset: offset of src_subset_lon_lat in fractional src pixel coordinates to be
+                           added to inverse index, pixel position of the origin of src_subset_lon_lat
         :param dst_grid: destination grid
-        :param block_id destination block coordinates
+        :param block_id destination block coordinates, j and i in this sequence
         :return: inverse pixel index with fractional source pixel index for each dst block pixel
         """
+        if isinstance(src_subset_lon_lat, da.Array):
+            src_subset_lon_lat = src_subset_lon_lat.compute()
         # generate four points with two triangles for the src subset in dst pixel fractional coordinates
         four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, block_id)
         # create small bboxes for the four points
         bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height = Rectifier.bboxes_of_triangles(four_points_i, four_points_j, dst_grid)
         # create source subset identity vector for rows and columns
-        src_id_col = np.arange(src_subset_lon_lat.shape[1])
-        src_id_row = np.arange(src_subset_lon_lat.shape[0])
-        # result has the extent of the dst grid, initialised with nan
-        result_col = np.empty((dst_grid.tile_height, dst_grid.tile_width))
-        result_row = np.empty((dst_grid.tile_height, dst_grid.tile_width))
+        src_width = src_subset_lon_lat.shape[1] - 1
+        src_height = src_subset_lon_lat.shape[2] - 1
+        src_id_col = np.tile(np.arange(src_height), (src_width, 1))
+        src_id_row = np.tile(np.arange(src_width), (src_height, 1)).transpose()
+        # result has the extent of the dst grid tile, initialised with nan
+        num_complete_tile_cols = math.ceil(dst_grid.width / dst_grid.tile_width) - 1
+        num_complete_tile_rows = math.ceil(dst_grid.height / dst_grid.tile_height) - 1
+        dst_width = dst_grid.tile_width \
+            if block_id[1] < num_complete_tile_cols \
+            else dst_grid.width - num_complete_tile_cols * dst_grid.tile_width
+        dst_height = dst_grid.tile_height \
+            if block_id[0] < num_complete_tile_rows \
+            else dst_grid.height - num_complete_tile_rows * dst_grid.tile_height
+        result_col = np.empty((dst_height, dst_width))
+        result_row = np.empty((dst_height, dst_width))
         result_col[:,:] = np.nan
         result_row[:,:] = np.nan
         # det_a and _b have the extent of the source subset.
@@ -329,7 +355,7 @@ class Rectifier:
         uv_delta = 0.001
         u_min = v_min = -uv_delta
         uv_max = 1.0 + 2 * uv_delta
-        # loops over bboxes max size
+        # loops over bboxes max size, shift the dst pixel for each triangle
         for j_offset in range(bboxes_max_height):
             dst_j = bboxes_min_j + j_offset
             for i_offset in range(bboxes_max_width):
@@ -338,34 +364,36 @@ class Rectifier:
                 # dst_j and dst_i contain integer pixel coordinates of the considered point in the dst grid
                 # u and v have the extent of the source subset
                 # _fu = (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
-                ua = ((four_points_i[0] - dst_i) * (four_points_j[0] - four_points_j[2]) - \
-                      (four_points_j[0] - dst_j) * (four_points_i[0] - four_points_i[2])) / det_a \
+                ua = ((four_points_i[0] - dst_i - 0.5) * (four_points_j[0] - four_points_j[2]) - \
+                      (four_points_j[0] - dst_j - 0.5) * (four_points_i[0] - four_points_i[2])) / det_a \
                 # _fv = (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
-                va = ((four_points_j[0] - dst_j) * (four_points_i[0] - four_points_i[1]) - \
-                      (four_points_i[0] - dst_i) * (four_points_j[0] - four_points_j[1])) / det_a
+                va = ((four_points_j[0] - dst_j - 0.5) * (four_points_i[0] - four_points_i[1]) - \
+                      (four_points_i[0] - dst_i - 0.5) * (four_points_j[0] - four_points_j[1])) / det_a
                 is_inside_triangle_a = (ua >= u_min) & (va >= v_min) & (ua + va <= uv_max) & \
-                                       (dst_i >= 0) & (dst_i < dst_grid.tile_width) & \
-                                       (dst_j >= 0) & (dst_j < dst_grid.tile_height)
+                                       (dst_i >= 0) & (dst_i < dst_width) & \
+                                       (dst_j >= 0) & (dst_j < dst_height)
                 # insert pixel with this offset into result if inside
-                result_col[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
-                    src_id_col[is_inside_triangle_a] + src_offset[0] + ua[is_inside_triangle_a]
-                result_row[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
-                    src_id_row[is_inside_triangle_a] + src_offset[1] + va[is_inside_triangle_a]
+                if is_inside_triangle_a.any():
+                    result_col[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
+                        src_id_col[is_inside_triangle_a] + src_offset[0] + ua[is_inside_triangle_a]
+                    result_row[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
+                        src_id_row[is_inside_triangle_a] + src_offset[1] + va[is_inside_triangle_a]
                 # do the same for triangle b ...
                 # _fu = (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
-                ub = ((four_points_i[3] - dst_i) * (four_points_j[3] - four_points_j[1]) - \
-                      (four_points_j[3] - dst_j) * (four_points_i[3] - four_points_i[1])) / det_b \
+                ub = ((four_points_i[3] - dst_i - 0.5) * (four_points_j[3] - four_points_j[1]) - \
+                      (four_points_j[3] - dst_j - 0.5) * (four_points_i[3] - four_points_i[1])) / det_b \
                 # _fv = (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
-                vb = ((four_points_j[3] - dst_j) * (four_points_i[3] - four_points_i[2]) - \
-                      (four_points_i[3] - dst_i) * (four_points_j[3] - four_points_j[2])) / det_b
+                vb = ((four_points_j[3] - dst_j - 0.5) * (four_points_i[3] - four_points_i[2]) - \
+                      (four_points_i[3] - dst_i - 0.5) * (four_points_j[3] - four_points_j[2])) / det_b
                 is_inside_triangle_b = (ub >= u_min) & (vb >= v_min) & (ub + vb <= uv_max) & \
-                                       (dst_i >= 0) & (dst_i < dst_grid.tile_width) & \
-                                       (dst_j >= 0) & (dst_j < dst_grid.tile_height)
+                                       (dst_i >= 0) & (dst_i < dst_width) & \
+                                       (dst_j >= 0) & (dst_j < dst_height)
                 # insert pixel with this offset into result if inside
-                result_col[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
-                    src_id_col[is_inside_triangle_b] + src_offset[0] + ub[is_inside_triangle_b]
-                result_row[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
-                    src_id_row[is_inside_triangle_b] + src_offset[1] + vb[is_inside_triangle_b]
+                if is_inside_triangle_b.any():
+                    result_col[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
+                        src_id_col[is_inside_triangle_b] + src_offset[0] + 1.0 - ub[is_inside_triangle_b]
+                    result_row[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
+                        src_id_row[is_inside_triangle_b] + src_offset[1] + 1.0 - vb[is_inside_triangle_b]
         result = np.stack((result_col, result_row))
         return result
 
@@ -395,28 +423,26 @@ class Rectifier:
         for tj in range(num_blocks_j):
             for ti in range(num_blocks_i):
                 # determine src box that covers dst block plus buffer
-                src_offset_i = bbox_blocks[0, tj, ti]
-                src_offset_j = bbox_blocks[1, tj, ti]
                 src_subset_lon_lat = src_lon_lat[:,
-                                                 src_offset_j:bbox_blocks[3, tj, ti],
-                                                 src_offset_i:bbox_blocks[2, tj, ti]]
+                                     bbox_blocks[1, tj, ti]:bbox_blocks[3, tj, ti],
+                                     bbox_blocks[0, tj, ti]:bbox_blocks[2, tj, ti]]
                 # compose call for blockwise inverse index
                 src_id = (self.name+'_src', 0, tj, ti)
                 inv_id = (self.name+'_inverse', 0, tj, ti)
                 layer[src_id] = src_subset_lon_lat
                 layer[inv_id] = (self.inverse_index_of_dst_block_with_src_subset,
                                  src_id,
-                                 (src_offset_i, src_offset_j),
+                                 (bbox_blocks[0, tj, ti] + 0.5, bbox_blocks[1, tj, ti] + 0.5),
                                  self.dst_grid,
-                                 (ti, tj))
+                                 (tj, ti))
         # compose dask array of reprojected results
-        graph = HighLevelGraph.from_collections(name,
+        graph = HighLevelGraph.from_collections(self.name,
                                                 layer,
                                                 dependencies=[])
         result = da.Array(graph,
-                          name,
-                          shape=(2, dst_grid.rows.count, dst_grid.cols.count),
-                          chunks=(2, dst_grid.row_chunksize, dst_grid.col_chunksize),
+                          self.name+'_inverse',
+                          shape=(2, self.dst_grid.height, self.dst_grid.width),
+                          chunks=(2, self.dst_grid.tile_height, self.dst_grid.tile_width),
                           meta=np.ndarray([], dtype=np.float32))
         return result
 
