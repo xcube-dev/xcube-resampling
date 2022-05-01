@@ -18,13 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+import math
 import unittest
 import pyproj
 import numpy as np
 import dask.array as da
 from xcube_resampling.grid import Grid
 from xcube_resampling.rectifier import Rectifier
+import xarray as xr
 
 # noinspection PyTypeChecker
 class RectificationTest(unittest.TestCase):
@@ -263,5 +264,97 @@ class RectificationTest(unittest.TestCase):
                                                  [3.33552632, 2.91447368, np.nan]]], decimal=3)
         print(result)
 
+    def test_olci_forward_index(self):
+        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
+        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
+                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
+                                engine="netcdf4",
+                                chunks=2048)
+        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
+        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
+        index = r.create_forward_pixel_index()
+        print()
+        print(index)
+        print(index.compute())
 
+    def test_olci_covering_grid(self):
+        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
+        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
+                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
+                                engine="netcdf4",
+                                chunks=2048)
+        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
+        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
+        r.create_forward_pixel_index()
+        print()
+        print(r.forward_index)
+        print(r.forward_index.compute())
+        dst_grid = r.determine_covering_dst_grid()
+        print()
+        print(dst_grid)
+        print(r.forward_index)
+        print(r.forward_index.compute())
 
+    def test_olci_inverse_index(self):
+        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
+        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
+                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
+                                engine="netcdf4",
+                                chunks=2048)
+        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
+        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
+        r.create_forward_pixel_index()
+        r.determine_covering_dst_grid()
+        r.create_inverse_pixel_index()
+        print()
+        print(r.inverse_index)
+        index = r.inverse_index.compute()
+        #print(index)
+        src_lon = l1b['longitude'].data.compute()
+        src_lat = l1b['latitude'].data.compute()
+        #
+        for dst_pos in [(1000, 1000), (5000, 2600)]:
+            src_pos = index[:,dst_pos[1],dst_pos[0]]
+            src_int = (math.floor(src_pos[0]-0.5), math.floor(src_pos[1]-0.5))
+            dst_lon = dst_grid.x_min + (dst_pos[0] + 0.5) * dst_grid.x_res
+            dst_lat = dst_grid.y_min + (dst_pos[1] + 0.5) * dst_grid.y_res
+            print("src frac idx", src_pos)
+            print("upper left  ", src_lon[src_int[1], src_int[0]], src_lat[src_int[1], src_int[0]])
+            print("dst point   ", dst_lon, dst_lat)
+            print("lower right ", src_lon[src_int[1]+1, src_int[0]+1], src_lat[src_int[1]+1, src_int[0]+1])
+            assert dst_lon >= src_lon[src_int[1], src_int[0]] and dst_lon <= src_lon[src_int[1]+1, src_int[0]+1]
+            assert dst_lat <= src_lat[src_int[1], src_int[0]] and dst_lat >= src_lat[src_int[1]+1, src_int[0]+1]
+
+    def test_olci_rectify_one_tile(self):
+        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
+        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
+                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
+                                engine="netcdf4",
+                                chunks=2048)
+        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (3.539, 45.249), (0.003, -0.003), (1867, 1904), (2400, 2400))
+        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
+        r.create_forward_pixel_index()
+        r.create_inverse_pixel_index()
+        print(r.inverse_index.compute())
+        repro_dask = r.rectify_nearest_neighbour(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
+        print()
+        print(repro_dask)
+        result = repro_dask.compute()
+        print(result)
+
+    def test_olci_rectify(self):
+        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
+        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
+                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
+                                engine="netcdf4",
+                                chunks=2048)
+        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
+        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
+        r.create_forward_pixel_index()
+        r.determine_covering_dst_grid()
+        r.create_inverse_pixel_index()
+        repro_dask = r.rectify_nearest_neighbour(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
+        print()
+        print(repro_dask)
+        result = repro_dask.compute()
+        print(result)

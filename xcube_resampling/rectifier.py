@@ -34,6 +34,7 @@ __status__ = "Development"
 import math
 import pyproj
 import numpy as np
+import dask
 import dask.array as da
 from dask.highlevelgraph import HighLevelGraph
 from .grid import Grid
@@ -43,9 +44,9 @@ class Rectifier:
     """
     Reprojects measurement layers from a source image with pixel geo-coding to a destination grid
     with CRS and a similar resolution, with nearest neighbour resampling as default method.
-    Source image must be given, dst grid may be created such that it covers the source image area.
+    Source image must be given, dst grid is given or can be created such that it covers the source image area.
     Pre-calculates inverse pixel index that contains the source pixel coordinates for each destination pixel.
-    Generates and returns a dask array with a dask graph for the delayed computation. Just the inverse 
+    Generates and returns a dask array with a dask graph for the delayed computation. Just the forward
     index is pre-calculated as it determines how the graph is constructed. Pre-calculation is done by dask,
     too.
 
@@ -140,8 +141,8 @@ class Rectifier:
                                            trafo=self.trafo,
                                            dst_grid=self.dst_grid,
                                            new_axis=0,
-                                           dtype=np.int32,
-                                           #meta=np.array((), dtype=np.int32),
+                                           #dtype=np.int32,
+                                           meta=np.array((), dtype=np.int32),
                                            name=self.name + "_forward")
         return self.forward_index
 
@@ -169,12 +170,13 @@ class Rectifier:
         update dst grid origin and size, shift forward pixel index
         :return: dst grid
         """
-        if not self.forward_index:
+        if self.forward_index is None:
             raise ValueError("missing forward index. Call create_forward_pixel_index() first.")
         bboxes = da.map_blocks(self.dst_bbox_of_src_block, 
                                self.forward_index, 
-                               new_axis=0, 
-                               name=self.name + "_bbox").compute()
+                               #new_axis=0,
+                               name=self.name + "_bbox",
+                               meta=np.array([], dtype=int)).compute()
         i_min = np.min(bboxes[0])
         j_min = np.min(bboxes[1])
         i_max = np.max(bboxes[2])
@@ -184,9 +186,24 @@ class Rectifier:
         self.dst_grid.y_min = j_min * self.dst_grid.y_res
         self.dst_grid.width = i_max - i_min + 1
         self.dst_grid.height = j_max - j_min + 1
+        self.dst_grid = Grid(self.dst_grid.crs,
+                             (i_min * self.dst_grid.x_res, j_min * self.dst_grid.y_res),
+                             (self.dst_grid.x_res, self.dst_grid.y_res),
+                             (i_max - i_min + 1, j_max - j_min + 1),
+                             (self.dst_grid.tile_width, self.dst_grid.tile_height))
         # adjust pixel coordinates of forward mapping
-        self.forward_index -= np.array([[i_min], [j_min]])
+        #self.forward_index -= np.array([[i_min], [j_min]])
+        #self.forward_index = dask.delayed(lambda xy: xy - np.array([[i_min],[j_min]]))(self.forward_index)
+        ### shift must not happen because forward_index is recomputed with the right dst_grid in place.
+        ### This may depend on whether dst_grid is shared (and updated as an object) or is a copy (that cannot get an update any more)
+        ###
+        ###self.forward_index = da.map_blocks(self.shift_block, self.forward_index, shift_i=i_min, shift_j=j_min, drop_axis=2, new_axis=2, meta=np.array([], dtype=int))
         return self.dst_grid
+
+    @staticmethod
+    def shift_block(forward_index_block: np.ndarray, shift_i: int = None, shift_j: int = None, block_id=None):
+        result = forward_index_block #- np.array([[[shift_i]], [[shift_j]]])
+        return result
 
     @staticmethod
     def dst_bboxes_of_src_block(forward_index_block: np.ndarray,
@@ -197,7 +214,7 @@ class Rectifier:
         """
         Determines for one source block the source bounding box for each dst block
         if source block and dst block intersect.
-        map_blocks function called by creata_inverse_pixel_index
+        map_blocks function called by create_inverse_pixel_index
         :param forward_index_block: source block of pixel coordinates of source pixels in dst grid
                                     shape (2, src_tile_height, src_tile_width), sequence i, j
         :param dst_grid: dst number of blocks and their sizes
@@ -325,6 +342,7 @@ class Rectifier:
                                    covering the dst block
         :param src_offset: offset of src_subset_lon_lat in fractional src pixel coordinates to be
                            added to inverse index, pixel position of the origin of src_subset_lon_lat
+                           TODO this is an exact "0.5 pixel" position, is this intended?
         :param dst_grid: destination grid
         :param block_id destination block coordinates, j and i in this sequence
         :return: inverse pixel index with fractional source pixel index for each dst block pixel
@@ -445,21 +463,23 @@ class Rectifier:
                                  self.trafo,
                                  (tj, ti))
         # compose dask array of reprojected results
-        graph = HighLevelGraph.from_collections(self.name,
+        graph = HighLevelGraph.from_collections(self.name+'_inverse',
                                                 layer,
                                                 dependencies=[])
-        result = da.Array(graph,
-                          self.name+'_inverse',
-                          shape=(2, self.dst_grid.height, self.dst_grid.width),
-                          chunks=(2, self.dst_grid.tile_height, self.dst_grid.tile_width),
-                          meta=np.ndarray([], dtype=np.float32))
-        return result
+        self.inverse_index = da.Array(graph,
+                                      self.name+'_inverse',
+                                      shape=(2, self.dst_grid.height, self.dst_grid.width),
+                                      chunks=(2, self.dst_grid.tile_height, self.dst_grid.tile_width),
+                                      meta=np.ndarray([], dtype=np.float32))
+        return self.inverse_index
 
 
     @staticmethod
     def rectify_tiles_to_block(block_i: np.ndarray,
                                block_j: np.ndarray,
-                               src_grid: Grid,
+                               tx: int,
+                               ty: int,
+                               src_tilesize: Tuple[int, int],
                                num_blocks_i: int,
                                tiles: np.ndarray,
                                *measurements: da.Array) -> np.array:
@@ -468,13 +488,18 @@ class Rectifier:
         uses inverse tile index of block and masks measurements of each tile for the block.
         :param block_i: inverse index for the block
         :param block_j: inverse index for the block
-        :param src_grid: chunk sizes to calculate tile-local positions
+        :param tx: block column
+        :param ty: block row
+        :param src_tilesize: chunk sizes to calculate tile-local positions, j, i
         :param num_blocks_i: to split tile numbers into tile row and tile column
         :param tiles: list of tile numbers
         :param measurements: list of tile measurement stacks, same length as tiles
         :return: stack of measurements of the block
         """
-        dst_data = np.empty((measurements[0].shape[0], *block_j.shape), dtype=np.float32)
+        num_measurements = measurements[0].shape[0]
+        num_src_rows = measurements[0].shape[1]
+        num_src_cols = measurements[0].shape[2]
+        dst_data = np.empty((num_measurements, *block_j.shape), dtype=np.float32)
         dst_data[:] = np.nan
         # loop over source tiles overlapping with dst block
         for tile, tile_measurements in zip(tiles, measurements):
@@ -482,10 +507,15 @@ class Rectifier:
             tile_j = tile // num_blocks_i
             tile_i = tile % num_blocks_i
             # reduce indices (at dst block positions) to upper left corner of source tile
-            shifted_j = block_j - tile_j * src_grid.tile_height
-            shifted_i = block_i - tile_i * src_grid.tile_width
+            shifted_j = block_j - tile_j * src_tilesize[0]
+            shifted_i = block_i - tile_i * src_tilesize[1]
             # mask dst block positions that shall be filled by this source tile
-            tile_mask = (block_j // src_grid.tile_height == tile_j) & (block_i // src_grid.tile_width == tile_i)
+            tile_mask = (block_j // src_tilesize[0] == tile_j) \
+                        & (block_i // src_tilesize[1] == tile_i) \
+                        & (block_j >= 0) \
+                        & (block_j < num_src_rows) \
+                        & (block_i >= 0) \
+                        & (block_i < num_src_cols)
             # get values, TODO is compute required here?
             m = tile_measurements.compute()  # m is bands x j x i
             # set dst positions by values from source measurements
@@ -500,7 +530,8 @@ class Rectifier:
         :param measurements: stack of source measurements
         :return: list of source measurement stacks, one per tile in tiles
         """
-        num_tiles_i = math.ceil(self.src_grid.width / self.src_grid.tile_width)
+        #num_tiles_i = math.ceil(self.src_grid.width / self.src_grid.tile_width)
+        num_tiles_i = measurements[0].blocks.shape[1]
         tile_measurements = []
         for tile in tiles:
             # split tile index into tile row and tile column
@@ -527,23 +558,27 @@ class Rectifier:
             raise ValueError("missing inverse index. Call create_inverse_pixel_index() first.")
         num_blocks_x = math.ceil(self.dst_grid.width / self.dst_grid.tile_width)
         num_blocks_y = math.ceil(self.dst_grid.height / self.dst_grid.tile_height)
-        num_tiles_col = math.ceil(self.src_grid.width / self.src_grid.tile_width)
-        num_tiles_row = math.ceil(self.src_grid.height / self.src_grid.tile_height)
+        num_tiles_col = math.ceil(measurements[0].shape[1] / measurements[0].chunksize[1])
+        num_tiles_row = math.ceil(measurements[0].shape[0] / measurements[0].chunksize[0])
         # create graph with one call per dst block
         layer = dict()
         dependencies = []
+        inverse_index = self.inverse_index.compute()
         # dst rows loop and cols loop
         for ty in range(num_blocks_y):
             for tx in range(num_blocks_x):
                 # ty and tx are the dst block numbers 0..num_blocks
                 # determine inverse index values for dst block
-                block = self.inverse_index.blocks[:, ty, tx]
-                block = block.compute()
-                block_i = block[0]
-                block_j = block[1]
+                block = inverse_index[:,
+                        ty * self.dst_grid.tile_height:min((ty + 1) * self.dst_grid.tile_height, self.dst_grid.height),
+                        tx * self.dst_grid.tile_width:min((tx + 1) * self.dst_grid.tile_width, self.dst_grid.width)]
+                intblock = np.around(block).astype(int)
+                intblock[np.isnan(block)] = -1
+                block_i = intblock[0]
+                block_j = intblock[1]
                 # determine source tile indices for the dst block, still on dst pixel resolution
                 # mask areas outside inverse index range
-                block_tile = (block_j // self.src_grid.tile_height) * num_tiles_col + (block_i // self.src_grid.tile_width)
+                block_tile = (block_j // measurements[0].chunksize[0]) * num_tiles_col + (block_i // measurements[0].chunksize[1])
                 block_tile[(block_j == -1) | (block_i == -1)] = -1
                 # determine set of the few src tile indices that occur in this dst block using some numpy indexing
                 # initialise array with possible set of tiles + one extra at the end for out-of-index, all masked -1
@@ -567,7 +602,7 @@ class Rectifier:
                 # add dask graph entry to reproject source tiles to block
                 # additional first index is 0 for the single chunk of the complete measurement stack
                 layer[(self.name, 0, ty, tx)] = (
-                    Rectifier.rectify_tiles_to_block, block_i, block_j, self.src_grid, num_tiles_col, tile_set, *tile_measurement_ids
+                    Rectifier.rectify_tiles_to_block, block_i, block_j, tx, ty, measurements[0].chunksize, num_tiles_col, tile_set, *tile_measurement_ids
                 )
         # compose dask array of reprojected results
         graph = HighLevelGraph.from_collections(self.name,
