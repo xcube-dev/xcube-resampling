@@ -497,12 +497,12 @@ class Rectifier:
         :return: stack of measurements of the block
         """
         num_measurements = measurements[0].shape[0]
-        num_src_rows = measurements[0].shape[1]
-        num_src_cols = measurements[0].shape[2]
         dst_data = np.empty((num_measurements, *block_j.shape), dtype=np.float32)
         dst_data[:] = np.nan
         # loop over source tiles overlapping with dst block
         for tile, tile_measurements in zip(tiles, measurements):
+            num_src_rows = tile_measurements.shape[1]
+            num_src_cols = tile_measurements.shape[2]
             # split tile index into tile row and tile column
             tile_j = tile // num_blocks_i
             tile_i = tile % num_blocks_i
@@ -512,10 +512,10 @@ class Rectifier:
             # mask dst block positions that shall be filled by this source tile
             tile_mask = (block_j // src_tilesize[0] == tile_j) \
                         & (block_i // src_tilesize[1] == tile_i) \
-                        & (block_j >= 0) \
-                        & (block_j < num_src_rows) \
-                        & (block_i >= 0) \
-                        & (block_i < num_src_cols)
+                        & (shifted_j >= 0) \
+                        & (shifted_j < num_src_rows) \
+                        & (shifted_i >= 0) \
+                        & (shifted_i < num_src_cols)
             # get values, TODO is compute required here?
             m = tile_measurements.compute()  # m is bands x j x i
             # set dst positions by values from source measurements
