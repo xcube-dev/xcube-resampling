@@ -36,12 +36,14 @@ import pyproj
 import numpy as np
 import dask
 import dask.array as da
-from dask.highlevelgraph import HighLevelGraph
 from .grid import Grid
-from typing import Tuple, Union, Optional
+from typing import Tuple
+
 
 class Rectifier:
     """
+    TODO update!
+
     Reprojects measurement layers from a source image with pixel geo-coding to a destination grid
     with CRS and a similar resolution, with nearest neighbour resampling as default method.
     Source image must be given, dst grid is given or can be created such that it covers the source image area.
@@ -100,67 +102,38 @@ class Rectifier:
         self.dst_grid = dst_grid
         self.name = name
 
-    @staticmethod
-    def block_dst_pixels_of_src_block(src_lon:np.ndarray,
-                                      src_lat:np.ndarray,
-                                      trafo:pyproj.Transformer=None,
-                                      dst_grid:Grid=None) -> np.ndarray:
-        """
-        Calculates for one source block the integer dst image coordinates j and i
-        for each source pixel. map_blocks function used in create_forward_pixel_index,
-        must be called with new_axis=0 .
-        :param src_lon: one block of src x coordinates at src pixel centres
-        :param src_lat: one block of src y coordinates at src pixel centres
-        :param trafo: transformation from src to dst
-        :param dst_grid: defines a grid with the origin at the upper left corner of the start pixel
-        :return: stack of i and j arrays for the block
-        """
-        # transform into source coordinates
-        if dst_grid.crs.is_geographic:
-            dst_x, dst_y = src_lon, src_lat
-        else:
-            dst_x, dst_y = trafo.transform(src_lon, src_lat)
-        # convert to pixel positions
-        # "floor" in fact rounds because transformed pixel centers are related to upper left corner
-        dst_i = np.floor((dst_x - dst_grid.x_min) / dst_grid.x_res).astype(dtype=int)
-        dst_j = np.floor((dst_y - dst_grid.y_min) / dst_grid.y_res).astype(dtype=int)
-        # we stack to return a single np array for the block
-        result = np.stack((dst_i, dst_j))
-        return result
+    def prepare_forward_index(self) -> da.Array:
+        self.dask_forward_index = da.map_blocks(Rectifier.block_dst_pixels_of_src_block,
+                                                self.src_lon,
+                                                self.src_lat,
+                                                dst_grid=self.dst_grid,
+                                                new_axis=0,
+                                                #dtype=np.int32,
+                                                meta=np.array((), dtype=np.int32),
+                                                name=self.name + "_forward")
+        return self.dask_forward_index
 
-    def create_forward_pixel_index(self):
-        """
-        Creates dst pixel index (integer) of each source pixel. 
-        """
-        self.trafo = pyproj.Transformer.from_crs(pyproj.CRS(4326),
-                                                 self.dst_grid.crs,
-                                                 always_xy=True)
-        self.forward_index = da.map_blocks(Rectifier.block_dst_pixels_of_src_block,
-                                           self.src_lon,
-                                           self.src_lat,
-                                           trafo=self.trafo,
-                                           dst_grid=self.dst_grid,
-                                           new_axis=0,
-                                           #dtype=np.int32,
-                                           meta=np.array((), dtype=np.int32),
-                                           name=self.name + "_forward")
-        return self.forward_index
+    def prepare_src_bboxes(self) -> da.Array:
+        bbox_blocks_raw = da.map_blocks(self.dst_bboxes_of_src_block,
+                                        self.dask_forward_index,
+                                        dst_grid=self.dst_grid,
+                                        src_tile_size=self.src_lat.chunksize,
+                                        src_size=self.src_lat.shape,
+                                        drop_axis=0,
+                                        new_axis=[0,1,2],
+                                        meta=np.array([], dtype=np.int32),
+                                        name=self.name + "_bboxes")
+        # we compute min and max of all 4 bounds though we need only two of each,
+        # dask seems not to delay a []
+        self.dask_src_bboxes = da.vstack((da.nanmin(bbox_blocks_raw, axis=(3,4)),
+                                          da.nanmax(bbox_blocks_raw, axis=(3,4))))
+        return self.dask_src_bboxes
 
-    @staticmethod
-    def dst_bbox_of_src_block(forward_index_block: np.ndarray):
-        """
-        Determines the bounding box of a source image block in dst pixel coordinates.
-        map_blocks function called by determine_covering_dst_grid,
-        must be called with new_axis=0 .
-        :param forward_index_block: dst pixel position (integer) of each source pixel of the source block,
-                                    array of shape (2, height, width), sequence i, j
-        :return: numpy array of shape (4,1,1) with imin, jmin, imax, jmax
-        """
-        i_min = np.nanmin(forward_index_block[0])
-        j_min = np.nanmin(forward_index_block[1])
-        i_max = np.nanmax(forward_index_block[0])
-        j_max = np.nanmax(forward_index_block[1])
-        return np.array([i_min, j_min, i_max, j_max]).reshape((4,1,1))
+    def compute_forward_index(self) -> Tuple[np.ndarray, np.ndarray]:
+        self.forward_index, src_bboxes = dask.compute(self.dask_forward_index, self.dask_src_bboxes)
+        # we select min and max of two bounds each
+        self.src_bboxes = np.stack((src_bboxes[0], src_bboxes[1], src_bboxes[6], src_bboxes[7]))
+        return (self.forward_index, self.src_bboxes)
 
     def determine_covering_dst_grid(self) -> Grid:
         """
@@ -172,8 +145,8 @@ class Rectifier:
         """
         if self.forward_index is None:
             raise ValueError("missing forward index. Call create_forward_pixel_index() first.")
-        bboxes = da.map_blocks(self.dst_bbox_of_src_block, 
-                               self.forward_index, 
+        bboxes = da.map_blocks(self.dst_bbox_of_src_block,
+                               self.forward_index,
                                #new_axis=0,
                                name=self.name + "_bbox",
                                meta=np.array([], dtype=int)).compute()
@@ -192,7 +165,7 @@ class Rectifier:
                              (i_max - i_min + 1, j_max - j_min + 1),
                              (self.dst_grid.tile_width, self.dst_grid.tile_height))
         # adjust pixel coordinates of forward mapping
-        #self.forward_index -= np.array([[i_min], [j_min]])
+        self.forward_index -= np.array([[[i_min]], [[j_min]]])
         #self.forward_index = dask.delayed(lambda xy: xy - np.array([[i_min],[j_min]]))(self.forward_index)
         ### shift must not happen because forward_index is recomputed with the right dst_grid in place.
         ### This may depend on whether dst_grid is shared (and updated as an object) or is a copy (that cannot get an update any more)
@@ -200,9 +173,130 @@ class Rectifier:
         ###self.forward_index = da.map_blocks(self.shift_block, self.forward_index, shift_i=i_min, shift_j=j_min, drop_axis=2, new_axis=2, meta=np.array([], dtype=int))
         return self.dst_grid
 
+    def prepare_inverse_index(self):
+        src_lon_lat = da.stack((self.src_lon, self.src_lat))
+        num_blocks_j = math.ceil(self.dst_grid.height / self.dst_grid.tile_height)
+        num_blocks_i = math.ceil(self.dst_grid.width / self.dst_grid.tile_width)
+        num_complete_tile_cols = num_blocks_i - 1
+        num_complete_tile_rows = num_blocks_j - 1
+        block_rows = []
+        for tj in range(num_blocks_j):
+            block_cols = []
+            for ti in range(num_blocks_i):
+                # result has the extent of the dst grid tile, initialised with nan
+                dst_width = self.dst_grid.tile_width \
+                    if ti < num_complete_tile_cols \
+                    else self.dst_grid.width - num_complete_tile_cols * self.dst_grid.tile_width
+                dst_height = self.dst_grid.tile_height \
+                    if tj < num_complete_tile_rows \
+                    else self.dst_grid.height - num_complete_tile_rows * self.dst_grid.tile_height
+                # dst rows loop and cols loop
+                # determine src box that covers dst block plus buffer
+                lon_lat_blocks = []
+                for tile_row in range(self.src_bboxes[1, tj, ti] // self.src_lon.chunksize[0], (self.src_bboxes[3, tj, ti] - 1) // self.src_lon.chunksize[0] + 1):
+                    for tile_col in range(self.src_bboxes[0, tj, ti] // self.src_lon.chunksize[1], (self.src_bboxes[2, tj, ti] - 1) // self.src_lon.chunksize[1] + 1):
+                        block = src_lon_lat.blocks[:, tile_row, tile_col]
+                        lon_lat_blocks.append(block)
+                delayed_block = dask.delayed(self.inverse_index_of_dst_block_with_src_tiles)((tj, ti),
+                                                                                             self.dst_grid,
+                                                                                             self.src_bboxes[:, tj, ti],
+                                                                                             self.src_lon.chunksize,
+                                                                                             *lon_lat_blocks)
+                da_block = da.from_delayed(delayed_block, shape=(2, dst_height, dst_width), dtype=float)
+                block_cols.append(da_block)
+            block_row = da.concatenate(block_cols, axis=2)
+            block_rows.append(block_row)
+        self.dask_inverse_index = da.concatenate(block_rows, axis=1)
+        return self.dask_inverse_index
+
+    def prepare_rectification(self, *measurements: da.Array) -> da.Array:
+        """
+        Rectifies stack of measurements from source image to dst grid using pre-computed inverse index
+        :param measurements: stack of source measurements
+        :return: dask array with stack of rectified measurements on dst grid
+        """
+        if not self.dst_grid:
+            raise ValueError("missing dst grid. Call create_covering_dst_grid() first.")
+        if self.dask_inverse_index is None:
+            raise ValueError("missing inverse index. Call create_inverse_pixel_index() first.")
+        num_blocks_x = math.ceil(self.dst_grid.width / self.dst_grid.tile_width)
+        num_blocks_y = math.ceil(self.dst_grid.height / self.dst_grid.tile_height)
+        num_tiles_col = math.ceil(measurements[0].shape[1] / measurements[0].chunksize[1])
+        num_tiles_row = math.ceil(measurements[0].shape[0] / measurements[0].chunksize[0])
+        # create graph with one call per dst block
+        inverse_index = self.dask_inverse_index.compute()
+        block_rows = []
+        # dst rows loop and cols loop
+        for ty in range(num_blocks_y):
+            block_cols = []
+            for tx in range(num_blocks_x):
+                # ty and tx are the dst block numbers 0..num_blocks
+                # determine inverse index values for dst block
+                block = inverse_index[:,
+                        ty * self.dst_grid.tile_height:min((ty + 1) * self.dst_grid.tile_height, self.dst_grid.height),
+                        tx * self.dst_grid.tile_width:min((tx + 1) * self.dst_grid.tile_width, self.dst_grid.width)]
+                #intblock = np.around(block).astype(int)
+                intblock = np.floor(block).astype(int)
+                intblock[np.isnan(block)] = -1
+                block_i = intblock[0]
+                block_j = intblock[1]
+                # determine source tile indices for the dst block, still on dst pixel resolution
+                # mask areas outside inverse index range
+                block_tile = (block_j // measurements[0].chunksize[0]) * num_tiles_col + (block_i // measurements[0].chunksize[1])
+                block_tile[(block_j == -1) | (block_i == -1)] = -1
+                # determine set of the few src tile indices that occur in this dst block using some numpy indexing
+                # initialise array with possible set of tiles + one extra at the end for out-of-index, all masked -1
+                # set the few positions (many times all at once) where there are tiles set in dst block
+                # slice away tile indices not set and extra element, tile_set is a small array of source tiles
+                all_tile_numbers = np.arange(num_tiles_row * num_tiles_col + 1, dtype=int)
+                tile_array = np.empty(shape=(num_tiles_row * num_tiles_col + 1), dtype=int)
+                tile_array[:] = -1
+                tile_array[block_tile] = all_tile_numbers[block_tile]
+                tile_set = tile_array[(tile_array != -1) & (tile_array != all_tile_numbers[-1])]
+                # collect the measurement stacks of the source tiles of this block
+                tile_measurements = self.tile_measurements_of(tile_set, *measurements)
+                delayed_block = dask.delayed(Rectifier.rectify_tiles_to_block)(block_i, block_j,
+                                                                               tx, ty,
+                                                                               measurements[0].chunksize, num_tiles_col, len(measurements),
+                                                                               tile_set, *tile_measurements)
+                da_block = da.from_delayed(delayed_block, shape=block.shape, dtype=float)  # TODO distinguish band types
+                block_cols.append(da_block)
+            block_row = da.concatenate(block_cols, axis=2)
+            block_rows.append(block_row)
+        self.dask_rectified = da.concatenate(block_rows, axis=1)
+        return self.dask_rectified
+
+    def compute_rectification(self) -> np.ndarray:
+        return self.dask_rectified.compute()
+
+
+
     @staticmethod
-    def shift_block(forward_index_block: np.ndarray, shift_i: int = None, shift_j: int = None, block_id=None):
-        result = forward_index_block #- np.array([[[shift_i]], [[shift_j]]])
+    def block_dst_pixels_of_src_block(src_lon:np.ndarray,
+                                      src_lat:np.ndarray,
+                                      dst_grid:Grid=None) -> np.ndarray:
+        """
+        Calculates for one source block the integer dst image coordinates j and i
+        for each source pixel. map_blocks function used in create_forward_pixel_index,
+        must be called with new_axis=0 .
+        :param src_lon: one block of src x coordinates at src pixel centres
+        :param src_lat: one block of src y coordinates at src pixel centres
+        :param trafo: transformation from src to dst
+        :param dst_grid: defines a grid with the origin at the upper left corner of the start pixel
+        :return: stack of i and j arrays for the block
+        """
+        # transform into source coordinates
+        if dst_grid.crs.is_geographic:
+            dst_x, dst_y = src_lon, src_lat
+        else:
+            trafo = pyproj.Transformer.from_crs(pyproj.CRS(4326), dst_grid.crs, always_xy=True)
+            dst_x, dst_y = trafo.transform(src_lon, src_lat)
+        # convert to pixel positions
+        # "floor" in fact rounds because transformed pixel centers are related to upper left corner
+        dst_i = np.floor((dst_x - dst_grid.x_min) / dst_grid.x_res).astype(dtype=int)
+        dst_j = np.floor((dst_y - dst_grid.y_min) / dst_grid.y_res).astype(dtype=int)
+        # we stack to return a single np array for the block
+        result = np.stack((dst_i, dst_j))
         return result
 
     @staticmethod
@@ -262,9 +356,144 @@ class Rectifier:
         return result_boxes
 
     @staticmethod
+    def dst_bbox_of_src_block(forward_index_block: np.ndarray):
+        """
+        Determines the bounding box of a source image block in dst pixel coordinates.
+        map_blocks function called by determine_covering_dst_grid,
+        must be called with new_axis=0 .
+        :param forward_index_block: dst pixel position (integer) of each source pixel of the source block,
+                                    array of shape (2, height, width), sequence i, j
+        :return: numpy array of shape (4,1,1) with imin, jmin, imax, jmax
+        """
+        i_min = np.nanmin(forward_index_block[0])
+        j_min = np.nanmin(forward_index_block[1])
+        i_max = np.nanmax(forward_index_block[0])
+        j_max = np.nanmax(forward_index_block[1])
+        return np.array([i_min, j_min, i_max, j_max]).reshape((4,1,1))
+
+    @staticmethod
+    def shift_block(forward_index_block: np.ndarray, shift_i: int = None, shift_j: int = None, block_id=None):
+        result = forward_index_block #- np.array([[[shift_i]], [[shift_j]]])
+        return result
+
+    @staticmethod
+    def inverse_index_of_dst_block_with_src_tiles(block_id: Tuple[int, int],
+                                                  dst_grid: Grid,
+                                                  src_bbox: np.ndarray,
+                                                  src_chunksize: Tuple[int, int],
+                                                  *lon_lat_tiles: np.ndarray) -> np.ndarray:
+        """
+        Determines inverse index col, row of fractional source image pixel coordinates for
+        each dst pixel of a dst block. Uses painter algorithm to transform src triangles to
+        dst grid and mark dst pixels inside triangles.
+        High level graph function used in create_inverse_pixel_index.
+        :param src_subset_lon_lat: lon and lat coordinates of source pixels of a subset
+                                   covering the dst block
+        :param src_offset: offset of src_subset_lon_lat in fractional src pixel coordinates to be
+                           added to inverse index, pixel position of the origin of src_subset_lon_lat
+                           TODO this is an exact "0.5 pixel" position, is this intended?
+        :param dst_grid: destination grid
+        :param block_id destination block coordinates, j and i in this sequence
+        :return: inverse pixel index with fractional source pixel index for each dst block pixel
+        """
+        #if isinstance(src_subset_lon_lat, da.Array):
+        #    src_subset_lon_lat = src_subset_lon_lat.compute()
+        src_offset = (src_bbox[0] + 0.5, src_bbox[1] + 0.5)
+        subset_i0 = src_bbox[0]
+        subset_j0 = src_bbox[1]
+        src_subset_lon_lat = np.empty((2, src_bbox[3] - src_bbox[1], src_bbox[2] - src_bbox[0]), dtype=lon_lat_tiles[0].dtype)
+        i = 0
+        for tile_j in range(src_bbox[1] // src_chunksize[0], (src_bbox[3] - 1) // src_chunksize[0] + 1):
+            tile_j0 = tile_j * src_chunksize[0]
+            tile_j1 = tile_j0 + src_chunksize[0]
+            j0 = max(tile_j0, src_bbox[1])
+            j1 = min(tile_j1, src_bbox[3])
+            for tile_i in range(src_bbox[0] // src_chunksize[1], (src_bbox[2] - 1) // src_chunksize[1] + 1):
+                tile_i0 = tile_i * src_chunksize[1]
+                tile_i1 = tile_i0 + src_chunksize[1]
+                i0 = max(tile_i0, src_bbox[0])
+                i1 = min(tile_i1, src_bbox[2])
+                #print(*block_id, j0, j1, i0, i1, tile_j0, tile_j1)
+                src_subset_lon_lat[:, j0-subset_j0:j1-subset_j0, i0-subset_i0:i1-subset_i0] = \
+                    lon_lat_tiles[i][:,j0-tile_j0:j1-tile_j0, i0-tile_i0:i1-tile_i0]
+                i += 1
+        # generate four points with two triangles for the src subset in dst pixel fractional coordinates
+        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, block_id)
+        # create small bboxes for the four points
+        bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height = Rectifier.bboxes_of_triangles(four_points_i, four_points_j, dst_grid)
+        # create source subset identity vector for rows and columns
+        src_width = src_subset_lon_lat.shape[1] - 1
+        src_height = src_subset_lon_lat.shape[2] - 1
+        src_id_col = np.tile(np.arange(src_height), (src_width, 1))
+        src_id_row = np.tile(np.arange(src_width), (src_height, 1)).transpose()
+        # result has the extent of the dst grid tile, initialised with nan
+        num_complete_tile_cols = math.ceil(dst_grid.width / dst_grid.tile_width) - 1
+        num_complete_tile_rows = math.ceil(dst_grid.height / dst_grid.tile_height) - 1
+        dst_width = dst_grid.tile_width \
+            if block_id[1] < num_complete_tile_cols \
+            else dst_grid.width - num_complete_tile_cols * dst_grid.tile_width
+        dst_height = dst_grid.tile_height \
+            if block_id[0] < num_complete_tile_rows \
+            else dst_grid.height - num_complete_tile_rows * dst_grid.tile_height
+        result_col = np.empty((dst_height, dst_width))
+        result_row = np.empty((dst_height, dst_width))
+        result_col[:,:] = np.nan
+        result_row[:,:] = np.nan
+        # det_a and _b have the extent of the source subset.
+        # _fdet = (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
+        det_a = (four_points_i[0] - four_points_i[1]) * (four_points_j[0] - four_points_j[2]) \
+                - (four_points_i[0] - four_points_i[2]) * (four_points_j[0] - four_points_j[1])
+        det_b = (four_points_i[3] - four_points_i[2]) * (four_points_j[3] - four_points_j[1]) \
+                - (four_points_i[3] - four_points_i[1]) * (four_points_j[3] - four_points_j[2])
+        # numerical accuracy parameters
+        uv_delta = 0.001
+        u_min = v_min = -uv_delta
+        uv_max = 1.0 + 2 * uv_delta
+        # loops over bboxes max size, shift the dst pixel for each triangle
+        for j_offset in range(bboxes_max_height):
+            dst_j = bboxes_min_j + j_offset
+            for i_offset in range(bboxes_max_width):
+                dst_i = bboxes_min_i + i_offset
+                # dst_j and dst_i have the extent of the source subset
+                # dst_j and dst_i contain integer pixel coordinates of the considered point in the dst grid
+                # u and v have the extent of the source subset
+                # _fu = (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
+                ua = ((four_points_i[0] - dst_i - 0.5) * (four_points_j[0] - four_points_j[2]) - \
+                      (four_points_j[0] - dst_j - 0.5) * (four_points_i[0] - four_points_i[2])) / det_a
+                # _fv = (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
+                va = ((four_points_j[0] - dst_j - 0.5) * (four_points_i[0] - four_points_i[1]) - \
+                      (four_points_i[0] - dst_i - 0.5) * (four_points_j[0] - four_points_j[1])) / det_a
+                is_inside_triangle_a = (ua >= u_min) & (va >= v_min) & (ua + va <= uv_max) & \
+                                       (dst_i >= 0) & (dst_i < dst_width) & \
+                                       (dst_j >= 0) & (dst_j < dst_height)
+                # insert pixel with this offset into result if inside
+                if is_inside_triangle_a.any():
+                    result_col[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
+                        src_id_col[is_inside_triangle_a] + src_offset[0] + ua[is_inside_triangle_a]
+                    result_row[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
+                        src_id_row[is_inside_triangle_a] + src_offset[1] + va[is_inside_triangle_a]
+                # do the same for triangle b ...
+                # _fu = (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
+                ub = ((four_points_i[3] - dst_i - 0.5) * (four_points_j[3] - four_points_j[1]) - \
+                      (four_points_j[3] - dst_j - 0.5) * (four_points_i[3] - four_points_i[1])) / det_b
+                # _fv = (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
+                vb = ((four_points_j[3] - dst_j - 0.5) * (four_points_i[3] - four_points_i[2]) - \
+                      (four_points_i[3] - dst_i - 0.5) * (four_points_j[3] - four_points_j[2])) / det_b
+                is_inside_triangle_b = (ub >= u_min) & (vb >= v_min) & (ub + vb <= uv_max) & \
+                                       (dst_i >= 0) & (dst_i < dst_width) & \
+                                       (dst_j >= 0) & (dst_j < dst_height)
+                # insert pixel with this offset into result if inside
+                if is_inside_triangle_b.any():
+                    result_col[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
+                        src_id_col[is_inside_triangle_b] + src_offset[0] + 1.0 - ub[is_inside_triangle_b]
+                    result_row[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
+                        src_id_row[is_inside_triangle_b] + src_offset[1] + 1.0 - vb[is_inside_triangle_b]
+        result = np.stack((result_col, result_row))
+        return result
+
+    @staticmethod
     def triangles_in_dst_pixel_grid(src_subset_lon_lat: np.ndarray,
                                     dst_grid: Grid,
-                                    trafo: pyproj.Transformer,
                                     block_id: Tuple[int, int]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Stacks the four points P0, P1, P2, P3 that form two triangles P0-P1-P2 and P3-P1-P2. 
@@ -280,6 +509,7 @@ class Rectifier:
         if dst_grid.crs.is_geographic:
             src_x, src_y = src_subset_lon_lat[0], src_subset_lon_lat[1]
         else:
+            trafo = pyproj.Transformer.from_crs(pyproj.CRS(4326), dst_grid.crs, always_xy=True)
             src_x, src_y = trafo.transform(src_subset_lon_lat[0], src_subset_lon_lat[1])
         # determine fractional pixel positions of subset in dst grid
         # subset_i and _j have the extent of the source subset.
@@ -328,161 +558,15 @@ class Rectifier:
         return (bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height)
 
     @staticmethod
-    def inverse_index_of_dst_block_with_src_subset(src_subset_lon_lat: np.ndarray,
-                                                   src_offset: Tuple[float, float],
-                                                   dst_grid: Grid,
-                                                   trafo: pyproj.Transformer,
-                                                   block_id: Tuple[int, int]) -> np.array:
-        """
-        Determines inverse index col, row of fractional source image pixel coordinates for 
-        each dst pixel of a dst block. Uses painter algorithm to transform src triangles to 
-        dst grid and mark dst pixels inside triangles.
-        High level graph function used in create_inverse_pixel_index.
-        :param src_subset_lon_lat: lon and lat coordinates of source pixels of a subset 
-                                   covering the dst block
-        :param src_offset: offset of src_subset_lon_lat in fractional src pixel coordinates to be
-                           added to inverse index, pixel position of the origin of src_subset_lon_lat
-                           TODO this is an exact "0.5 pixel" position, is this intended?
-        :param dst_grid: destination grid
-        :param block_id destination block coordinates, j and i in this sequence
-        :return: inverse pixel index with fractional source pixel index for each dst block pixel
-        """
-        if isinstance(src_subset_lon_lat, da.Array):
-            src_subset_lon_lat = src_subset_lon_lat.compute()
-        # generate four points with two triangles for the src subset in dst pixel fractional coordinates
-        four_points_i, four_points_j = Rectifier.triangles_in_dst_pixel_grid(src_subset_lon_lat, dst_grid, trafo, block_id)
-        # create small bboxes for the four points
-        bboxes_min_i, bboxes_min_j, bboxes_max_width, bboxes_max_height = Rectifier.bboxes_of_triangles(four_points_i, four_points_j, dst_grid)
-        # create source subset identity vector for rows and columns
-        src_width = src_subset_lon_lat.shape[1] - 1
-        src_height = src_subset_lon_lat.shape[2] - 1
-        src_id_col = np.tile(np.arange(src_height), (src_width, 1))
-        src_id_row = np.tile(np.arange(src_width), (src_height, 1)).transpose()
-        # result has the extent of the dst grid tile, initialised with nan
-        num_complete_tile_cols = math.ceil(dst_grid.width / dst_grid.tile_width) - 1
-        num_complete_tile_rows = math.ceil(dst_grid.height / dst_grid.tile_height) - 1
-        dst_width = dst_grid.tile_width \
-            if block_id[1] < num_complete_tile_cols \
-            else dst_grid.width - num_complete_tile_cols * dst_grid.tile_width
-        dst_height = dst_grid.tile_height \
-            if block_id[0] < num_complete_tile_rows \
-            else dst_grid.height - num_complete_tile_rows * dst_grid.tile_height
-        result_col = np.empty((dst_height, dst_width))
-        result_row = np.empty((dst_height, dst_width))
-        result_col[:,:] = np.nan
-        result_row[:,:] = np.nan
-        # det_a and _b have the extent of the source subset.
-        # _fdet = (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
-        det_a = (four_points_i[0] - four_points_i[1]) * (four_points_j[0] - four_points_j[2]) \
-              - (four_points_i[0] - four_points_i[2]) * (four_points_j[0] - four_points_j[1])
-        det_b = (four_points_i[3] - four_points_i[2]) * (four_points_j[3] - four_points_j[1]) \
-              - (four_points_i[3] - four_points_i[1]) * (four_points_j[3] - four_points_j[2])
-        # numerical accuracy parameters
-        uv_delta = 0.001
-        u_min = v_min = -uv_delta
-        uv_max = 1.0 + 2 * uv_delta
-        # loops over bboxes max size, shift the dst pixel for each triangle
-        for j_offset in range(bboxes_max_height):
-            dst_j = bboxes_min_j + j_offset
-            for i_offset in range(bboxes_max_width):
-                dst_i = bboxes_min_i + i_offset
-                # dst_j and dst_i have the extent of the source subset
-                # dst_j and dst_i contain integer pixel coordinates of the considered point in the dst grid
-                # u and v have the extent of the source subset
-                # _fu = (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
-                ua = ((four_points_i[0] - dst_i - 0.5) * (four_points_j[0] - four_points_j[2]) - \
-                      (four_points_j[0] - dst_j - 0.5) * (four_points_i[0] - four_points_i[2])) / det_a \
-                # _fv = (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
-                va = ((four_points_j[0] - dst_j - 0.5) * (four_points_i[0] - four_points_i[1]) - \
-                      (four_points_i[0] - dst_i - 0.5) * (four_points_j[0] - four_points_j[1])) / det_a
-                is_inside_triangle_a = (ua >= u_min) & (va >= v_min) & (ua + va <= uv_max) & \
-                                       (dst_i >= 0) & (dst_i < dst_width) & \
-                                       (dst_j >= 0) & (dst_j < dst_height)
-                # insert pixel with this offset into result if inside
-                if is_inside_triangle_a.any():
-                    result_col[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
-                        src_id_col[is_inside_triangle_a] + src_offset[0] + ua[is_inside_triangle_a]
-                    result_row[dst_j[is_inside_triangle_a], dst_i[is_inside_triangle_a]] = \
-                        src_id_row[is_inside_triangle_a] + src_offset[1] + va[is_inside_triangle_a]
-                # do the same for triangle b ...
-                # _fu = (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
-                ub = ((four_points_i[3] - dst_i - 0.5) * (four_points_j[3] - four_points_j[1]) - \
-                      (four_points_j[3] - dst_j - 0.5) * (four_points_i[3] - four_points_i[1])) / det_b \
-                # _fv = (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
-                vb = ((four_points_j[3] - dst_j - 0.5) * (four_points_i[3] - four_points_i[2]) - \
-                      (four_points_i[3] - dst_i - 0.5) * (four_points_j[3] - four_points_j[2])) / det_b
-                is_inside_triangle_b = (ub >= u_min) & (vb >= v_min) & (ub + vb <= uv_max) & \
-                                       (dst_i >= 0) & (dst_i < dst_width) & \
-                                       (dst_j >= 0) & (dst_j < dst_height)
-                # insert pixel with this offset into result if inside
-                if is_inside_triangle_b.any():
-                    result_col[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
-                        src_id_col[is_inside_triangle_b] + src_offset[0] + 1.0 - ub[is_inside_triangle_b]
-                    result_row[dst_j[is_inside_triangle_b], dst_i[is_inside_triangle_b]] = \
-                        src_id_row[is_inside_triangle_b] + src_offset[1] + 1.0 - vb[is_inside_triangle_b]
-        result = np.stack((result_col, result_row))
-        return result
-
-    def create_inverse_pixel_index(self) -> da.Array:
-        # determine borders x dst_j x dst_i for src_row x src_col
-        # merge borders into one per dst block
-        bbox_blocks_raw = da.map_blocks(self.dst_bboxes_of_src_block,
-                                        self.forward_index,
-                                        dst_grid=self.dst_grid,
-                                        src_tile_size=self.src_lat.chunksize,
-                                        src_size=self.src_lat.shape,
-                                        drop_axis=0,
-                                        new_axis=[0,1,2],
-                                        meta=np.array([], dtype=np.int32),
-                                        name=self.name + "_bboxes").compute()
-        bbox_blocks = np.stack((np.nanmin(bbox_blocks_raw[0], axis=(2,3)),
-                                np.nanmin(bbox_blocks_raw[1], axis=(2,3)),
-                                np.nanmax(bbox_blocks_raw[2], axis=(2,3)),
-                                np.nanmax(bbox_blocks_raw[3], axis=(2,3))))
-        src_lon_lat = da.stack((self.src_lon, self.src_lat))
-        # create graph with one call per dst block
-        layer = dict()
-        dependencies = []
-        # dst row blocks loop and col blocks loop
-        num_blocks_j = math.ceil(self.dst_grid.height / self.dst_grid.tile_height)
-        num_blocks_i = math.ceil(self.dst_grid.width / self.dst_grid.tile_width)
-        for tj in range(num_blocks_j):
-            for ti in range(num_blocks_i):
-                # determine src box that covers dst block plus buffer
-                src_subset_lon_lat = src_lon_lat[:,
-                                     bbox_blocks[1, tj, ti]:bbox_blocks[3, tj, ti],
-                                     bbox_blocks[0, tj, ti]:bbox_blocks[2, tj, ti]]
-                # compose call for blockwise inverse index
-                src_id = (self.name+'_src', 0, tj, ti)
-                inv_id = (self.name+'_inverse', 0, tj, ti)
-                layer[src_id] = src_subset_lon_lat
-                layer[inv_id] = (self.inverse_index_of_dst_block_with_src_subset,
-                                 src_id,
-                                 (bbox_blocks[0, tj, ti] + 0.5, bbox_blocks[1, tj, ti] + 0.5),
-                                 self.dst_grid,
-                                 self.trafo,
-                                 (tj, ti))
-        # compose dask array of reprojected results
-        graph = HighLevelGraph.from_collections(self.name+'_inverse',
-                                                layer,
-                                                dependencies=[])
-        self.inverse_index = da.Array(graph,
-                                      self.name+'_inverse',
-                                      shape=(2, self.dst_grid.height, self.dst_grid.width),
-                                      chunks=(2, self.dst_grid.tile_height, self.dst_grid.tile_width),
-                                      meta=np.ndarray([], dtype=np.float32))
-        return self.inverse_index
-
-
-    @staticmethod
     def rectify_tiles_to_block(block_i: np.ndarray,
                                block_j: np.ndarray,
                                tx: int,
                                ty: int,
                                src_tilesize: Tuple[int, int],
                                num_blocks_i: int,
+                               num_measurements: int,
                                tiles: np.ndarray,
-                               *measurements: da.Array) -> np.array:
+                               *measurements: np.ndarray) -> np.array:
         """
         High level graph block function used in rectify,
         uses inverse tile index of block and masks measurements of each tile for the block.
@@ -496,7 +580,6 @@ class Rectifier:
         :param measurements: list of tile measurement stacks, same length as tiles
         :return: stack of measurements of the block
         """
-        num_measurements = measurements[0].shape[0]
         dst_data = np.empty((num_measurements, *block_j.shape), dtype=np.float32)
         dst_data[:] = np.nan
         # loop over source tiles overlapping with dst block
@@ -517,7 +600,10 @@ class Rectifier:
                         & (shifted_i >= 0) \
                         & (shifted_i < num_src_cols)
             # get values, TODO is compute required here?
-            m = tile_measurements.compute()  # m is bands x j x i
+            if isinstance(tile_measurements, da.Array):
+                m = tile_measurements.compute()  # m is bands x j x i
+            else:
+                m = tile_measurements
             # set dst positions by values from source measurements
             dst_data[:,tile_mask] = m[:,shifted_j[tile_mask],shifted_i[tile_mask]]
         return dst_data
@@ -543,78 +629,6 @@ class Rectifier:
             tile_m_rechunked = tile_m_stack.rechunk(tile_m_stack.shape)
             tile_measurements.append(tile_m_rechunked)
         return tile_measurements
-
-
-    def rectify_nearest_neighbour(self,
-                                  *measurements: da.Array) -> da.Array:
-        """
-        Rectifies stack of measurements from source image to dst grid using pre-computed inverse index
-        :param measurements: stack of source measurements
-        :return: dask array with stack of rectified measurements on dst grid
-        """
-        if not self.dst_grid:
-            raise ValueError("missing dst grid. Call create_covering_dst_grid() first.")
-        if self.inverse_index is None:
-            raise ValueError("missing inverse index. Call create_inverse_pixel_index() first.")
-        num_blocks_x = math.ceil(self.dst_grid.width / self.dst_grid.tile_width)
-        num_blocks_y = math.ceil(self.dst_grid.height / self.dst_grid.tile_height)
-        num_tiles_col = math.ceil(measurements[0].shape[1] / measurements[0].chunksize[1])
-        num_tiles_row = math.ceil(measurements[0].shape[0] / measurements[0].chunksize[0])
-        # create graph with one call per dst block
-        layer = dict()
-        dependencies = []
-        inverse_index = self.inverse_index.compute()
-        # dst rows loop and cols loop
-        for ty in range(num_blocks_y):
-            for tx in range(num_blocks_x):
-                # ty and tx are the dst block numbers 0..num_blocks
-                # determine inverse index values for dst block
-                block = inverse_index[:,
-                        ty * self.dst_grid.tile_height:min((ty + 1) * self.dst_grid.tile_height, self.dst_grid.height),
-                        tx * self.dst_grid.tile_width:min((tx + 1) * self.dst_grid.tile_width, self.dst_grid.width)]
-                intblock = np.around(block).astype(int)
-                intblock[np.isnan(block)] = -1
-                block_i = intblock[0]
-                block_j = intblock[1]
-                # determine source tile indices for the dst block, still on dst pixel resolution
-                # mask areas outside inverse index range
-                block_tile = (block_j // measurements[0].chunksize[0]) * num_tiles_col + (block_i // measurements[0].chunksize[1])
-                block_tile[(block_j == -1) | (block_i == -1)] = -1
-                # determine set of the few src tile indices that occur in this dst block using some numpy indexing
-                # initialise array with possible set of tiles + one extra at the end for out-of-index, all masked -1
-                # set the few positions (many times all at once) where there are tiles set in dst block
-                # slice away tile indices not set and extra element, tile_set is a small array of source tiles
-                all_tile_numbers = np.arange(num_tiles_row * num_tiles_col + 1, dtype=int)
-                tile_array = np.empty(shape=(num_tiles_row * num_tiles_col + 1), dtype=int)
-                tile_array[:] = -1
-                tile_array[block_tile] = all_tile_numbers[block_tile]
-                tile_set = tile_array[(tile_array != -1) & (tile_array != all_tile_numbers[-1])]
-                # collect the measurement stacks of the source tiles of this block
-                tile_measurements = self.tile_measurements_of(tile_set, *measurements)
-                # get the dependencies for the dask graph complete
-                tile_measurement_ids = []
-                for measurement in tile_measurements:
-                    id = (measurement.name, 0, 0, 0)
-                    if id not in layer:
-                        layer[id] = measurement
-                        dependencies.append(measurement)
-                    tile_measurement_ids.append(id)
-                # add dask graph entry to reproject source tiles to block
-                # additional first index is 0 for the single chunk of the complete measurement stack
-                layer[(self.name, 0, ty, tx)] = (
-                    Rectifier.rectify_tiles_to_block, block_i, block_j, tx, ty, measurements[0].chunksize, num_tiles_col, tile_set, *tile_measurement_ids
-                )
-        # compose dask array of reprojected results
-        graph = HighLevelGraph.from_collections(self.name,
-                                                layer,
-                                                dependencies=dependencies)
-        meta = np.ndarray(shape=(len(measurements), num_blocks_y, num_blocks_x), dtype=np.float32)
-        result = da.Array(graph,
-                          self.name,
-                          shape=(len(measurements), self.dst_grid.height, self.dst_grid.width),
-                          chunks=(len(measurements), self.dst_grid.tile_height, self.dst_grid.tile_width),
-                          meta=meta)
-        return result
 
 
     @staticmethod
