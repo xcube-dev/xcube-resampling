@@ -132,7 +132,7 @@ class RectificationTest(unittest.TestCase):
     def test_method_dst_pixels_of_src_block(self):
         src_lat = self.src_lat.blocks[1, 0]
         src_lon = self.src_lon.blocks[1, 0]
-        block_result = Rectifier.dst_pixels_of_src_block(src_lon, src_lat, dst_grid=self.dst_grid)
+        block_result = Rectifier.forward_index_block(src_lon, src_lat, dst_grid=self.dst_grid)
         assert np.array_equal(block_result,
                               [[[0, 0]], [[2, 2]]])
         print()
@@ -142,11 +142,11 @@ class RectificationTest(unittest.TestCase):
         r = Rectifier(self.src_lon, self.src_lat, self.dst_grid)
         dask_forward_index = r.prepare_forward_index()
         forward_index, = dask.compute(dask_forward_index)
-        result = r.dst_bboxes_of_src_block(forward_index[:,0:3,2:3],
-                                           self.dst_grid,
-                                           (3, 2),
-                                           (4, 3),
-                                           (0, 1))
+        result = r.bboxes_block(forward_index[:, 0:3, 2:3],
+                                self.dst_grid,
+                                (3, 2),
+                                (4, 3),
+                                (0, 1))
         result = result.reshape(result.shape[0:3])
         assert np.array_equal(result,
                               np.array([[[3, 1], [3, 1]],
@@ -157,7 +157,7 @@ class RectificationTest(unittest.TestCase):
     def test_method_bboxes_map_blocks(self):
         r = Rectifier(self.src_lon, self.src_lat, self.dst_grid)
         r.prepare_forward_index()
-        bbox_blocks_raw = da.map_blocks(r.dst_bboxes_of_src_block,
+        bbox_blocks_raw = da.map_blocks(r.bboxes_block,
                                         r.dask_forward_index,
                                         dst_grid=r.dst_grid,
                                         src_tile_size=r.src_lat.chunksize,
@@ -494,8 +494,8 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
+        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
+        bbox_blocks_raw = Rectifier.bboxes_block(
             r.forward_index,
             dst_grid=r.dst_grid,
             src_tile_size=r.src_lat.shape,
@@ -516,8 +516,8 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
+        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
+        bbox_blocks_raw = Rectifier.bboxes_block(
                                         r.forward_index,
                                         dst_grid=r.dst_grid,
                                         src_tile_size=r.src_lat.shape,
@@ -546,8 +546,8 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
+        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
+        bbox_blocks_raw = Rectifier.bboxes_block(
                                         r.forward_index,
                                         dst_grid=r.dst_grid,
                                         src_tile_size=r.src_lat.shape,
@@ -581,8 +581,8 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
+        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
+        bbox_blocks_raw = Rectifier.bboxes_block(
                                         r.forward_index,
                                         dst_grid=r.dst_grid,
                                         src_tile_size=r.src_lat.shape,

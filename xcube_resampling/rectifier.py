@@ -103,26 +103,24 @@ class Rectifier:
         self.name = name
 
     def prepare_forward_index(self) -> da.Array:
-        self.dask_forward_index = da.map_blocks(Rectifier.dst_pixels_of_src_block,
+        self.dask_forward_index = da.map_blocks(Rectifier.forward_index_block,
                                                 self.src_lon,
                                                 self.src_lat,
                                                 dst_grid=self.dst_grid,
                                                 new_axis=0,
                                                 #dtype=np.int32,
-                                                meta=np.array((), dtype=np.int32),
-                                                name=self.name + "_forward")
+                                                meta=np.array((), dtype=np.int32))
         return self.dask_forward_index
 
     def prepare_src_bboxes(self) -> da.Array:
-        bbox_blocks_raw = da.map_blocks(self.dst_bboxes_of_src_block,
+        bbox_blocks_raw = da.map_blocks(self.bboxes_block,
                                         self.dask_forward_index,
                                         dst_grid=self.dst_grid,
                                         src_tile_size=self.src_lat.chunksize,
                                         src_size=self.src_lat.shape,
                                         drop_axis=0,
                                         new_axis=[0,1,2],
-                                        meta=np.array([], dtype=np.int32),
-                                        name=self.name + "_bboxes")
+                                        meta=np.array([], dtype=np.int32))
         # we compute min and max of all 4 bounds though we need only two of each,
         # dask seems not to delay a []
         self.dask_src_bboxes = da.vstack((da.nanmin(bbox_blocks_raw, axis=(3,4)),
@@ -261,9 +259,9 @@ class Rectifier:
 
 
     @staticmethod
-    def dst_pixels_of_src_block(src_lon:np.ndarray,
-                                src_lat:np.ndarray,
-                                dst_grid:Grid=None) -> np.ndarray:
+    def forward_index_block(src_lon:np.ndarray,
+                            src_lat:np.ndarray,
+                            dst_grid:Grid=None) -> np.ndarray:
         """
         Calculates for one source block the integer dst image coordinates j and i
         for each source pixel. map_blocks function used in create_forward_pixel_index,
@@ -289,11 +287,11 @@ class Rectifier:
         return result
 
     @staticmethod
-    def dst_bboxes_of_src_block(forward_index_block: np.ndarray,
-                                dst_grid: Grid = None,
-                                src_tile_size: Tuple[int, int] = None,
-                                src_size: Tuple[int, int] = None,
-                                block_id: Tuple[int, int] = None):
+    def bboxes_block(forward_index_block: np.ndarray,
+                     dst_grid: Grid = None,
+                     src_tile_size: Tuple[int, int] = None,
+                     src_size: Tuple[int, int] = None,
+                     block_id: Tuple[int, int] = None):
         """
         Determines for one source block the source bounding box for each dst block
         if source block and dst block intersect.
