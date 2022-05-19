@@ -38,7 +38,7 @@ class RectificationTest(unittest.TestCase):
     def setUpClass(self) -> None:
         #self._client = Client(LocalCluster(n_workers=8, processes=True))
         #self._client = Client(n_workers=1, threads_per_worker=6)
-        dask.config.set(scheduler='synchronous')
+        #dask.config.set(scheduler='synchronous')
         self.src_lat = da.from_array([[53.98, 53.94, 53.90],
                                  [53.88, 53.84, 53.80],
                                  [53.78, 53.74, 53.70],
@@ -245,11 +245,11 @@ class RectificationTest(unittest.TestCase):
         ti = 0
         src_subset_lon_lat1 = src_lon_lat[:, 0:3, 0:2].compute()
         src_subset_lon_lat2 = src_lon_lat[:, 3:4, 0:2].compute()
-        index = Rectifier.src_pixels_of_dst_block((tj, ti),
-                                                  self.dst_grid,
+        index = Rectifier.inverse_index_block((tj, ti),
+                                              self.dst_grid,
                                                                     r.src_bboxes[:, tj, ti],
-                                                  self.src_lat.chunksize,
-                                                  src_subset_lon_lat1, src_subset_lon_lat2)
+                                              self.src_lat.chunksize,
+                                              src_subset_lon_lat1, src_subset_lon_lat2)
         print()
         print(index)
         np.testing.assert_almost_equal(index, [[[np.nan, np.nan], [np.nan, 1.11842105]],
@@ -266,11 +266,11 @@ class RectificationTest(unittest.TestCase):
         ti = 1
         src_subset_lon_lat1 = src_lon_lat[:, 0:3, 0:2].compute()
         src_subset_lon_lat2 = src_lon_lat[:, 0:3, 2:3].compute()
-        index = Rectifier.src_pixels_of_dst_block((tj, ti),
-                                                  self.dst_grid,
+        index = Rectifier.inverse_index_block((tj, ti),
+                                              self.dst_grid,
                                                                     r.src_bboxes[:, tj, ti],
-                                                  self.src_lat.chunksize,
-                                                  src_subset_lon_lat1, src_subset_lon_lat2)
+                                              self.src_lat.chunksize,
+                                              src_subset_lon_lat1, src_subset_lon_lat2)
         np.testing.assert_almost_equal(index, [[[1.513], [2.171]],
                                                [[0.519], [1.506]]], decimal=3)
 
@@ -568,7 +568,7 @@ class RectificationTest(unittest.TestCase):
         intblock[np.isnan(r.inverse_index)] = -1
         block_i = intblock[0]
         block_j = intblock[1]
-        r.rectified = Rectifier.src_data_of_dst_block(
+        r.rectified = Rectifier.rectify_block(
             block_i, block_j, 0, 0, oa12.shape, 1, 2, np.array([0]), oa12, oa08)
 
     def test_olci_numpy_rectify_write(self):
@@ -603,7 +603,7 @@ class RectificationTest(unittest.TestCase):
         intblock[np.isnan(r.inverse_index)] = -1
         block_i = intblock[0]
         block_j = intblock[1]
-        r.rectified = Rectifier.src_data_of_dst_block(
+        r.rectified = Rectifier.rectify_block(
             block_i, block_j, 0, 0, oa12.shape, 1, 2, np.array([0]), oa12, oa08)
 
         ds = xr.Dataset({"oa08": (["lat", "lon"], r.rectified[1]),
