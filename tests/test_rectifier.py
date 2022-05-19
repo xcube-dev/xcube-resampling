@@ -36,8 +36,9 @@ class RectificationTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self) -> None:
-        #self._client = Client(LocalCluster(n_workers=6, processes=True))
+        #self._client = Client(LocalCluster(n_workers=8, processes=True))
         #self._client = Client(n_workers=1, threads_per_worker=6)
+        dask.config.set(scheduler='synchronous')
         self.src_lat = da.from_array([[53.98, 53.94, 53.90],
                                  [53.88, 53.84, 53.80],
                                  [53.78, 53.74, 53.70],
@@ -97,7 +98,6 @@ class RectificationTest(unittest.TestCase):
         print()
         print(dst_grid)
         print(r.forward_index)
-        print(r.forward_index.compute())
 
     def test_inverse_index(self):
         r = Rectifier(self.src_lon, self.src_lat, self.dst_grid)
@@ -132,7 +132,7 @@ class RectificationTest(unittest.TestCase):
     def test_method_dst_pixels_of_src_block(self):
         src_lat = self.src_lat.blocks[1, 0]
         src_lon = self.src_lon.blocks[1, 0]
-        block_result = Rectifier.block_dst_pixels_of_src_block(src_lon, src_lat, dst_grid=self.dst_grid)
+        block_result = Rectifier.dst_pixels_of_src_block(src_lon, src_lat, dst_grid=self.dst_grid)
         assert np.array_equal(block_result,
                               [[[0, 0]], [[2, 2]]])
         print()
@@ -245,11 +245,11 @@ class RectificationTest(unittest.TestCase):
         ti = 0
         src_subset_lon_lat1 = src_lon_lat[:, 0:3, 0:2].compute()
         src_subset_lon_lat2 = src_lon_lat[:, 3:4, 0:2].compute()
-        index = Rectifier.inverse_index_of_dst_block_with_src_tiles((tj, ti),
-                                                                    self.dst_grid,
+        index = Rectifier.src_pixels_of_dst_block((tj, ti),
+                                                  self.dst_grid,
                                                                     r.src_bboxes[:, tj, ti],
-                                                                    self.src_lat.chunksize,
-                                                                    src_subset_lon_lat1, src_subset_lon_lat2)
+                                                  self.src_lat.chunksize,
+                                                  src_subset_lon_lat1, src_subset_lon_lat2)
         print()
         print(index)
         np.testing.assert_almost_equal(index, [[[np.nan, np.nan], [np.nan, 1.11842105]],
@@ -266,11 +266,11 @@ class RectificationTest(unittest.TestCase):
         ti = 1
         src_subset_lon_lat1 = src_lon_lat[:, 0:3, 0:2].compute()
         src_subset_lon_lat2 = src_lon_lat[:, 0:3, 2:3].compute()
-        index = Rectifier.inverse_index_of_dst_block_with_src_tiles((tj, ti),
-                                                                    self.dst_grid,
+        index = Rectifier.src_pixels_of_dst_block((tj, ti),
+                                                  self.dst_grid,
                                                                     r.src_bboxes[:, tj, ti],
-                                                                    self.src_lat.chunksize,
-                                                                    src_subset_lon_lat1, src_subset_lon_lat2)
+                                                  self.src_lat.chunksize,
+                                                  src_subset_lon_lat1, src_subset_lon_lat2)
         np.testing.assert_almost_equal(index, [[[1.513], [2.171]],
                                                [[0.519], [1.506]]], decimal=3)
 
@@ -326,17 +326,21 @@ class RectificationTest(unittest.TestCase):
         src_lon = l1b['longitude'].data.compute()
         src_lat = l1b['latitude'].data.compute()
         #
-        for dst_pos in [(1000, 1000), (5000, 2600)]:
+        for dst_pos in [(1000, 1000), (5000, 2600), (3166,2832)]:
             src_pos = index[:,dst_pos[1],dst_pos[0]]
             src_int = (math.floor(src_pos[0]-0.5), math.floor(src_pos[1]-0.5))
             dst_lon = dst_grid.x_min + (dst_pos[0] + 0.5) * dst_grid.x_res
             dst_lat = dst_grid.y_min + (dst_pos[1] + 0.5) * dst_grid.y_res
             print("src frac idx", src_pos)
             print("upper left  ", src_lon[src_int[1], src_int[0]], src_lat[src_int[1], src_int[0]])
+            print("upper right ", src_lon[src_int[1], src_int[0]+1], src_lat[src_int[1], src_int[0]+1])
             print("dst point   ", dst_lon, dst_lat)
+            print("lower left ", src_lon[src_int[1]+1, src_int[0]], src_lat[src_int[1]+1, src_int[0]])
             print("lower right ", src_lon[src_int[1]+1, src_int[0]+1], src_lat[src_int[1]+1, src_int[0]+1])
-            assert dst_lon >= src_lon[src_int[1], src_int[0]] and dst_lon <= src_lon[src_int[1]+1, src_int[0]+1]
-            assert dst_lat <= src_lat[src_int[1], src_int[0]] and dst_lat >= src_lat[src_int[1]+1, src_int[0]+1]
+            assert dst_lon >= min(src_lon[src_int[1], src_int[0]], src_lon[src_int[1]+1, src_int[0]])
+            assert dst_lon <= max(src_lon[src_int[1], src_int[0]+1], src_lon[src_int[1]+1, src_int[0]+1])
+            assert dst_lat <= max(src_lat[src_int[1], src_int[0]], src_lat[src_int[1], src_int[0]+1])
+            assert dst_lat >= min(src_lat[src_int[1]+1, src_int[0]], src_lat[src_int[1]+1, src_int[0]+1])
 
     def test_olci_rectify_one_tile(self):
         path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
@@ -388,10 +392,10 @@ class RectificationTest(unittest.TestCase):
         r.prepare_src_bboxes()
         r.compute_forward_index()
         r.prepare_inverse_index()
-        r.prepare_rectification(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
+        result = r.prepare_rectification(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
         print()
-        print(dict(r.dask_rectified.dask))
-        result = r.compute_rectification()
+        #print(dict(r.dask_rectified.dask))
+        #result = r.compute_rectification()
         print(result)
         ds = xr.Dataset({"oa08": (["lat", "lon"], result[1]),
                          "oa12": (["lat", "lon"], result[0])},
@@ -400,6 +404,32 @@ class RectificationTest(unittest.TestCase):
                             "lon": (["lon"], r.dst_grid.x_axis())
                         })
         ds.to_netcdf("/windows/tmp/eopf/repojected2.nc")
+
+    def test_olci_rectify_write_profiling(self):
+        import cProfile
+        cProfile.runctx('self.test_olci_rectify_write()', globals(), locals(), None)
+
+    def test_olci_rectify_to_covering_grid_write(self):
+        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
+        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
+                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
+                                engine="netcdf4",
+                                chunks=2048)
+        result, dst_grid = Rectifier.rectify_to_covering_grid(l1b['longitude'].data,
+                                                              l1b['latitude'].data,
+                                                              pyproj.CRS("EPSG:4326"),
+                                                              (0.003, -0.003),
+                                                              (2400, 2400),
+                                                              l1b['Oa12_radiance'].data,
+                                                              l1b['Oa08_radiance'].data)
+        print(result)
+        ds = xr.Dataset({"oa08": (["lat", "lon"], result[1]),
+                         "oa12": (["lat", "lon"], result[0])},
+                        coords={
+                            "lat": (["lat"], dst_grid.y_axis()),
+                            "lon": (["lon"], dst_grid.x_axis())
+                        })
+        ds.to_netcdf("/windows/tmp/eopf/repojected3.nc")
 
     # ===== feasibility tests =====
         
@@ -464,7 +494,7 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.block_dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
+        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
         bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
             r.forward_index,
             dst_grid=r.dst_grid,
@@ -486,7 +516,7 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.block_dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
+        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
         bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
                                         r.forward_index,
                                         dst_grid=r.dst_grid,
@@ -516,7 +546,7 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.block_dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
+        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
         bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
                                         r.forward_index,
                                         dst_grid=r.dst_grid,
@@ -538,7 +568,7 @@ class RectificationTest(unittest.TestCase):
         intblock[np.isnan(r.inverse_index)] = -1
         block_i = intblock[0]
         block_j = intblock[1]
-        r.rectified = Rectifier.rectify_tiles_to_block(
+        r.rectified = Rectifier.src_data_of_dst_block(
             block_i, block_j, 0, 0, oa12.shape, 1, 2, np.array([0]), oa12, oa08)
 
     def test_olci_numpy_rectify_write(self):
@@ -551,7 +581,7 @@ class RectificationTest(unittest.TestCase):
         #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
         dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
         r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.block_dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
+        r.forward_index = Rectifier.dst_pixels_of_src_block(longitude, latitude, r.dst_grid)
         bbox_blocks_raw = Rectifier.dst_bboxes_of_src_block(
                                         r.forward_index,
                                         dst_grid=r.dst_grid,
@@ -573,7 +603,7 @@ class RectificationTest(unittest.TestCase):
         intblock[np.isnan(r.inverse_index)] = -1
         block_i = intblock[0]
         block_j = intblock[1]
-        r.rectified = Rectifier.rectify_tiles_to_block(
+        r.rectified = Rectifier.src_data_of_dst_block(
             block_i, block_j, 0, 0, oa12.shape, 1, 2, np.array([0]), oa12, oa08)
 
         ds = xr.Dataset({"oa08": (["lat", "lon"], r.rectified[1]),
