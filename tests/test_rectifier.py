@@ -19,13 +19,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import math
 import unittest
 import dask
 import pyproj
 import numpy as np
 import dask.array as da
-import xarray as xr
+import dask
 from dask.highlevelgraph import HighLevelGraph
 from distributed import LocalCluster, Client
 from xcube_resampling.grid import Grid
@@ -164,8 +163,7 @@ class RectificationTest(unittest.TestCase):
                                         src_size=r.src_lat.shape,
                                         drop_axis=0,
                                         new_axis=[0,1,2],
-                                        meta=np.array([], dtype=np.int32),
-                                        name=r.name + "_bboxes")
+                                        meta=np.array([], dtype=np.int32))
         print()
         print(bbox_blocks_raw)
         bbox_blocks_raw = bbox_blocks_raw.compute()
@@ -243,13 +241,12 @@ class RectificationTest(unittest.TestCase):
         # determine src box that covers dst block plus buffer
         tj = 0
         ti = 0
-        src_subset_lon_lat1 = src_lon_lat[:, 0:3, 0:2].compute()
-        src_subset_lon_lat2 = src_lon_lat[:, 3:4, 0:2].compute()
+        src_lon_lat_subset = src_lon_lat[:, 0:4, 0:2].compute()
         index = Rectifier.inverse_index_block((tj, ti),
                                               self.dst_grid,
-                                                                    r.src_bboxes[:, tj, ti],
-                                              self.src_lat.chunksize,
-                                              src_subset_lon_lat1, src_subset_lon_lat2)
+                                              r.src_bboxes[:, tj, ti],
+                                              src_lon_lat_subset[0],
+                                              src_lon_lat_subset[1])
         print()
         print(index)
         np.testing.assert_almost_equal(index, [[[np.nan, np.nan], [np.nan, 1.11842105]],
@@ -264,177 +261,19 @@ class RectificationTest(unittest.TestCase):
         # determine src box that covers dst block plus buffer
         tj = 0
         ti = 1
-        src_subset_lon_lat1 = src_lon_lat[:, 0:3, 0:2].compute()
-        src_subset_lon_lat2 = src_lon_lat[:, 0:3, 2:3].compute()
+        src_lon_lat_subset = src_lon_lat[:, 0:3, 0:3].compute()
         index = Rectifier.inverse_index_block((tj, ti),
                                               self.dst_grid,
-                                                                    r.src_bboxes[:, tj, ti],
-                                              self.src_lat.chunksize,
-                                              src_subset_lon_lat1, src_subset_lon_lat2)
+                                              r.src_bboxes[:, tj, ti],
+                                              src_lon_lat_subset[0],
+                                              src_lon_lat_subset[1])
         np.testing.assert_almost_equal(index, [[[1.513], [2.171]],
                                                [[0.519], [1.506]]], decimal=3)
-
-    # ===== tests with OLCI input =====
-        
-    def test_olci_forward_index(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (2400, 2400))
-        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
-        r.prepare_forward_index()
-        r.prepare_src_bboxes()
-        index,_ = r.compute_forward_index()
-        print()
-        print(r.forward_index)
-        print(index)
-
-    def test_olci_covering_grid(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
-        r.prepare_forward_index()
-        r.prepare_src_bboxes()
-        r.compute_forward_index()
-        dst_grid = r.determine_covering_dst_grid()
-        print()
-        print(dst_grid)
-        print(r.forward_index)
-
-    def test_olci_inverse_index(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (2400, 2400))
-        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
-        r.prepare_forward_index()
-        r.prepare_src_bboxes()
-        r.compute_forward_index()
-        r.prepare_inverse_index()
-        print()
-        print(r.dask_inverse_index)
-        index = r.dask_inverse_index.compute()
-        #print(index)
-        src_lon = l1b['longitude'].data.compute()
-        src_lat = l1b['latitude'].data.compute()
-        #
-        for dst_pos in [(1000, 1000), (5000, 2600), (3166,2832)]:
-            src_pos = index[:,dst_pos[1],dst_pos[0]]
-            src_int = (math.floor(src_pos[0]-0.5), math.floor(src_pos[1]-0.5))
-            dst_lon = dst_grid.x_min + (dst_pos[0] + 0.5) * dst_grid.x_res
-            dst_lat = dst_grid.y_min + (dst_pos[1] + 0.5) * dst_grid.y_res
-            print("src frac idx", src_pos)
-            print("upper left  ", src_lon[src_int[1], src_int[0]], src_lat[src_int[1], src_int[0]])
-            print("upper right ", src_lon[src_int[1], src_int[0]+1], src_lat[src_int[1], src_int[0]+1])
-            print("dst point   ", dst_lon, dst_lat)
-            print("lower left ", src_lon[src_int[1]+1, src_int[0]], src_lat[src_int[1]+1, src_int[0]])
-            print("lower right ", src_lon[src_int[1]+1, src_int[0]+1], src_lat[src_int[1]+1, src_int[0]+1])
-            assert dst_lon >= min(src_lon[src_int[1], src_int[0]], src_lon[src_int[1]+1, src_int[0]])
-            assert dst_lon <= max(src_lon[src_int[1], src_int[0]+1], src_lon[src_int[1]+1, src_int[0]+1])
-            assert dst_lat <= max(src_lat[src_int[1], src_int[0]], src_lat[src_int[1], src_int[0]+1])
-            assert dst_lat >= min(src_lat[src_int[1]+1, src_int[0]], src_lat[src_int[1]+1, src_int[0]+1])
-
-    def test_olci_rectify_one_tile(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (3.539, 45.249), (0.003, -0.003), (1867, 1904), (2400, 2400))
-        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
-        r.prepare_forward_index()
-        r.prepare_src_bboxes()
-        r.compute_forward_index()
-        r.prepare_inverse_index()
-        r.prepare_rectification(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        print()
-        print(r.dask_rectified)
-        result = r.compute_rectification()
-        print(result)
-
-    def test_olci_rectify(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (2400, 2400))
-        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
-        r.prepare_forward_index()
-        r.prepare_src_bboxes()
-        r.compute_forward_index()
-        r.prepare_inverse_index()
-        r.prepare_rectification(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        print()
-        print(r.dask_rectified)
-        result = r.compute_rectification()
-        print(result)
-
-    def test_olci_rectify_write(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (2400, 2400))
-        r = Rectifier(l1b['longitude'].data, l1b['latitude'].data, dst_grid)
-        r.prepare_forward_index()
-        r.prepare_src_bboxes()
-        r.compute_forward_index()
-        r.prepare_inverse_index()
-        result = r.prepare_rectification(l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        print()
-        #print(dict(r.dask_rectified.dask))
-        #result = r.compute_rectification()
-        print(result)
-        ds = xr.Dataset({"oa08": (["lat", "lon"], result[1]),
-                         "oa12": (["lat", "lon"], result[0])},
-                        coords={
-                            "lat": (["lat"], r.dst_grid.y_axis()),
-                            "lon": (["lon"], r.dst_grid.x_axis())
-                        })
-        ds.to_netcdf("/windows/tmp/eopf/repojected2.nc")
-
-    def test_olci_rectify_write_profiling(self):
-        import cProfile
-        cProfile.runctx('self.test_olci_rectify_write()', globals(), locals(), None)
-
-    def test_olci_rectify_to_covering_grid_write(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        result, dst_grid = Rectifier.rectify_to_covering_grid(l1b['longitude'].data,
-                                                              l1b['latitude'].data,
-                                                              pyproj.CRS("EPSG:4326"),
-                                                              (0.003, -0.003),
-                                                              (2400, 2400),
-                                                              l1b['Oa12_radiance'].data,
-                                                              l1b['Oa08_radiance'].data)
-        print(result)
-        ds = xr.Dataset({"oa08": (["lat", "lon"], result[1]),
-                         "oa12": (["lat", "lon"], result[0])},
-                        coords={
-                            "lat": (["lat"], dst_grid.y_axis()),
-                            "lon": (["lon"], dst_grid.x_axis())
-                        })
-        ds.to_netcdf("/windows/tmp/eopf/repojected3.nc")
 
     # ===== feasibility tests =====
         
     @staticmethod
-    def testfunc(a, i):
+    def func(a, i):
         return np.asarray(a) + i
 
     def test_dask_graph(self):
@@ -442,9 +281,9 @@ class RectificationTest(unittest.TestCase):
         layer = { ("nodename", 0, 0): input.blocks[0,0],
                   ("nodename", 0, 1): input.blocks[0,1],
                   ("nodename", 0, 2): input.blocks[0,2],
-                  ("nodename2", 0, 0): (RectificationTest.testfunc, ("nodename", 0, 0), 3),
-                  ("nodename2", 0, 1): (RectificationTest.testfunc, ("nodename", 0, 1), 3),
-                  ("nodename2", 0, 2): (RectificationTest.testfunc, ("nodename", 0, 2), 3) }
+                  ("nodename2", 0, 0): (RectificationTest.func, ("nodename", 0, 0), 3),
+                  ("nodename2", 0, 1): (RectificationTest.func, ("nodename", 0, 1), 3),
+                  ("nodename2", 0, 2): (RectificationTest.func, ("nodename", 0, 2), 3) }
         graph = HighLevelGraph.from_collections("nodename2", layer, dependencies=[])
         a = da.Array(graph, "nodename2", shape=(2,3), chunks=(2,1), meta=np.ndarray([], dtype=int))
         print()
@@ -473,143 +312,3 @@ class RectificationTest(unittest.TestCase):
         print(n)
         print(r)
         print(r.compute())
-
-    # ===== tests using single chunk full images with numpy instead of dask arrays =====
-
-    def test_olci_numpy_read_inputs(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        longitude, latitude, oa12, oa08 = dask.compute(l1b["longitude"].data, l1b["latitude"].data, l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-
-    def test_olci_numpy_forward_index(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        longitude, latitude, oa12, oa08 = dask.compute(l1b["longitude"].data, l1b["latitude"].data, l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
-        r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.bboxes_block(
-            r.forward_index,
-            dst_grid=r.dst_grid,
-            src_tile_size=r.src_lat.shape,
-            src_size=r.src_lat.shape,
-            block_id=(0,0))
-        # we compute min and max of all 4 bounds though we need only two of each,
-        # dask seems not to delay a []
-        r.src_bboxes = np.vstack((np.nanmin(bbox_blocks_raw, axis=(3,4)),
-                                  np.nanmax(bbox_blocks_raw, axis=(3,4))))
-
-    def test_olci_numpy_inverse_index(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        longitude, latitude, oa12, oa08 = dask.compute(l1b["longitude"].data, l1b["latitude"].data, l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
-        r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.bboxes_block(
-                                        r.forward_index,
-                                        dst_grid=r.dst_grid,
-                                        src_tile_size=r.src_lat.shape,
-                                        src_size=r.src_lat.shape,
-            block_id=(0,0))
-        # we compute min and max of all 4 bounds though we need only two of each,
-        # dask seems not to delay a []
-        r.src_bboxes = np.vstack((np.nanmin(bbox_blocks_raw, axis=(3,4)),
-                                          np.nanmax(bbox_blocks_raw, axis=(3,4))))
-        lon_lat = np.stack((longitude, latitude))
-        r.inverse_index = Rectifier.inverse_index_of_dst_block_with_src_subset(
-                                 lon_lat[:,
-                                     r.src_bboxes[1, 0, 0]:r.src_bboxes[3, 0, 0],
-                                     r.src_bboxes[0, 0, 0]:r.src_bboxes[2, 0, 0]],
-                                 (r.src_bboxes[0, 0, 0] + 0.5, r.src_bboxes[1, 0, 0] + 0.5),
-                                 r.dst_grid,
-                                 (0, 0))
-
-    def test_olci_numpy_rectify_data(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        longitude, latitude, oa12, oa08 = dask.compute(l1b["longitude"].data, l1b["latitude"].data, l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
-        r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.bboxes_block(
-                                        r.forward_index,
-                                        dst_grid=r.dst_grid,
-                                        src_tile_size=r.src_lat.shape,
-                                        src_size=r.src_lat.shape,
-            block_id=(0,0))
-        # we compute min and max of all 4 bounds though we need only two of each,
-        # dask seems not to delay a []
-        r.src_bboxes = np.vstack((np.nanmin(bbox_blocks_raw, axis=(3,4)),
-                                          np.nanmax(bbox_blocks_raw, axis=(3,4))))
-        r.inverse_index = Rectifier.inverse_index_of_dst_block_with_src_subset(
-                                 np.stack((longitude, latitude))[:,
-                                     r.src_bboxes[1, 0,0]:r.src_bboxes[3, 0,0],
-                                     r.src_bboxes[0, 0,0]:r.src_bboxes[2, 0,0]],
-                                 (r.src_bboxes[0, 0, 0] + 0.5, r.src_bboxes[1, 0, 0] + 0.5),
-                                 r.dst_grid,
-                                 (0, 0))
-        intblock = np.around(r.inverse_index).astype(int)
-        intblock[np.isnan(r.inverse_index)] = -1
-        block_i = intblock[0]
-        block_j = intblock[1]
-        r.rectified = Rectifier.rectify_block(
-            block_i, block_j, 0, 0, oa12.shape, 1, 2, np.array([0]), oa12, oa08)
-
-    def test_olci_numpy_rectify_write(self):
-        path = '/windows/tmp/eopf/S3A_OL_1_EFR____20210801T102426_20210801T102726_20210802T141313_0179_074_336_2160_LN1_O_NT_002.SEN3'
-        l1b = xr.open_mfdataset([path + '/geo_coordinates.nc'] +
-                                [(path + '/Oa{:02d}_radiance.nc'.format(x)) for x in range(1, 22)],
-                                engine="netcdf4",
-                                chunks=2048)
-        longitude, latitude, oa12, oa08 = dask.compute(l1b["longitude"].data, l1b["latitude"].data, l1b['Oa12_radiance'].data, l1b['Oa08_radiance'].data)
-        #dst_grid = Grid(pyproj.CRS("EPSG:4326"), (0, 0), (0.003, -0.003), (0, 0), (2400, 2400))
-        dst_grid = Grid(pyproj.CRS("EPSG:4326"), (-10.863, 52.449), (0.003, -0.003), (6667, 4304), (6667, 4304))
-        r = Rectifier(longitude, latitude, dst_grid)
-        r.forward_index = Rectifier.forward_index_block(longitude, latitude, r.dst_grid)
-        bbox_blocks_raw = Rectifier.bboxes_block(
-                                        r.forward_index,
-                                        dst_grid=r.dst_grid,
-                                        src_tile_size=r.src_lat.shape,
-                                        src_size=r.src_lat.shape,
-            block_id=(0,0))
-        # we compute min and max of all 4 bounds though we need only two of each,
-        # dask seems not to delay a []
-        r.src_bboxes = np.vstack((np.nanmin(bbox_blocks_raw, axis=(3,4)),
-                                          np.nanmax(bbox_blocks_raw, axis=(3,4))))
-        r.inverse_index = Rectifier.inverse_index_of_dst_block_with_src_subset(
-                                 np.stack((longitude, latitude))[:,
-                                     r.src_bboxes[1, 0,0]:r.src_bboxes[3, 0,0],
-                                     r.src_bboxes[0, 0,0]:r.src_bboxes[2, 0,0]],
-                                 (r.src_bboxes[0, 0, 0] + 0.5, r.src_bboxes[1, 0, 0] + 0.5),
-                                 r.dst_grid,
-                                 (0, 0))
-        intblock = np.around(r.inverse_index).astype(int)
-        intblock[np.isnan(r.inverse_index)] = -1
-        block_i = intblock[0]
-        block_j = intblock[1]
-        r.rectified = Rectifier.rectify_block(
-            block_i, block_j, 0, 0, oa12.shape, 1, 2, np.array([0]), oa12, oa08)
-
-        ds = xr.Dataset({"oa08": (["lat", "lon"], r.rectified[1]),
-                         "oa12": (["lat", "lon"], r.rectified[0])},
-                        coords={
-                            "lat": (["lat"], r.dst_grid.y_axis()),
-                            "lon": (["lon"], r.dst_grid.x_axis())
-                        })
-        ds.to_netcdf("/windows/tmp/eopf/repojected3.nc")
