@@ -45,7 +45,7 @@ class Grid:
     The grid is represented by
     * crs: the coordinate reference system of the grid
     * xy_min: an origin, the upper left corner of the upmost and leftmost pixel
-    * xy_res: step between pixels in the CRS unit, constant in each dimensino
+    * xy_res: step between pixels in the CRS unit, constant in each dimension
     * width, height: number of columns and rows of the grid
     * tile_width, tile_height: number of columns and rows per block
     Origin is the upper left corner of the start pixel. But pixel x and y values are pixel centre coordinates.
