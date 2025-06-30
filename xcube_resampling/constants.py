@@ -19,7 +19,23 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from typing import Callable
+import logging
 
-from .version import version
+import numpy as np
+import dask.array as da
 
-__version__ = version
+Aggregator = Callable[[np.ndarray | da.Array], np.ndarray | da.Array]
+FloatInt = int | float
+AffineTransformMatrix = tuple[
+    tuple[FloatInt, FloatInt, FloatInt], tuple[FloatInt, FloatInt, FloatInt]
+]
+
+FILLVALUE_UINT8 = 255
+FILLVALUE_UINT16 = 65535
+FILLVALUE_INT = -1
+FILLVALUE_FLOAT = np.nan
+
+SCALE_LIMIT = 0.95
+UV_DELTA = 1e-3
+LOG = logging.getLogger("xcube.stac")

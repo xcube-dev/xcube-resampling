@@ -1,4 +1,4 @@
-## Initial version 0.0.1 (in development)
+## Initial version 0.1.0 (in development)
 
 
 
