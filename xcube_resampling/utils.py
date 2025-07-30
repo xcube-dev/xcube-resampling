@@ -23,6 +23,7 @@ from collections.abc import Mapping, Callable, Hashable, Sequence
 import xarray as xr
 from xcube.core.gridmapping import GridMapping
 import numpy as np
+import pyproj
 
 from .constants import (
     LOG,
@@ -31,6 +32,7 @@ from .constants import (
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
     FILLVALUE_INT,
+    FloatInt,
 )
 
 
@@ -66,7 +68,7 @@ def get_spatial_dims(ds: xr.Dataset) -> (str, str):
 
 def clip_dataset_by_bbox(
     ds: xr.Dataset,
-    bbox: tuple[float | int] | list[float | int],
+    bbox: Sequence[FloatInt, FloatInt, FloatInt, FloatInt],
     spatial_dims: Sequence[str, str] | None = None,
 ) -> xr.Dataset:
     """
@@ -110,9 +112,95 @@ def clip_dataset_by_bbox(
     return ds
 
 
+def normalize_grid_mapping(ds: xr.Dataset) -> xr.Dataset:
+    """Normalizes the grid mapping in a dataset to use a standard "spatial_ref"
+    coordinate.
+
+    This function replaces any existing grid mapping references in the dataset with a
+    unified "spatial_ref" coordinate. It updates the "grid_mapping" attribute of all
+    data variables to reference "spatial_ref", removes the original grid mapping
+    variable (if present), and adds a new "spatial_ref" coordinate with CF-compliant
+    CRS attributes.
+
+    Args:
+        ds: A dataset containing geospatial data with grid mapping metadata.
+
+    Returns:
+        A dataset with a standardized "spatial_ref" coordinate used for grid mapping.
+    """
+    gm_name = _get_grid_mapping_name(ds)
+    if gm_name is None:
+        return ds
+    try:
+        crs = pyproj.crs.CRS.from_cf(ds[gm_name].attrs)
+        attrs = crs.to_cf()
+    except pyproj.crs.CRSError:
+        LOG.warning(
+            f"CRS definition {ds[gm_name].attrs} does not conform to the CF convention."
+        )
+        attrs = ds[gm_name].attrs
+    ds = ds.drop_vars(gm_name)
+    ds = ds.assign_coords(spatial_ref=xr.DataArray(0, attrs=attrs))
+    for var in ds.data_vars:
+        ds[var].attrs["grid_mapping"] = "spatial_ref"
+
+    return ds
+
+
+def _get_grid_mapping_name(ds: xr.Dataset) -> str | None:
+    """Extracts the name of the grid mapping variable from an xarray Dataset.
+
+    The function searches through the dataset's data variables for the "grid_mapping"
+    attribute, as well as for commonly used coordinate variables like "crs" and
+    "spatial_ref". It ensures that at most one unique grid mapping name is present.
+
+    Args:
+        ds: A dataset to inspect for grid mapping information.
+
+    Returns:
+        The name of the grid mapping variable if found, otherwise None.
+
+    Raises:
+        AssertionError: If more than one unique grid mapping name is detected.
+    """
+    gm_names = []
+    for var in ds.data_vars:
+        if "grid_mapping" in ds[var].attrs:
+            gm_names.append(ds[var].attrs["grid_mapping"])
+    if "crs" in ds:
+        gm_names.append("crs")
+    if "spatial_ref" in ds.coords:
+        gm_names.append("spatial_ref")
+    gm_names = np.unique(gm_names)
+    assert len(gm_names) <= 1, "Multiple grid mapping names found."
+    if len(gm_names) == 1:
+        return str(gm_names[0])
+    else:
+        return None
+
+
+def _tranform_bbox(
+    transformer: pyproj.Transformer,
+    bbox_source: Sequence[FloatInt, FloatInt, FloatInt, FloatInt],
+    xy_res_trans: tuple[FloatInt, FloatInt],
+) -> tuple[FloatInt, FloatInt, FloatInt, FloatInt]:
+    bbox_trans = transformer.transform_bounds(*bbox_source)
+    bbox_trans = (
+        bbox_trans[0] - 2 * xy_res_trans[0],
+        bbox_trans[1] - 2 * xy_res_trans[1],
+        bbox_trans[2] + 2 * xy_res_trans[0],
+        bbox_trans[3] + 2 * xy_res_trans[1],
+    )
+    return bbox_trans
+
+
 def _can_apply_affine_transform(source_gm: GridMapping, target_gm: GridMapping) -> bool:
     GridMapping.assert_regular(source_gm, name="source_gm")
     GridMapping.assert_regular(target_gm, name="target_gm")
+    return _is_equal_crs(source_gm, target_gm)
+
+
+def _is_equal_crs(source_gm: GridMapping, target_gm: GridMapping) -> bool:
     geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
     return geographic or source_gm.crs.equals(target_gm.crs)
 

@@ -30,6 +30,7 @@ from dask_image import ndinterp
 from .gridmapping import GridMapping
 from .constants import Aggregator, AffineTransformMatrix
 from .utils import (
+    normalize_grid_mapping,
     _can_apply_affine_transform,
     _get_agg_method,
     _get_recover_nan,
@@ -45,6 +46,7 @@ def affine_transform_dataset(
     agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
     recover_nans: bool | Mapping[np.dtype | str, bool] = False,
 ) -> xr.Dataset:
+    # ToDo: what is with fill values ???
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
 
@@ -53,48 +55,81 @@ def affine_transform_dataset(
         f"{source_gm.crs.name!r} and target CRS {target_gm.crs.name!r}"
     )
 
+    source_ds = normalize_grid_mapping(source_ds)
+
+    target_ds = resample_dataset(
+        source_ds,
+        target_gm.ij_transform_to(source_gm),
+        (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
+        target_gm.size,
+        target_gm.tile_size,
+        spline_orders,
+        agg_methods,
+        recover_nans,
+    )
+
+    # assign coordinates from target grid-mapping
     x_name, y_name = source_gm.xy_dim_names
     coords = source_ds.coords.to_dataset()
     coords = coords.drop_vars((x_name, y_name))
     x_name, y_name = target_gm.xy_dim_names
     coords[x_name] = target_gm.x_coords
     coords[y_name] = target_gm.y_coords
-    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
-    target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
-
-    affine_matrix = target_gm.ij_transform_to(source_gm)
-    xy_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    for var_name, data_array in source_ds.items():
-        if data_array.dims[-2:] != xy_dims:
-            continue
-
-        if isinstance(data_array.data, np.ndarray):
-            is_numpy_array = True
-            array = da.asarray(data_array.data)
-        else:
-            is_numpy_array = False
-            array = data_array.data
-
-        output_shape = array.shape[-2:] + (target_gm.size[1], target_gm.size[0])
-        output_chunks = tuple(chunks[0] for chunks in array.chunks[-2:]) + (
-            target_gm.tile_size[1],
-            target_gm.tile_size[0],
-        )
-        resampled_array = _resample_array(
-            array,
-            affine_matrix,
-            output_shape,
-            output_chunks,
-            _get_spline_order(spline_orders, var_name, data_array),
-            _get_agg_method(agg_methods, var_name, data_array),
-            _get_recover_nan(recover_nans, var_name, data_array),
-        )
-        if is_numpy_array:
-            resampled_array = resampled_array.compute()
-        target_ds[var_name] = (data_array.dims, resampled_array)
-        target_ds[var_name].attrs = data_array.attrs
+    target_ds.assign_coords(coords)
 
     return target_ds
+
+
+def resample_dataset(
+    dataset: xr.Dataset,
+    affine_matrix: AffineTransformMatrix,
+    yx_dims: tuple[str, str],
+    target_size: tuple[int, int],
+    target_tile_size: tuple[int, int],
+    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
+    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
+    recover_nans: bool | Mapping[np.dtype | str, bool] = False,
+) -> xr.Dataset:
+    data_vars = dict()
+    coords = dict()
+    for var_name, data_array in dataset.items():
+        new_data_array = None
+        if data_array.dims[-2:] == yx_dims:
+            if isinstance(data_array.data, np.ndarray):
+                is_numpy_array = True
+                array = da.asarray(data_array.data)
+            else:
+                is_numpy_array = False
+                array = data_array.data
+
+            output_shape = array.shape[-2:] + (target_size[1], target_size[0])
+            output_chunks = tuple(chunks[0] for chunks in array.chunks[-2:]) + (
+                target_tile_size[1],
+                target_tile_size[0],
+            )
+            resampled_array = _resample_array(
+                array,
+                affine_matrix,
+                output_shape,
+                output_chunks,
+                _get_spline_order(spline_orders, var_name, data_array),
+                _get_agg_method(agg_methods, var_name, data_array),
+                _get_recover_nan(recover_nans, var_name, data_array),
+            )
+            if is_numpy_array:
+                resampled_array = resampled_array.compute()
+            new_data_array = xr.DataArray(
+                data=resampled_array, dims=data_array.dims, attrs=data_array.attrs
+            )
+        elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
+            new_data_array = data_array
+        if new_data_array is not None:
+            if var_name in dataset.coords:
+                coords[var_name] = new_data_array
+            elif var_name in dataset.data_vars:
+                data_vars[var_name] = new_data_array
+
+    return xr.Dataset(data_vars=data_vars, coords=coords, attrs=dataset.attrs)
 
 
 def _resample_array(

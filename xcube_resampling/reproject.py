@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Hashable
 
 import dask.array as da
 import numpy as np
@@ -30,7 +30,13 @@ import xarray as xr
 from .gridmapping import GridMapping
 from .affine import affine_transform_dataset
 from .constants import Aggregator, SCALE_LIMIT
-from .utils import _get_fill_value, _get_spline_order, clip_dataset_by_bbox
+from .utils import (
+    _get_fill_value,
+    _get_spline_order,
+    clip_dataset_by_bbox,
+    normalize_grid_mapping,
+    _tranform_bbox,
+)
 
 
 def reproject_dataset(
@@ -122,85 +128,109 @@ def reproject_dataset(
     coords[x_name] = target_gm.x_coords
     coords[y_name] = target_gm.y_coords
     coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
-    ds_out = xr.Dataset(coords=coords, attrs=source_ds.attrs)
+    target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
-    xy_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
+    yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
     for var_name, data_array in source_ds.items():
-        if data_array.dims[-2:] != xy_dims:
-            continue
+        if data_array.dims[-2:] == yx_dims:
+            assert len(data_array.dims) in (
+                2,
+                3,
+            ), f"Data variable {var_name} has {len(data_array.dims)} dimensions."
 
-        # treat 2d arrays as 3d arrays
-        assert len(data_array.dims) in (
-            2,
-            3,
-        ), f"Data variable {var_name} has {len(data_array.dims)} dimensions."
-        data_array_expanded = False
-        if len(data_array.dims) == 2:
-            data_array = data_array.expand_dims({"dummy": 1})
-            data_array_expanded = True
-
-        if isinstance(data_array.data, np.ndarray):
-            is_numpy_array = True
-            array = da.asarray(data_array.data)
-        else:
-            is_numpy_array = False
-            array = data_array.data
-
-        # reorganize data array slice to align with the
-        # chunks of source_xx and source_yy
-        fill_value = _get_fill_value(fill_values, var_name, data_array)
-        spline_order = _get_spline_order(spline_orders, var_name, data_array)
-        scr_data = _reorganize_data_array_slice(
-            array,
-            x_coords,
-            y_coords,
-            scr_ij_bboxes,
-            pad_width,
-            fill_value,
-        )
-        slices_reprojected = []
-        # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
-        dim0_end = 0
-        for chunk_size in data_array.chunks[0]:
-            dim0_start = dim0_end
-            dim0_end = dim0_start + chunk_size
-
-            data_reprojected = da.map_blocks(
-                _reproject_block,
+            target_ds[var_name] = _reproject_data_array(
+                data_array,
+                var_name,
+                source_gm,
+                target_gm,
                 source_xx,
                 source_yy,
-                scr_data[dim0_start:dim0_end],
                 x_coords,
                 y_coords,
-                dtype=data_array.dtype,
-                chunks=(
-                    scr_data[dim0_start:dim0_end].shape[0],
-                    source_yy.chunks[0][0],
-                    source_yy.chunks[1][0],
-                ),
-                scr_x_res=source_gm.x_res,
-                scr_y_res=source_gm.y_res,
-                spline_order=spline_order,
+                scr_ij_bboxes,
+                pad_width,
+                spline_orders,
+                fill_values,
             )
-            data_reprojected = data_reprojected[
-                :, : target_gm.height, : target_gm.width
-            ]
-            slices_reprojected.append(data_reprojected)
-        array_reprojected = da.concatenate(slices_reprojected, axis=0)
-        if is_numpy_array:
-            array_reprojected = array_reprojected.compute()
-        if data_array_expanded:
-            ds_out[var_name] = (
-                (y_name, x_name),
-                array_reprojected[0, :, :],
-            )
-        else:
-            ds_out[var_name] = (
-                (data_array.dims[0], y_name, x_name),
-                array_reprojected,
-            )
-        ds_out[var_name].attrs = data_array.attrs
-    return ds_out
+        elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
+            target_ds[var_name] = data_array
+
+    return normalize_grid_mapping(target_ds)
+
+
+def _reproject_data_array(
+    data_array: xr.DataArray,
+    var_name: Hashable,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    source_xx: da.Array,
+    source_yy: da.Array,
+    x_coords: da.Array,
+    y_coords: da.Array,
+    scr_ij_bboxes: np.ndarray,
+    pad_width: tuple[tuple[int]],
+    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
+    fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+):
+    data_array_expanded = False
+    if len(data_array.dims) == 2:
+        data_array = data_array.expand_dims({"dummy": 1})
+        data_array_expanded = True
+
+    if isinstance(data_array.data, np.ndarray):
+        is_numpy_array = True
+        array = da.asarray(data_array.data)
+    else:
+        is_numpy_array = False
+        array = data_array.data
+
+    # reorganize data array slice to align with the
+    # chunks of source_xx and source_yy
+    fill_value = _get_fill_value(fill_values, var_name, data_array)
+    spline_order = _get_spline_order(spline_orders, var_name, data_array)
+    scr_data = _reorganize_data_array_slice(
+        array,
+        x_coords,
+        y_coords,
+        scr_ij_bboxes,
+        pad_width,
+        fill_value,
+    )
+    slices_reprojected = []
+    # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
+    dim0_end = 0
+    for chunk_size in data_array.chunks[0]:
+        dim0_start = dim0_end
+        dim0_end = dim0_start + chunk_size
+
+        data_reprojected = da.map_blocks(
+            _reproject_block,
+            source_xx,
+            source_yy,
+            scr_data[dim0_start:dim0_end],
+            x_coords,
+            y_coords,
+            dtype=data_array.dtype,
+            chunks=(
+                scr_data[dim0_start:dim0_end].shape[0],
+                source_yy.chunks[0][0],
+                source_yy.chunks[1][0],
+            ),
+            scr_x_res=source_gm.x_res,
+            scr_y_res=source_gm.y_res,
+            spline_order=spline_order,
+        )
+        data_reprojected = data_reprojected[:, : target_gm.height, : target_gm.width]
+        slices_reprojected.append(data_reprojected)
+    array_reprojected = da.concatenate(slices_reprojected, axis=0)
+    if is_numpy_array:
+        array_reprojected = array_reprojected.compute()
+    if data_array_expanded:
+        array_reprojected = array_reprojected[0, :, :]
+        dims = (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
+    else:
+        dims = (data_array.dims[0], target_gm.xy_dim_names[0])
+    return xr.DataArray(data=array_reprojected, dims=dims, attrs=data_array.attrs)
 
 
 def _reproject_block(
@@ -284,7 +314,7 @@ def _downscale_source_dataset(
     agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None,
     recover_nans: bool | Mapping[np.dtype | str, bool],
 ):
-    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
+    bbox_trans = _tranform_bbox(transformer, target_gm.xy_bbox, source_gm.xy_res)
     xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
     yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
     x_scale = source_gm.x_res / xres_trans
@@ -292,12 +322,6 @@ def _downscale_source_dataset(
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
         # clip source dataset to the transformed bounding box defined by
         # target grid mapping, so that affine_transform_dataset is not that heavy
-        bbox_trans = [
-            bbox_trans[0] - 2 * source_gm.x_res,
-            bbox_trans[1] - 2 * source_gm.y_res,
-            bbox_trans[2] + 2 * source_gm.x_res,
-            bbox_trans[3] + 2 * source_gm.y_res,
-        ]
         source_ds = clip_dataset_by_bbox(
             source_ds, bbox_trans, spatial_dims=target_gm.xy_dim_names
         )
