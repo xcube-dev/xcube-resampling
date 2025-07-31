@@ -38,4 +38,5 @@ FILLVALUE_FLOAT = np.nan
 
 SCALE_LIMIT = 0.95
 UV_DELTA = 1e-3
+
 LOG = logging.getLogger("xcube.stac")

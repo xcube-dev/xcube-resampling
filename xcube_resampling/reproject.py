@@ -39,6 +39,7 @@ from .utils import (
 )
 
 
+# ToDo: add variables as kwarg, to select for variable to be reprojected, do the same for affine and rectification
 def reproject_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
@@ -92,6 +93,7 @@ def reproject_dataset(
     """
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
+    source_ds = normalize_grid_mapping(source_ds, source_gm)
 
     transformer = pyproj.Transformer.from_crs(
         target_gm.crs, source_gm.crs, always_xy=True
@@ -121,13 +123,12 @@ def reproject_dataset(
     source_xx, source_yy = _transform_gridpoints(transformer, target_gm)
 
     # reproject dataset
-    x_name, y_name = source_gm.xy_dim_names
-    coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name))
     x_name, y_name = target_gm.xy_dim_names
-    coords[x_name] = target_gm.x_coords
-    coords[y_name] = target_gm.y_coords
-    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
+    coords = {
+        x_name: target_gm.x_coords,
+        y_name: target_gm.y_coords,
+        "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
+    }
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
@@ -155,7 +156,7 @@ def reproject_dataset(
         elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
             target_ds[var_name] = data_array
 
-    return normalize_grid_mapping(target_ds)
+    return target_ds
 
 
 def _reproject_data_array(
@@ -229,7 +230,11 @@ def _reproject_data_array(
         array_reprojected = array_reprojected[0, :, :]
         dims = (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
     else:
-        dims = (data_array.dims[0], target_gm.xy_dim_names[0])
+        dims = (
+            data_array.dims[0],
+            target_gm.xy_dim_names[1],
+            target_gm.xy_dim_names[0],
+        )
     return xr.DataArray(data=array_reprojected, dims=dims, attrs=data_array.attrs)
 
 
@@ -323,7 +328,7 @@ def _downscale_source_dataset(
         # clip source dataset to the transformed bounding box defined by
         # target grid mapping, so that affine_transform_dataset is not that heavy
         source_ds = clip_dataset_by_bbox(
-            source_ds, bbox_trans, spatial_dims=target_gm.xy_dim_names
+            source_ds, bbox_trans, spatial_dims=source_gm.xy_dim_names
         )
         source_gm = GridMapping.from_dataset(source_ds)
         w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)

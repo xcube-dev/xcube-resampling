@@ -3,22 +3,22 @@ requires = ["setuptools >= 61.2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xarray-eopf"
+name = "xcube-resampling"
 dynamic = ["version", "readme"]
 authors = [
-  {name = "Konstantin Ntokas (Brockmann Consult GmbH)"},
-  {name = "Norman Fomferra (Brockmann Consult GmbH)"}
+  {name = "xcube Development Team"},
 ]
-description = "A backend implmentation for xarray that allows for analysis-ready reading of ESA EOPF data products."
+description = "A package resaample, reproject and rectify datasets."
 keywords = [
-  "copernicus",
-  "esa",
-  "eopf",
-  "sentinel",
+  "xcube",
   "xarray",
-  "zarr"
+  "dask",
+  "reprojection",
+  "rectification",
+  "affine transformation",
+  "parallel processing",
 ]
-license = {text = "Apache-2.0"}
+license = {text = "MIT"}
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
@@ -41,17 +41,15 @@ classifiers = [
 requires-python = ">=3.10"
 
 dependencies = [
-  "aiohttp",
-  "dask",
-  "dask-image",
-  "fsspec",
-  "numba",
-  "numpy",
-  "pyproj",
-  "requests",
-  "s3fs",
-  "xarray>=2024.10",
-  "zarr>=2,<3.0"
+  "affine>=2.2",
+  "dask>=2021.6",
+  "dask-image>=0.6",
+  "deprecated>=1.2",
+  "numba>=0.52",
+  "numpy>=1.16",
+  "pyproj>=3.0",
+  "xarray>=2024.7",
+  "zarr>=2.11,<3"
 ]
 
 [project.optional-dependencies]
@@ -79,11 +77,8 @@ doc = [
   "mkdocstrings-python"
 ]
 
-[project.entry-points."xarray.backends"]
-eopf-zarr = "xarray_eopf.backend:EopfBackend"
-
 [tool.setuptools.dynamic]
-version = {attr = "xarray_eopf.__version__"}
+version = {attr = "xcube_resampling.__version__"}
 readme = {file = "README.md", content-type = "text/markdown"}
 
 [tool.setuptools.packages.find]
@@ -103,7 +98,7 @@ profile = "black"
 exclude = ["**/*.ipynb"]
 
 [project.urls]
-Documentation = "https://eopf-sample-service.github.io/xarray-eopf"
-Repository = "https://github.com/EOPF-Sample-Service/xarray-eopf"
-Changelog = "https://github.com/EOPF-Sample-Service/xarray-eopf/blob/main/CHANGES.md"
-Issues = "https://github.com/EOPF-Sample-Service/xarray-eopf/issues"
+Documentation = "https://github.com/xcube-dev/xcube-resampling"
+Repository = "https://github.com/xcube-dev/xcube-resampling"
+Changelog = "https://github.com/xcube-dev/xcube-resampling/blob/main/CHANGES.md"
+Issues = "https://github.com/xcube-dev/xcube-resampling/issues"

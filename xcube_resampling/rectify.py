@@ -27,7 +27,6 @@ import numpy as np
 import xarray as xr
 import pyproj
 
-from xcube.util.dask import compute_array_from_func
 from .gridmapping import GridMapping
 from .constants import Aggregator, UV_DELTA, SCALE_LIMIT
 from .utils import (
@@ -37,8 +36,12 @@ from .utils import (
     _get_spline_order,
 )
 from .affine import resample_dataset
+from .dask import compute_array_from_func
 
 
+# ToDo: spline-order 1 is triangular, spline-order 2 is bilinear; in affine transformation
+# ToDo: spline-order 1 is bilinear, spline-order 2 is quadratic; Should be we maybe aligne this? -> adjust also reproject
+# ToDo: assess which of the parameters are needed from the original function in xcube.
 def rectify_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping | None = None,
@@ -47,13 +50,14 @@ def rectify_dataset(
     agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
     recover_nans: bool | Mapping[np.dtype | str, bool] = False,
     fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
-    target_tile_size: int | Sequence[int, int] | None = None,
+    tile_size: int | Sequence[int, int] | None = None,
 ) -> xr.Dataset:
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
+    source_ds = normalize_grid_mapping(source_ds, source_gm)
 
     if target_gm is None:
-        target_gm = source_gm.to_regular(tile_size=target_tile_size)
+        target_gm = source_gm.to_regular(tile_size=tile_size)
 
     transformer_forward = pyproj.Transformer.from_crs(
         source_gm.crs, target_gm.crs, always_xy=True
@@ -77,16 +81,15 @@ def rectify_dataset(
     )
 
     # calculate source indices in target grid-mapping
-    target_source_ij = _compute_target_source_ij(source_gm, target_gm)
+    target_source_ij = _compute_target_source_ij(source_gm, target_gm, UV_DELTA)
 
     # rectify dataset
-    x_name, y_name = source_gm.xy_dim_names
-    coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name))
     x_name, y_name = target_gm.xy_dim_names
-    coords[x_name] = target_gm.x_coords
-    coords[y_name] = target_gm.y_coords
-    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
+    coords = {
+        x_name: target_gm.x_coords,
+        y_name: target_gm.y_coords,
+        "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
+    }
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
@@ -100,7 +103,6 @@ def rectify_dataset(
             target_ds[var_name] = _rectify_data_array(
                 data_array,
                 var_name,
-                source_gm,
                 target_gm,
                 target_source_ij,
                 spline_orders,
@@ -110,7 +112,7 @@ def rectify_dataset(
         elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
             target_ds[var_name] = data_array
 
-    return normalize_grid_mapping(target_ds)
+    return target_ds
 
 
 def _transform_coords(
@@ -174,7 +176,6 @@ def _downscale_source_dataset(
 def _rectify_data_array(
     data_array: xr.DataArray,
     var_name: Hashable,
-    source_gm: GridMapping,
     target_gm: GridMapping,
     target_source_ij: da.Array,
     spline_orders: int | Mapping[np.dtype | str, int] | None = None,
@@ -187,75 +188,37 @@ def _rectify_data_array(
 
     if isinstance(data_array.data, np.ndarray):
         is_numpy_array = True
-        array = da.asarray(data_array.data)
     else:
         is_numpy_array = False
-        array = data_array.data
 
     fill_value = _get_fill_value(fill_values, var_name, data_array)
     spline_order = _get_spline_order(spline_orders, var_name, data_array)
 
-    # calculate recification of each chunk along the 1st (non-spatial) dimension.
+    # calculate rectification of each chunk along the 1st (non-spatial) dimension.
     slices_rectified = []
     dim0_end = 0
     for chunk_size in data_array.chunks[0]:
         dim0_start = dim0_end
         dim0_end = dim0_start + chunk_size
 
-        _compute_var_image(
-            scr_data[dim0_start:dim0_end],
+        data_rectified = _compute_var_image(
+            data_array[dim0_start:dim0_end], target_source_ij, fill_value, spline_order
         )
-
-        data_reprojected = da.map_blocks(
-            _reproject_block,
-            source_xx,
-            source_yy,
-            scr_data[dim0_start:dim0_end],
-            x_coords,
-            y_coords,
-            dtype=data_array.dtype,
-            chunks=(
-                scr_data[dim0_start:dim0_end].shape[0],
-                source_yy.chunks[0][0],
-                source_yy.chunks[1][0],
-            ),
-            scr_x_res=source_gm.x_res,
-            scr_y_res=source_gm.y_res,
-            spline_order=spline_order,
-        )
-        data_reprojected = data_reprojected[:, : target_gm.height, : target_gm.width]
-        slices_reprojected.append(data_reprojected)
-    array_reprojected = da.concatenate(slices_reprojected, axis=0)
+        slices_rectified.append(data_rectified)
+    array_rectified = da.concatenate(slices_rectified, axis=0)
     if is_numpy_array:
-        array_reprojected = array_reprojected.compute()
+        array_rectified = array_rectified.compute()
     if data_array_expanded:
-        array_reprojected = array_reprojected[0, :, :]
+        array_rectified = array_rectified[0, :, :]
         dims = (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
     else:
-        dims = (data_array.dims[0], target_gm.xy_dim_names[0])
+        dims = (
+            data_array.dims[0],
+            target_gm.xy_dim_names[1],
+            target_gm.xy_dim_names[0],
+        )
 
-    # dst_var_dims = src_var.dims[0:-2] + dst_dims
-    # dst_var_coords = {
-    #     d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords
-    # }
-    # # noinspection PyTypeChecker
-    # dst_var_coords.update(
-    #     {d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords}
-    # )
-    # dst_var_array = _compute_var_image(
-    #     src_var,
-    #     dst_src_ij_array,
-    #     fill_value=np.nan,
-    #     interpolation=interpolation_mode,
-    # )
-    # dst_var = xr.DataArray(
-    #     dst_var_array,
-    #     dims=dst_var_dims,
-    #     coords=dst_var_coords,
-    #     attrs=src_var.attrs,
-    # )
-    # dst_vars[src_var_name] = dst_var
-    return xr.DataArray(data=array_reprojected, dims=dims, attrs=data_array.attrs)
+    return xr.DataArray(data=array_rectified, dims=dims, attrs=data_array.attrs)
 
 
 def _compute_target_source_ij(
@@ -281,7 +244,6 @@ def _compute_target_source_ij(
     # the risk to not find any source ij-bbox for a given xy-bbox.
     # xy_border will not be larger than half of the
     # coverage of a tile.
-    #
     num_tiles_x = dst_width / dst_tile_width
     num_tiles_y = dst_height / dst_tile_height
     xy_border = min(
@@ -367,41 +329,6 @@ def _compute_target_source_ij_block(
         uv_delta,
     )
     return dst_src_ij_block
-
-
-@nb.njit(nogil=True, parallel=True, cache=True)
-def _compute_target_source_ij_parallel(
-    src_x_image: np.ndarray,
-    src_y_image: np.ndarray,
-    src_i_min: int,
-    src_j_min: int,
-    dst_src_ij_images: np.ndarray,
-    dst_x_offset: float,
-    dst_y_offset: float,
-    dst_x_scale: float,
-    dst_y_scale: float,
-    uv_delta: float,
-):
-    """Compute numpy.ndarray destination image with source
-    pixel i,j coords from numpy.ndarray x,y sources in
-    parallel mode.
-    """
-    src_height = src_x_image.shape[-2]
-    dst_src_ij_images[:, :, :] = np.nan
-    for src_j0 in nb.prange(src_height - 1):
-        _compute_target_source_ij_line(
-            src_j0,
-            src_x_image,
-            src_y_image,
-            src_i_min,
-            src_j_min,
-            dst_src_ij_images,
-            dst_x_offset,
-            dst_y_offset,
-            dst_x_scale,
-            dst_y_scale,
-            uv_delta,
-        )
 
 
 # Extra dask version, because if we use parallel=True
@@ -565,36 +492,25 @@ def _compute_var_image(
     src_var: xr.DataArray,
     dst_src_ij_images: da.Array,
     fill_value: int | float | complex = np.nan,
-    interpolation: int = 0,
+    spline_order: int = 0,
 ) -> da.Array:
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
     """
-    # If the source variable is not 3D, dummy variables are added to ensure
-    # that `_compute_var_image_block` always operates on 3D chunks
-    # when processing each Dask chunk.
-    if src_var.ndim == 1:
-        src_var = src_var.expand_dims(dim={"dummy0": 1, "dummy1": 1})
-    if src_var.ndim == 2:
-        src_var = src_var.expand_dims(dim={"dummy": 1})
     # Retrieve the chunk size required for `da.map_blocks`, as the resulting array
     # will have a different shape.
-    chunksize = src_var.shape[:-2] + dst_src_ij_images.chunksize[-2:]
+    chunksize = src_var.shape[:-2] + tuple(c[0] for c in dst_src_ij_images.chunks[-2:])
     arr = da.map_blocks(
         _compute_var_image_block,
         dst_src_ij_images,
         src_var,
         fill_value,
-        interpolation,
+        spline_order,
         chunksize,
         dtype=src_var.dtype,
         chunks=chunksize,
     )
     arr = arr[..., : dst_src_ij_images.shape[-2], : dst_src_ij_images.shape[-1]]
-    if arr.shape[0] == 1:
-        arr = arr[0, :, :]
-    if arr.shape[0] == 1:
-        arr = arr[0, :]
     return arr
 
 
@@ -602,7 +518,7 @@ def _compute_var_image_block(
     dst_src_ij_images: np.ndarray,
     src_var_image: xr.DataArray,
     fill_value: int | float | complex,
-    interpolation: int,
+    spline_order: int,
     chunksize: tuple[int],
 ) -> np.ndarray:
     """Extract source pixels from np.ndarray source
@@ -625,33 +541,10 @@ def _compute_var_image_block(
         ..., src_bbox[1] : src_bbox[3], src_bbox[0] : src_bbox[2]
     ].values.astype(np.float64)
     _compute_var_image_sequential(
-        src_var_image, dst_src_ij_images, dst_values, src_bbox, interpolation
+        src_var_image, dst_src_ij_images, dst_values, src_bbox, spline_order
     )
     dst_out[..., :dst_height, :dst_width] = dst_values
     return dst_out
-
-
-@nb.njit(nogil=True, parallel=True, cache=True)
-def _compute_var_image_parallel(
-    src_var_image: np.ndarray,
-    dst_src_ij_images: np.ndarray,
-    dst_var_image: np.ndarray,
-    src_bbox: tuple[int, int, int, int],
-    interpolation: int,
-):
-    """Extract source pixels from np.ndarray source
-    using numba parallel mode.
-    """
-    dst_height = dst_var_image.shape[-2]
-    for dst_j in nb.prange(dst_height):
-        _compute_var_image_for_dest_line(
-            dst_j,
-            src_var_image,
-            dst_src_ij_images,
-            dst_var_image,
-            src_bbox,
-            interpolation,
-        )
 
 
 # Extra dask version, because if we use parallel=True
@@ -662,7 +555,7 @@ def _compute_var_image_sequential(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    interpolation: int,
+    spline_order: int,
 ):
     """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
@@ -675,7 +568,7 @@ def _compute_var_image_sequential(
             dst_src_ij_images,
             dst_var_image,
             src_bbox,
-            interpolation,
+            spline_order,
         )
 
 
@@ -686,7 +579,7 @@ def _compute_var_image_for_dest_line(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    interpolation: int,
+    spline_order: int,
 ):
     """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.
@@ -709,15 +602,15 @@ def _compute_var_image_for_dest_line(
         src_j0 = int(src_j_f)
         u = src_i_f - src_i0
         v = src_j_f - src_j0
-        if interpolation == 0:
-            # interpolation == "nearest"
+        if spline_order == 0:
+            # nearest-neighbor
             if u > 0.5:
                 src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             if v > 0.5:
                 src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             dst_var_value = src_var_image[..., src_j0, src_i0]
-        elif interpolation == 1:
-            # interpolation == "triangular"
+        elif spline_order == 1:
+            # triangular
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_01 = src_var_image[..., src_j0, src_i1]
@@ -736,8 +629,8 @@ def _compute_var_image_for_dest_line(
                     + (1.0 - u) * (value_10 - value_11)
                     + (1.0 - v) * (value_01 - value_11)
                 )
-        else:
-            # interpolation == "bilinear"
+        elif spline_order == 2:
+            # bilinear
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_00 = src_var_image[..., src_j0, src_i0]
@@ -747,6 +640,11 @@ def _compute_var_image_for_dest_line(
             value_u0 = value_00 + u * (value_01 - value_00)
             value_u1 = value_10 + u * (value_11 - value_10)
             dst_var_value = value_u0 + v * (value_u1 - value_u0)
+        else:
+            # cubic
+            # TODO need to be implemented
+            raise NotImplementedError()
+
         dst_var_image[..., dst_j, dst_i] = dst_var_value
 
 

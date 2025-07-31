@@ -20,8 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 from collections.abc import Mapping, Callable, Hashable, Sequence
+
 import xarray as xr
-from xcube.core.gridmapping import GridMapping
 import numpy as np
 import pyproj
 
@@ -34,6 +34,7 @@ from .constants import (
     FILLVALUE_INT,
     FloatInt,
 )
+from .gridmapping import GridMapping
 
 
 def get_spatial_dims(ds: xr.Dataset) -> (str, str):
@@ -112,7 +113,7 @@ def clip_dataset_by_bbox(
     return ds
 
 
-def normalize_grid_mapping(ds: xr.Dataset) -> xr.Dataset:
+def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
     """Normalizes the grid mapping in a dataset to use a standard "spatial_ref"
     coordinate.
 
@@ -131,16 +132,8 @@ def normalize_grid_mapping(ds: xr.Dataset) -> xr.Dataset:
     gm_name = _get_grid_mapping_name(ds)
     if gm_name is None:
         return ds
-    try:
-        crs = pyproj.crs.CRS.from_cf(ds[gm_name].attrs)
-        attrs = crs.to_cf()
-    except pyproj.crs.CRSError:
-        LOG.warning(
-            f"CRS definition {ds[gm_name].attrs} does not conform to the CF convention."
-        )
-        attrs = ds[gm_name].attrs
     ds = ds.drop_vars(gm_name)
-    ds = ds.assign_coords(spatial_ref=xr.DataArray(0, attrs=attrs))
+    ds = ds.assign_coords(spatial_ref=xr.DataArray(0, attrs=gm.crs.to_cf()))
     for var in ds.data_vars:
         ds[var].attrs["grid_mapping"] = "spatial_ref"
 
@@ -248,7 +241,7 @@ def _get_agg_method(
                 f"are assigned."
             )
             agg_method = assign_defaults(var.dtype)
-    elif isinstance(agg_methods, Aggregator):
+    elif callable(agg_methods):
         agg_method = agg_methods
     else:
         agg_method = assign_defaults(var.dtype)
@@ -283,7 +276,7 @@ def _get_fill_value(
     key: Hashable,
     var: xr.DataArray,
 ) -> int:
-
+    # noinspection PyShadowingNames
     def assign_defaults(data_type: np.dtype) -> int:
         if data_type == np.uint8:
             fill_value = FILLVALUE_UINT8

@@ -49,13 +49,12 @@ def affine_transform_dataset(
     # ToDo: what is with fill values ???
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
+    source_ds = normalize_grid_mapping(source_ds, source_gm)
 
     assert _can_apply_affine_transform(source_gm, target_gm), (
         f"Affine transformation cannot be applied to source CRS "
         f"{source_gm.crs.name!r} and target CRS {target_gm.crs.name!r}"
     )
-
-    source_ds = normalize_grid_mapping(source_ds)
 
     target_ds = resample_dataset(
         source_ds,
@@ -69,13 +68,9 @@ def affine_transform_dataset(
     )
 
     # assign coordinates from target grid-mapping
-    x_name, y_name = source_gm.xy_dim_names
-    coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name))
     x_name, y_name = target_gm.xy_dim_names
-    coords[x_name] = target_gm.x_coords
-    coords[y_name] = target_gm.y_coords
-    target_ds.assign_coords(coords)
+    coords = {x_name: target_gm.x_coords, y_name: target_gm.y_coords}
+    target_ds = target_ds.assign_coords(coords)
 
     return target_ds
 
@@ -102,8 +97,8 @@ def resample_dataset(
                 is_numpy_array = False
                 array = data_array.data
 
-            output_shape = array.shape[-2:] + (target_size[1], target_size[0])
-            output_chunks = tuple(chunks[0] for chunks in array.chunks[-2:]) + (
+            output_shape = array.shape[:-2] + (target_size[1], target_size[0])
+            output_chunks = tuple(chunks[0] for chunks in array.chunks[:-2]) + (
                 target_tile_size[1],
                 target_tile_size[0],
             )
@@ -170,10 +165,15 @@ def _downscale(
     ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
     j_divisor = math.ceil(abs(j_scale))
     i_divisor = math.ceil(abs(i_scale))
-    output_shape = tuple(output_shape[-2:]) + (
+    affine_matrix = (
+        (i_scale / i_divisor, affine_matrix[0][1], affine_matrix[0][2]),
+        (affine_matrix[1][0], j_scale / j_divisor, affine_matrix[1][2]),
+    )
+    output_shape = tuple(output_shape[:-2]) + (
         output_shape[-2] * j_divisor,
         output_shape[-1] * i_divisor,
     )
+
     array = _upscale(
         array, affine_matrix, output_shape, output_chunks, spline_order, recover_nan
     )

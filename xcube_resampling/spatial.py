@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 import xarray as xr
 import numpy as np
@@ -34,12 +34,13 @@ from .utils import _can_apply_affine_transform
 
 def resample_in_space(
     source_ds: xr.Dataset,
-    source_gm: GridMapping | None = None,
     target_gm: GridMapping | None = None,
+    source_gm: GridMapping | None = None,
     spline_orders: int | Mapping[np.dtype | str, int] | None = None,
     agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
     recover_nans: bool | Mapping[np.dtype | str, bool] = False,
     fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+    tile_size: int | Sequence[int, int] | None = None,
 ) -> xr.Dataset:
     """
     Resample a dataset *source_ds* in the spatial dimensions.
@@ -69,6 +70,8 @@ def resample_in_space(
             variables or a dictionary that maps a variable name or a data dtype to a
             boolean.
         fill_values: fill values
+        tile_size: tile size in target gridmapping; only used if source dataset is
+            irregular and *target_gm* is not assigned.
 
     Returns:
         The spatially resampled dataset, or None if the requested output area does
@@ -88,11 +91,15 @@ def resample_in_space(
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
 
-    if ~source_gm.is_regular:
+    if not source_gm.is_regular:
         return rectify_dataset(
             source_ds,
-            source_gm=source_gm,
             target_gm=target_gm,
+            source_gm=source_gm,
+            spline_orders=spline_orders,
+            agg_methods=agg_methods,
+            recover_nans=recover_nans,
+            tile_size=tile_size,
         )
     else:
         if target_gm is None:
