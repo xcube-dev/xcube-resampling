@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from collections.abc import Mapping, Sequence
+from typing import Sequence, Iterable
 
 import numpy as np
 import xarray as xr
@@ -28,13 +28,24 @@ import dask.array as da
 from dask_image import ndinterp
 
 from .gridmapping import GridMapping
-from .constants import Aggregator, AffineTransformMatrix
+from .constants import (
+    AggMethods,
+    AggFunction,
+    AffineTransformMatrix,
+    SplineOrder,
+    SplineOrders,
+    RecoverNans,
+    FillValues,
+    FloatInt,
+)
 from .utils import (
     normalize_grid_mapping,
     _can_apply_affine_transform,
     _get_agg_method,
     _get_recover_nan,
     _get_spline_order,
+    _get_fill_value,
+    _select_variables,
 )
 
 
@@ -42,11 +53,12 @@ def affine_transform_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
     source_gm: GridMapping | None = None,
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
-    recover_nans: bool | Mapping[np.dtype | str, bool] = False,
+    variables: str | Iterable[str] | None = None,
+    spline_orders: SplineOrders | None = None,
+    agg_methods: AggMethods | None = None,
+    recover_nans: RecoverNans = False,
+    fill_values: FillValues | None = None,
 ) -> xr.Dataset:
-    # ToDo: what is with fill values ???
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -55,6 +67,8 @@ def affine_transform_dataset(
         f"Affine transformation cannot be applied to source CRS "
         f"{source_gm.crs.name!r} and target CRS {target_gm.crs.name!r}"
     )
+
+    source_ds = _select_variables(source_ds, variables)
 
     target_ds = resample_dataset(
         source_ds,
@@ -65,6 +79,7 @@ def affine_transform_dataset(
         spline_orders,
         agg_methods,
         recover_nans,
+        fill_values,
     )
 
     # assign coordinates from target grid-mapping
@@ -81,9 +96,10 @@ def resample_dataset(
     yx_dims: tuple[str, str],
     target_size: tuple[int, int],
     target_tile_size: tuple[int, int],
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
-    recover_nans: bool | Mapping[np.dtype | str, bool] = False,
+    spline_orders: SplineOrders | None = None,
+    agg_methods: AggMethods | None = None,
+    recover_nans: RecoverNans = False,
+    fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     data_vars = dict()
     coords = dict()
@@ -110,6 +126,7 @@ def resample_dataset(
                 _get_spline_order(spline_orders, var_name, data_array),
                 _get_agg_method(agg_methods, var_name, data_array),
                 _get_recover_nan(recover_nans, var_name, data_array),
+                _get_fill_value(fill_values, var_name, data_array),
             )
             if is_numpy_array:
                 resampled_array = resampled_array.compute()
@@ -132,11 +149,12 @@ def _resample_array(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    spline_order: int,
-    agg_method: Aggregator,
-    recover_nan: bool = False,
+    spline_order: SplineOrder,
+    agg_method: AggFunction,
+    recover_nan: bool,
+    fill_value: FloatInt,
 ) -> da.Array:
-    if affine_matrix[0][0] > 1 or affine_matrix[1][0] > 1:
+    if (affine_matrix[0][0] > 1 or affine_matrix[1][0] > 1) and spline_order != 0:
         array = _downscale(
             array,
             affine_matrix,
@@ -145,10 +163,17 @@ def _resample_array(
             agg_method,
             spline_order,
             recover_nan,
+            fill_value,
         )
     else:
         array = _upscale(
-            array, affine_matrix, output_shape, output_chunks, spline_order, recover_nan
+            array,
+            affine_matrix,
+            output_shape,
+            output_chunks,
+            spline_order,
+            recover_nan,
+            fill_value,
         )
     return array
 
@@ -158,9 +183,10 @@ def _downscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    agg_method: Aggregator,
-    spline_order: int,
+    agg_method: AggFunction,
+    spline_order: SplineOrder,
     recover_nan: bool,
+    fill_value: FloatInt,
 ) -> da.Array:
     ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
     j_divisor = math.ceil(abs(j_scale))
@@ -175,7 +201,13 @@ def _downscale(
     )
 
     array = _upscale(
-        array, affine_matrix, output_shape, output_chunks, spline_order, recover_nan
+        array,
+        affine_matrix,
+        output_shape,
+        output_chunks,
+        spline_order,
+        recover_nan,
+        fill_value,
     )
     axes = {array.ndim - 2: j_divisor, array.ndim - 1: i_divisor}
     # noinspection PyTypeChecker
@@ -190,8 +222,9 @@ def _upscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    spline_order: int,
+    spline_order: SplineOrder,
     recover_nan: bool,
+    fill_value: FloatInt,
 ) -> da.Array:
     ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
     offset = (array.ndim - 2) * (0,) + (j_off, i_off)
@@ -203,6 +236,7 @@ def _upscale(
         output_shape=output_shape,
         output_chunks=output_chunks,
         mode="constant",
+        cval=fill_value,
     )
     if recover_nan and spline_order > 0:
         # We can "recover" values that are neighbours to NaN values
@@ -224,5 +258,4 @@ def _upscale(
                 da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm
             )
 
-    # No dealing with NaN required
-    return ndinterp.affine_transform(array, matrix, **kwargs, cval=np.nan)
+    return ndinterp.affine_transform(array, matrix, **kwargs)

@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from collections.abc import Mapping, Hashable
+from typing import Hashable, Iterable
 
 import dask.array as da
 import numpy as np
@@ -29,13 +29,21 @@ import xarray as xr
 
 from .gridmapping import GridMapping
 from .affine import affine_transform_dataset
-from .constants import Aggregator, SCALE_LIMIT
+from .constants import (
+    AggMethods,
+    SplineOrder,
+    SplineOrders,
+    RecoverNans,
+    FillValues,
+    SCALE_LIMIT,
+    FloatInt,
+)
 from .utils import (
     _get_fill_value,
     _get_spline_order,
     clip_dataset_by_bbox,
     normalize_grid_mapping,
-    _tranform_bbox,
+    _select_variables,
 )
 
 
@@ -44,10 +52,11 @@ def reproject_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
     source_gm: GridMapping | None = None,
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
-    recover_nans: bool | Mapping[np.dtype | str, bool] = False,
-    fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+    variables: str | Iterable[str] | None = None,
+    spline_orders: SplineOrders | None = None,
+    agg_methods: AggMethods | None = None,
+    recover_nans: RecoverNans = False,
+    fill_values: FillValues | None = None,
 ):
     """
     Reprojects a dataset to a new coordinate reference system.
@@ -94,6 +103,8 @@ def reproject_dataset(
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
+
+    source_ds = _select_variables(source_ds, variables)
 
     transformer = pyproj.Transformer.from_crs(
         target_gm.crs, source_gm.crs, always_xy=True
@@ -170,8 +181,8 @@ def _reproject_data_array(
     y_coords: da.Array,
     scr_ij_bboxes: np.ndarray,
     pad_width: tuple[tuple[int]],
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+    spline_orders: SplineOrders | None = None,
+    fill_values: FillValues | None = None,
 ):
     data_array_expanded = False
     if len(data_array.dims) == 2:
@@ -246,7 +257,7 @@ def _reproject_block(
     y_coord: np.ndarray,
     scr_x_res: int | float,
     scr_y_res: int | float,
-    spline_order: int,
+    spline_order: SplineOrder,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / scr_x_res
     iy = (source_yy - y_coord[0]) / -scr_y_res
@@ -315,11 +326,11 @@ def _downscale_source_dataset(
     source_gm: GridMapping,
     target_gm: GridMapping,
     transformer: pyproj.Transformer,
-    spline_orders: int | Mapping[np.dtype | str, int] | None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None,
-    recover_nans: bool | Mapping[np.dtype | str, bool],
+    spline_orders: SplineOrders | None,
+    agg_methods: AggMethods | None,
+    recover_nans: RecoverNans,
 ):
-    bbox_trans = _tranform_bbox(transformer, target_gm.xy_bbox, source_gm.xy_res)
+    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
     xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
     yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
     x_scale = source_gm.x_res / xres_trans
@@ -327,9 +338,13 @@ def _downscale_source_dataset(
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
         # clip source dataset to the transformed bounding box defined by
         # target grid mapping, so that affine_transform_dataset is not that heavy
-        source_ds = clip_dataset_by_bbox(
-            source_ds, bbox_trans, spatial_dims=source_gm.xy_dim_names
+        bbox_trans = (
+            bbox_trans[0] - 2 * source_gm.x_res,
+            bbox_trans[1] - 2 * source_gm.y_res,
+            bbox_trans[2] + 2 * source_gm.x_res,
+            bbox_trans[3] + 2 * source_gm.y_res,
         )
+        source_ds = clip_dataset_by_bbox(source_ds, bbox_trans, source_gm.xy_dim_names)
         source_gm = GridMapping.from_dataset(source_ds)
         w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
@@ -477,7 +492,7 @@ def _reorganize_data_array_slice(
     y_coords: da.Array,
     scr_ij_bboxes: np.ndarray,
     pad_width: tuple[tuple[int]],
-    fill_value: int | float,
+    fill_value: FloatInt,
 ) -> da.Array:
     data_out = da.zeros(
         (

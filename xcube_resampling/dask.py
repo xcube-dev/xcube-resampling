@@ -21,8 +21,7 @@
 
 import itertools
 import uuid
-from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Callable
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import dask.array as da
 import dask.array.core as dac

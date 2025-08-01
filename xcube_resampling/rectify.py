@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Mapping, Sequence, Hashable
+from typing import Iterable, Hashable, Sequence, Mapping
 
 import dask.array as da
 import numba as nb
@@ -28,12 +28,22 @@ import xarray as xr
 import pyproj
 
 from .gridmapping import GridMapping
-from .constants import Aggregator, UV_DELTA, SCALE_LIMIT
+from .constants import (
+    AggMethods,
+    SplineOrder,
+    SplineOrders,
+    RecoverNans,
+    FillValues,
+    FloatInt,
+    UV_DELTA,
+    SCALE_LIMIT,
+)
 from .utils import (
     normalize_grid_mapping,
     _is_equal_crs,
     _get_fill_value,
     _get_spline_order,
+    _select_variables,
 )
 from .affine import resample_dataset
 from .dask import compute_array_from_func
@@ -46,10 +56,11 @@ def rectify_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
-    recover_nans: bool | Mapping[np.dtype | str, bool] = False,
-    fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+    variables: str | Iterable[str] | None = None,
+    spline_orders: SplineOrders | None = None,
+    agg_methods: AggMethods | None = None,
+    recover_nans: RecoverNans = False,
+    fill_values: FillValues | None = None,
     tile_size: int | Sequence[int, int] | None = None,
 ) -> xr.Dataset:
     if source_gm is None:
@@ -59,14 +70,12 @@ def rectify_dataset(
     if target_gm is None:
         target_gm = source_gm.to_regular(tile_size=tile_size)
 
-    transformer_forward = pyproj.Transformer.from_crs(
-        source_gm.crs, target_gm.crs, always_xy=True
-    )
-
     # transform 2d spatial coordinate of source dataset to target CRS
     if not _is_equal_crs(source_gm, target_gm):
-        source_ds = _transform_coords(transformer_forward, source_ds, source_gm)
+        source_ds = _transform_coords(source_ds, source_gm, target_gm)
         source_gm = GridMapping.from_dataset(source_ds)
+
+    source_ds = _select_variables(source_ds, variables)
 
     # ToDo: clip dataset
 
@@ -116,12 +125,16 @@ def rectify_dataset(
 
 
 def _transform_coords(
-    transformer_forward: pyproj.Transformer,
     source_ds: xr.Dataset,
     source_gm: GridMapping,
+    target_gm: GridMapping,
 ) -> xr.Dataset:
-    source_xx = source_gm.x_coords
-    source_yy = source_gm.y_coords
+    source_xx = source_gm.x_coords.data
+    source_yy = source_gm.y_coords.data
+
+    transformer_forward = pyproj.Transformer.from_crs(
+        source_gm.crs, target_gm.crs, always_xy=True
+    )
 
     # get transformed coordinates
     # noinspection PyShadowingNames
@@ -136,11 +149,18 @@ def _transform_coords(
         dtype=np.float32,
         chunks=(2, source_yy.chunks[0][0], source_yy.chunks[1][0]),
     )
-    source_ds = source_ds.drop_vars(source_gm.xy_dim_names)
+    target_xx_yy = target_xx_yy[:, : source_gm.height, : source_gm.width]
+    source_ds = source_ds.drop_vars(source_gm.xy_var_names)
+    yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
+    if target_gm.crs.is_geographic:
+        yx_var_names = ("lon", "lat")
+    else:
+        yx_var_names = ("transformed_x", "transformed_y")
     source_ds = source_ds.assign_coords(
         {
-            source_gm.xy_dim_names[0]: target_xx_yy[0],
-            source_gm.xy_dim_names[1]: target_xx_yy[1],
+            "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
+            yx_var_names[0]: (yx_dims, target_xx_yy[0]),
+            yx_var_names[1]: (yx_dims, target_xx_yy[1]),
         }
     )
 
@@ -152,8 +172,8 @@ def _downscale_source_dataset(
     source_gm: GridMapping,
     target_gm: GridMapping,
     spline_orders: int | Mapping[np.dtype | str, int] | None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None,
-    recover_nans: bool | Mapping[np.dtype | str, bool],
+    agg_methods: AggMethods | None,
+    recover_nans: RecoverNans,
 ):
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
@@ -178,8 +198,8 @@ def _rectify_data_array(
     var_name: Hashable,
     target_gm: GridMapping,
     target_source_ij: da.Array,
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+    spline_orders: SplineOrders | None = None,
+    fill_values: FillValues | None = None,
 ) -> xr.DataArray:
     data_array_expanded = False
     if len(data_array.dims) == 2:
@@ -491,8 +511,8 @@ def _compute_target_source_ij_line(
 def _compute_var_image(
     src_var: xr.DataArray,
     dst_src_ij_images: da.Array,
-    fill_value: int | float | complex = np.nan,
-    spline_order: int = 0,
+    fill_value: FloatInt = np.nan,
+    spline_order: SplineOrders = 0,
 ) -> da.Array:
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
@@ -517,8 +537,8 @@ def _compute_var_image(
 def _compute_var_image_block(
     dst_src_ij_images: np.ndarray,
     src_var_image: xr.DataArray,
-    fill_value: int | float | complex,
-    spline_order: int,
+    fill_value: FloatInt,
+    spline_order: SplineOrder,
     chunksize: tuple[int],
 ) -> np.ndarray:
     """Extract source pixels from np.ndarray source
@@ -555,7 +575,7 @@ def _compute_var_image_sequential(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    spline_order: int,
+    spline_order: SplineOrder,
 ):
     """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
@@ -579,7 +599,7 @@ def _compute_var_image_for_dest_line(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    spline_order: int,
+    spline_order: SplineOrder,
 ):
     """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.

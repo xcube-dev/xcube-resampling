@@ -19,15 +19,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Mapping, Sequence
+from typing import Sequence, Iterable
 
 import xarray as xr
-import numpy as np
 
 from .affine import affine_transform_dataset
 from .rectify import rectify_dataset
 from .gridmapping import GridMapping
-from .constants import LOG, Aggregator
+from .constants import (
+    LOG,
+    AggMethods,
+    FillValues,
+    SplineOrders,
+    RecoverNans,
+)
 from .reproject import reproject_dataset
 from .utils import _can_apply_affine_transform
 
@@ -36,10 +41,11 @@ def resample_in_space(
     source_ds: xr.Dataset,
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
-    spline_orders: int | Mapping[np.dtype | str, int] | None = None,
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None = None,
-    recover_nans: bool | Mapping[np.dtype | str, bool] = False,
-    fill_values: int | float | Mapping[np.dtype | str, int | float] | None = None,
+    variables: str | Iterable[str] | None = None,
+    spline_orders: SplineOrders | None = None,
+    agg_methods: AggMethods | None = None,
+    recover_nans: RecoverNans = False,
+    fill_values: FillValues | None = None,
     tile_size: int | Sequence[int, int] | None = None,
 ) -> xr.Dataset:
     """
@@ -96,9 +102,11 @@ def resample_in_space(
             source_ds,
             target_gm=target_gm,
             source_gm=source_gm,
+            variables=variables,
             spline_orders=spline_orders,
             agg_methods=agg_methods,
             recover_nans=recover_nans,
+            fill_values=fill_values,
             tile_size=tile_size,
         )
     else:
@@ -117,15 +125,18 @@ def resample_in_space(
                 source_ds,
                 target_gm,
                 source_gm=source_gm,
+                variables=variables,
                 spline_orders=spline_orders,
                 agg_methods=agg_methods,
                 recover_nans=recover_nans,
+                fill_values=fill_values,
             )
         else:
             return reproject_dataset(
                 source_ds,
                 target_gm,
                 source_gm=source_gm,
+                variables=variables,
                 spline_orders=spline_orders,
                 agg_methods=agg_methods,
                 recover_nans=recover_nans,

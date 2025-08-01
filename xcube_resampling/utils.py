@@ -19,15 +19,19 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Mapping, Callable, Hashable, Sequence
+from typing import Mapping, Callable, Hashable, Sequence, Iterable
 
 import xarray as xr
 import numpy as np
-import pyproj
 
 from .constants import (
     LOG,
-    Aggregator,
+    AGG_METHODS,
+    SplineOrder,
+    SplineOrders,
+    RecoverNans,
+    AggMethod,
+    AggMethods,
     FILLVALUE_FLOAT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
@@ -125,6 +129,7 @@ def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
 
     Args:
         ds: A dataset containing geospatial data with grid mapping metadata.
+        gm: grid-mapping associated with dataset *ds*
 
     Returns:
         A dataset with a standardized "spatial_ref" coordinate used for grid mapping.
@@ -137,6 +142,16 @@ def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
     for var in ds.data_vars:
         ds[var].attrs["grid_mapping"] = "spatial_ref"
 
+    return ds
+
+
+def _select_variables(
+    ds: xr.Dataset, variables: str | Iterable[str] | None = None
+) -> xr.Dataset:
+    if variables is not None:
+        if isinstance(variables, str):
+            variables = [variables]
+        ds = ds[variables]
     return ds
 
 
@@ -172,21 +187,6 @@ def _get_grid_mapping_name(ds: xr.Dataset) -> str | None:
         return None
 
 
-def _tranform_bbox(
-    transformer: pyproj.Transformer,
-    bbox_source: Sequence[FloatInt, FloatInt, FloatInt, FloatInt],
-    xy_res_trans: tuple[FloatInt, FloatInt],
-) -> tuple[FloatInt, FloatInt, FloatInt, FloatInt]:
-    bbox_trans = transformer.transform_bounds(*bbox_source)
-    bbox_trans = (
-        bbox_trans[0] - 2 * xy_res_trans[0],
-        bbox_trans[1] - 2 * xy_res_trans[1],
-        bbox_trans[2] + 2 * xy_res_trans[0],
-        bbox_trans[3] + 2 * xy_res_trans[1],
-    )
-    return bbox_trans
-
-
 def _can_apply_affine_transform(source_gm: GridMapping, target_gm: GridMapping) -> bool:
     GridMapping.assert_regular(source_gm, name="source_gm")
     GridMapping.assert_regular(target_gm, name="target_gm")
@@ -199,12 +199,12 @@ def _is_equal_crs(source_gm: GridMapping, target_gm: GridMapping) -> bool:
 
 
 def _get_spline_order(
-    spline_orders: int | Mapping[np.dtype | str, int] | None,
+    spline_orders: SplineOrders | None,
     key: Hashable,
     var: xr.DataArray,
-) -> int:
+) -> SplineOrder:
 
-    def assign_defaults(data_type: np.dtype) -> int:
+    def assign_defaults(data_type: np.dtype) -> SplineOrder:
         return 0 if np.issubdtype(data_type, np.integer) else 3
 
     if isinstance(spline_orders, Mapping):
@@ -225,12 +225,12 @@ def _get_spline_order(
 
 
 def _get_agg_method(
-    agg_methods: Aggregator | Mapping[np.dtype | str, Aggregator] | None,
+    agg_methods: AggMethods | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> Callable:
-    def assign_defaults(data_type: np.dtype) -> Callable:
-        return np.mean if np.issubdtype(data_type, np.integer) else np.mean
+    def assign_defaults(data_type: np.dtype) -> AggMethod:
+        return "center" if np.issubdtype(data_type, np.integer) else "mean"
 
     if isinstance(agg_methods, Mapping):
         agg_method = agg_methods.get(str(key), agg_methods.get(var.dtype))
@@ -241,16 +241,16 @@ def _get_agg_method(
                 f"are assigned."
             )
             agg_method = assign_defaults(var.dtype)
-    elif callable(agg_methods):
+    elif isinstance(agg_methods, str):
         agg_method = agg_methods
     else:
         agg_method = assign_defaults(var.dtype)
 
-    return agg_method
+    return AGG_METHODS[agg_method]
 
 
 def _get_recover_nan(
-    recover_nans: bool | Mapping[np.dtype | str, bool],
+    recover_nans: RecoverNans,
     key: Hashable,
     var: xr.DataArray,
 ) -> bool:

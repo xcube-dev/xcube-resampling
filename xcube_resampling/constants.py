@@ -19,17 +19,53 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Callable
+from typing import Callable, Literal, TypeAlias, Hashable, Mapping
 import logging
 
 import numpy as np
-import dask.array as da
 
-Aggregator = Callable[[np.ndarray | da.Array], np.ndarray | da.Array]
+from .coarsen import center, first, last, mean, median, mode, std, var
+
 FloatInt = int | float
 AffineTransformMatrix = tuple[
     tuple[FloatInt, FloatInt, FloatInt], tuple[FloatInt, FloatInt, FloatInt]
 ]
+AggMethod: TypeAlias = Literal[
+    "center",
+    "count",
+    "first",
+    "last",
+    "max",
+    "mean",
+    "median",
+    "mode",
+    "min",
+    "prod",
+    "std",
+    "sum",
+    "var",
+]
+AggMethods: TypeAlias = AggMethod | Mapping[np.dtype | str, AggMethod]
+AggFunction: TypeAlias = Callable[[np.ndarray, tuple[int, ...] | None], np.ndarray]
+AGG_METHODS: dict[AggMethod, AggFunction] = {
+    "center": center,
+    "count": np.count_nonzero,
+    "first": first,
+    "last": last,
+    "prod": np.nanprod,
+    "max": np.nanmax,
+    "mean": mean,
+    "median": median,
+    "min": np.nanmin,
+    "mode": mode,
+    "std": std,
+    "sum": np.nansum,
+    "var": var,
+}
+SplineOrder: TypeAlias = Literal[0, 1, 2, 3]
+SplineOrders: TypeAlias = SplineOrder | Mapping[np.dtype | Hashable, SplineOrder]
+RecoverNans: TypeAlias = bool | Mapping[np.dtype | str, bool]
+FillValues: TypeAlias = FloatInt | Mapping[np.dtype | str, FloatInt]
 
 FILLVALUE_UINT8 = 255
 FILLVALUE_UINT16 = 65535
