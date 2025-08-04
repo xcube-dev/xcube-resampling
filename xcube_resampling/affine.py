@@ -84,7 +84,11 @@ def affine_transform_dataset(
 
     # assign coordinates from target grid-mapping
     x_name, y_name = target_gm.xy_dim_names
-    coords = {x_name: target_gm.x_coords, y_name: target_gm.y_coords}
+    coords = {
+        x_name: target_gm.x_coords,
+        y_name: target_gm.y_coords,
+        "spatial_ref": source_ds.spatial_ref,
+    }
     target_ds = target_ds.assign_coords(coords)
 
     return target_ds

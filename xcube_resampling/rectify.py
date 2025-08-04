@@ -61,7 +61,7 @@ def rectify_dataset(
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
-    tile_size: int | Sequence[int, int] | None = None,
+    tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
@@ -103,6 +103,8 @@ def rectify_dataset(
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
     for var_name, data_array in source_ds.items():
+        if var_name in target_gm.xy_var_names:
+            continue
         if data_array.dims[-2:] == yx_dims:
             assert len(data_array.dims) in (
                 2,
@@ -208,6 +210,7 @@ def _rectify_data_array(
 
     if isinstance(data_array.data, np.ndarray):
         is_numpy_array = True
+        data_array = data_array.chunk({dim: -1 for dim in data_array.dims})
     else:
         is_numpy_array = False
 

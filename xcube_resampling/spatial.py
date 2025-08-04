@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Sequence, Iterable
+from collections.abc import Iterable
 
 import xarray as xr
 
@@ -46,7 +46,7 @@ def resample_in_space(
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
-    tile_size: int | Sequence[int, int] | None = None,
+    tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
     """
     Resample a dataset *source_ds* in the spatial dimensions.
@@ -58,6 +58,7 @@ def resample_in_space(
             x-dimension (e.g., `x` or `lon`).
         source_gm: The source grid mapping.
         target_gm: The target grid mapping. Must be regular.
+        variables: variable names to be processed.
         spline_orders: Spline orders to be used for upsampling
             spatial data variables. It can be a single spline order
             for all variables or a dictionary that maps a variable name or a data dtype

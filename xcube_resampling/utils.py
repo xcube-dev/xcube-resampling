@@ -73,8 +73,8 @@ def get_spatial_dims(ds: xr.Dataset) -> (str, str):
 
 def clip_dataset_by_bbox(
     ds: xr.Dataset,
-    bbox: Sequence[FloatInt, FloatInt, FloatInt, FloatInt],
-    spatial_dims: Sequence[str, str] | None = None,
+    bbox: Sequence[FloatInt],
+    spatial_dims: tuple[str] | None = None,
 ) -> xr.Dataset:
     """
     Clip a xarray Dataset to a given bounding box.
@@ -135,9 +135,8 @@ def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
         A dataset with a standardized "spatial_ref" coordinate used for grid mapping.
     """
     gm_name = _get_grid_mapping_name(ds)
-    if gm_name is None:
-        return ds
-    ds = ds.drop_vars(gm_name)
+    if gm_name is not None:
+        ds = ds.drop_vars(gm_name)
     ds = ds.assign_coords(spatial_ref=xr.DataArray(0, attrs=gm.crs.to_cf()))
     for var in ds.data_vars:
         ds[var].attrs["grid_mapping"] = "spatial_ref"
