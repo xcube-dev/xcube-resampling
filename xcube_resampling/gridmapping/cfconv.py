@@ -29,9 +29,9 @@ import xarray as xr
 import zarr
 import zarr.convenience
 
-from .helpers import get_dataset_chunks
 from .assertions import assert_instance
 from .base import CRS_WGS84
+from .helpers import get_dataset_chunks
 
 
 class GridCoords:

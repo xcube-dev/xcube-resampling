@@ -23,14 +23,18 @@ import abc
 import copy
 import math
 import threading
-from collections.abc import Mapping
-from typing import Any, Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube_resampling.constants import AffineTransformMatrix, FloatInt
+from xcube_resampling.dask import get_block_iterators, get_chunk_sizes
+
+from .assertions import assert_given, assert_instance, assert_true
 from .helpers import (
     _assert_valid_xy_coords,
     _assert_valid_xy_names,
@@ -40,9 +44,6 @@ from .helpers import (
     _to_affine,
     scale_xy_res_and_size,
 )
-from .assertions import assert_given, assert_instance, assert_true
-from xcube_resampling.dask import get_block_iterators, get_chunk_sizes
-from xcube_resampling.constants import FloatInt, AffineTransformMatrix
 
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)

@@ -3,65 +3,28 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from test.sampledata import SourceDatasetMixin
 
 import numpy as np
-import pyproj
-import xarray as xr
 
-from xcube.core.gridmapping import CRS_WGS84, GridMapping
-from xcube.core.resampling import reproject_dataset
+from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
+from xcube_resampling.reproject import reproject_dataset
+
+from .sampledata import (
+    create_5x5_dataset_regular_utm,
+    create_complex_dataset_for_reproject,
+)
 
 
-class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
-    def test_reproject_value_error(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
-        with self.assertRaises(ValueError) as context:
-            reproject_dataset(source_ds)
-        self.assertEqual(
-            str(context.exception), "Either ref_ds or target_gm needs to be given."
-        )
-
-    def test_reproject_reference_dataset(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
-
-        # test reproject to reference dataset
-        x = np.arange(4320120.0, 4320120.0 + 4.1 * 80.0, 80.0)
-        y = np.arange(3382520.0 + 4.0 * 80.0, 3382519.0, -80.0)
-        spatial_ref = np.array(0)
-        band_1 = np.arange(25).reshape((5, 5))
-        ref_ds = xr.Dataset(
-            dict(
-                band_1=xr.DataArray(
-                    band_1, dims=("y", "x"), attrs=dict(grid_mapping="spatial_ref")
-                )
-            ),
-            coords=dict(x=x, y=y, spatial_ref=spatial_ref),
-        )
-        ref_ds.spatial_ref.attrs = pyproj.CRS.from_epsg("3035").to_cf()
-        target_ds = reproject_dataset(source_ds, ref_ds=ref_ds)
-        np.testing.assert_almost_equal(
-            target_ds.band_1.values,
-            np.array(
-                [
-                    [1, 1, 2, 3, 4],
-                    [6, 6, 7, 8, 9],
-                    [11, 12, 12, 13, 14],
-                    [16, 17, 17, 18, 19],
-                    [21, 17, 17, 18, 19],
-                ],
-                dtype=target_ds.band_1.dtype,
-            ),
-        )
-
+# noinspection PyMethodMayBeStatic
+class ReprojectDatasetTest(unittest.TestCase):
     def test_reproject_target_gm(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+        source_ds = create_5x5_dataset_regular_utm()
 
         # test projected CRS similar resolution
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
         )
-        target_ds = reproject_dataset(source_ds, target_gm=target_gm)
+        target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -77,7 +40,7 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_reproject_target_gm_j_axis_up(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+        source_ds = create_5x5_dataset_regular_utm()
         target_gm = GridMapping.regular(
             size=(5, 5),
             xy_min=(4320080, 3382480),
@@ -85,7 +48,7 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
             crs="epsg:3035",
             is_j_axis_up=True,
         )
-        target_ds = reproject_dataset(source_ds, target_gm=target_gm)
+        target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -101,14 +64,14 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_reproject_target_gm_finer_res(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+        source_ds = create_5x5_dataset_regular_utm()
 
         # test projected CRS finer resolution
         # test if subset calculation works as expected
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(4320080, 3382480), xy_res=20, crs="epsg:3035"
         )
-        target_ds = reproject_dataset(source_ds, target_gm=target_gm)
+        target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -124,20 +87,20 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_reproject_target_gm_coarser_res(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+        source_ds = create_5x5_dataset_regular_utm()
 
         # test projected CRS finer resolution
         # test if subset calculation works as expected
         target_gm = GridMapping.regular(
             size=(3, 3), xy_min=(4320050, 3382500), xy_res=120, crs="epsg:3035"
         )
-        target_ds = reproject_dataset(source_ds, target_gm=target_gm)
+        target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
                 [
                     [0, 1, 2],
-                    [10, 11, 12],
+                    [5, 6, 7],
                     [15, 16, 17],
                 ],
                 dtype=target_ds.band_1.dtype,
@@ -145,12 +108,12 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_reproject_target_gm_geographic_crs(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+        source_ds = create_5x5_dataset_regular_utm()
         # test geographic CRS with similar resolution
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0006, crs=CRS_WGS84
         )
-        target_ds = reproject_dataset(source_ds, target_gm=target_gm)
+        target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -166,14 +129,14 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_reproject_target_gm_geographic_crs_fine_res(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+        source_ds = create_5x5_dataset_regular_utm()
 
         # test geographic CRS with 1/2 resolution
         # test if subset calculation works as expected
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0003, crs=CRS_WGS84
         )
-        target_ds = reproject_dataset(source_ds, target_gm=target_gm)
+        target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -189,7 +152,7 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_reproject_complex_dask_array(self):
-        source_ds = self.new_complex_dataset_for_reproject()
+        source_ds = create_complex_dataset_for_reproject()
         target_gm = GridMapping.regular(
             size=(10, 10),
             xy_min=(6.0, 48.0),
@@ -198,12 +161,14 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
             tile_size=(5, 5),
         )
 
-        target_ds = reproject_dataset(
-            source_ds, target_gm=target_gm, interpolation="triangular"
+        target_ds = reproject_dataset(source_ds, target_gm, spline_orders=1)
+        self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
+        self.assertAlmostEqual(
+            target_ds.temperature.values[0, 0, 0], 6427.7188, places=4
         )
-        self.assertCountEqual(["temperature"], list(target_ds.data_vars))
-        self.assertEqual(target_ds.temperature.values[0, 0, 0], 6427.7188)
-        self.assertEqual(target_ds.temperature.values[0, -1, -1], 3085.9507)
+        self.assertAlmostEqual(
+            target_ds.temperature.values[0, -1, -1], 3085.9504, places=4
+        )
         self.assertEqual(
             [2, 5, 5],
             [
@@ -213,12 +178,14 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
             ],
         )
 
-        target_ds = reproject_dataset(
-            source_ds, target_gm=target_gm, interpolation="bilinear"
+        target_ds = reproject_dataset(source_ds, target_gm, spline_orders=2)
+        self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
+        self.assertAlmostEqual(
+            target_ds.temperature.values[0, 0, 0], 6427.7186, places=4
         )
-        self.assertCountEqual(["temperature"], list(target_ds.data_vars))
-        self.assertEqual(target_ds.temperature.values[0, 0, 0], 6427.718652710034)
-        self.assertEqual(target_ds.temperature.values[0, -1, -1], 3085.9507290783004)
+        self.assertAlmostEqual(
+            target_ds.temperature.values[0, -1, -1], 3085.9504, places=4
+        )
         self.assertEqual(
             [2, 5, 5],
             [

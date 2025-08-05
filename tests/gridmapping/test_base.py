@@ -1,21 +1,35 @@
-# Copyright (c) 2018-2025 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+# The MIT License (MIT)
+# Copyright (c) 2025 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import unittest
-from test.sampledata import SourceDatasetMixin
 
+import affine
 import numpy as np
 import pyproj
 import shapely.wkt
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping.coords import Coords2DGridMapping
-
-# noinspection PyProtectedMember
-from xcube.core.gridmapping.helpers import _to_affine
-from xcube.core.gridmapping.regular import RegularGridMapping
+from xcube_resampling.gridmapping import GridMapping
+from xcube_resampling.gridmapping.coords import Coords2DGridMapping
+from xcube_resampling.gridmapping.regular import RegularGridMapping
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
@@ -44,7 +58,7 @@ class _TestGridMapping(GridMapping):
 
 
 # noinspection PyMethodMayBeStatic
-class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
+class GridMappingTest(unittest.TestCase):
     _kwargs = dict(
         size=(720, 360),
         tile_size=(360, 180),
@@ -239,8 +253,8 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def assertMatrixPoint(self, expected_point, matrix, point):
-        affine = _to_affine(matrix)
-        actual_point = affine * point
+        affine_matrix = affine.Affine(*matrix[0], *matrix[1])
+        actual_point = affine_matrix * point
         self.assertAlmostEqual(expected_point[0], actual_point[0])
         self.assertAlmostEqual(expected_point[1], actual_point[1])
         return actual_point
@@ -504,11 +518,11 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         # different from locally or with GitHub Unit testing. Therefore, this
         # workaround.
         expected_geospatial_bounds = (
-            f"POLYGON((19.73859219445214 56.011953311099965, "
-            f"19.73859219445214 57.96226854502516, "
-            f"24.490858156706885 57.96226854502516, "
-            f"24.490858156706885 56.011953311099965, "
-            f"19.73859219445214 56.011953311099965))"
+            "POLYGON((19.73859219445214 56.011953311099965, "
+            "19.73859219445214 57.96226854502516, "
+            "24.490858156706885 57.96226854502516, "
+            "24.490858156706885 56.011953311099965, "
+            "19.73859219445214 56.011953311099965))"
         )
 
         expected_polygon = shapely.wkt.loads(expected_geospatial_bounds)

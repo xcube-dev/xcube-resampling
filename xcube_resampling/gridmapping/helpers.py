@@ -20,8 +20,9 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
+from collections.abc import Hashable
 from fractions import Fraction
-from typing import Any, Hashable
+from typing import Any
 
 import affine
 import dask.array as da
@@ -29,7 +30,8 @@ import numpy as np
 import pyproj.crs
 import xarray as xr
 
-from xcube_resampling.constants import FloatInt, AffineTransformMatrix
+from xcube_resampling.constants import AffineTransformMatrix, FloatInt
+
 from .assertions import assert_given, assert_instance, assert_true
 from .undefined import UNDEFINED
 

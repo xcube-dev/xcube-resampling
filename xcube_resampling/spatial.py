@@ -24,15 +24,15 @@ from collections.abc import Iterable
 import xarray as xr
 
 from .affine import affine_transform_dataset
-from .rectify import rectify_dataset
-from .gridmapping import GridMapping
 from .constants import (
     LOG,
     AggMethods,
     FillValues,
-    SplineOrders,
     RecoverNans,
+    SplineOrders,
 )
+from .gridmapping import GridMapping
+from .rectify import rectify_dataset
 from .reproject import reproject_dataset
 from .utils import _can_apply_affine_transform
 
@@ -49,51 +49,56 @@ def resample_in_space(
     tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
     """
-    Resample a dataset *source_ds* in the spatial dimensions.
+    Resample the spatial dimensions of a dataset to match a target grid mapping.
+
+    Depending on the regularity and compatibility of the source and target grid
+    mappings, this function will either rectify, reproject, or affine-transform the
+    spatial dimensions of `source_ds`.
 
     Args:
-        source_ds: The source dataset. Data variables must have
-            dimensions in the following order: optional 3rd dimension followed
-            by the y-dimension (e.g., `y` or `lat`) followed by the
-            x-dimension (e.g., `x` or `lon`).
-        source_gm: The source grid mapping.
-        target_gm: The target grid mapping. Must be regular.
-        variables: variable names to be processed.
-        spline_orders: Spline orders to be used for upsampling
-            spatial data variables. It can be a single spline order
-            for all variables or a dictionary that maps a variable name or a data dtype
-            to the spline order. A spline order is given by one of `0`
-            (nearest neighbor), `1` (linear), `2` (bi-linear), or `3` (cubic).
-            The default is `3` fo floating point datasets and `0` for integer datasets.
-        agg_methods: Aggregation methods to be used for downsampling
-            spatial data variables. It can be a single aggregation method for all
-            variables or a dictionary that maps a variable name or a data dtype to the
-            aggregation method. The aggregation method is a function like `np.sum`,
-            `np.mean` which is propagated to [`dask.array.coarsen`](https://docs.dask.org/en/stable/generated/dask.array.coarsen.html).
-        recover_nans: If true, whether a special algorithm shall be used that is able
-            to recover values that would otherwise yield NaN during resampling. Default
-            is False for all variable types since this may require considerable CPU
-            resources on top. It can be a single aggregation method for all
-            variables or a dictionary that maps a variable name or a data dtype to a
-            boolean.
-        fill_values: fill values
-        tile_size: tile size in target gridmapping; only used if source dataset is
-            irregular and *target_gm* is not assigned.
+        source_ds: The input xarray.Dataset. Data variables must have dimensions
+            in the following order: optional third dimension followed by the
+            y-dimension (e.g., "y" or "lat") and the x-dimension (e.g., "x" or "lon").
+        target_gm: The target GridMapping to which the dataset should be resampled.
+            Must be regular. If not provided, a default regular grid is derived
+            from `source_gm` using `to_regular(tile_size)`.
+        source_gm: The GridMapping describing the source dataset's spatial layout.
+            If not provided, it is inferred from `source_ds` using
+            `GridMapping.from_dataset(source_ds)`.
+        variables: A single variable name or iterable of variable names to be
+            resampled. If None, all data variables will be processed.
+        spline_orders: Spline orders used for upsampling spatial data variables.
+            Can be a single spline order (0=nearest, 1=linear, 2=bilinear, 3=cubic),
+            or a dictionary mapping variable names or data dtypes to spline orders.
+            Defaults to 3 for floating-point data and 0 for integers.
+        agg_methods: Aggregation methods for downsampling spatial data variables.
+            Can be a single method (e.g., `np.mean`) or a dictionary mapping variable
+            names or dtypes to aggregation methods. These are passed to
+            `dask.array.coarsen`.
+        recover_nans: Whether to apply a special algorithm to recover values that
+            would otherwise become NaN during resampling. This can be a single boolean
+            or a dictionary mapping variable names or dtypes to booleans. Defaults to
+            False.
+        fill_values: Fill values to use for areas where data is unavailable.
+        tile_size: Optional tile size used when generating a regular grid from
+            an irregular source grid mapping. Only used if `target_gm` is not provided.
 
     Returns:
-        The spatially resampled dataset, or None if the requested output area does
-        not intersect with *dataset*.
+        A new dataset that has been spatially resampled to match the target grid
+            mapping.
 
     Notes:
-        - If the source grid mapping *source_gm* is not given, it is derived from *dataset*:
-          `source_gm = GridMapping.from_dataset(source_ds)`.
-        - If the target grid mapping *target_gm* is not given, it is derived from
-          *ref_ds* as `target_gm = GridMapping.from_dataset(ref_ds)`; if *ref_ds* is
-          not given, *target_gm* is derived from *source_gm* as
-          `target_gm = source_gm.to_regular()`.
-        - If *source_gm* is almost equal to *target_gm*, this function is a no-op
-          and *dataset* is returned unchanged.
-        - further information is given in the [xcube-resample documentation]()
+        - If `source_gm` is not provided, it is inferred from `source_ds`.
+        - If `target_gm` is not provided, and the source is irregular, it is
+          derived from `source_gm.to_regular(tile_size=tile_size)`.
+        - If both grid mappings are regular and approximately equal, the original
+          dataset is returned unchanged.
+        - If the transformation can be represented as an affine mapping, it is
+          applied directly for performance.
+        - If the source is irregular, rectification is applied.
+        - Otherwise, a reprojection is performed.
+        - See the [xcube-resampling documentation](https://xcube-dev.github.io/xcube-resampling/)
+          for more details.
     """
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)

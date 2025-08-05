@@ -23,6 +23,7 @@ import dask.array as da
 import pyproj
 import xarray as xr
 
+from .assertions import assert_true
 from .base import GridMapping
 from .helpers import (
     _default_xy_dim_names,
@@ -32,7 +33,6 @@ from .helpers import (
     _normalize_number_pair,
     _to_int_or_float,
 )
-from .assertions import assert_true
 
 
 class RegularGridMapping(GridMapping):

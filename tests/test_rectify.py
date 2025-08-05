@@ -20,19 +20,19 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
+
+import numpy as np
+import xarray as xr
+
+from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
+from xcube_resampling.rectify import rectify_dataset
+
 from .sampledata import (
     create_2x2_dataset_with_irregular_coords,
     create_2x2_dataset_with_irregular_coords_antimeridian,
 )
 
-import numpy as np
-import pytest
-
-# noinspection PyUnresolvedReferences
-import xarray as xr
-
-from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
-from xcube_resampling.rectify import rectify_dataset
+nan = np.nan
 
 
 # noinspection PyMethodMayBeStatic
@@ -45,17 +45,16 @@ class RectifyDatasetTest(unittest.TestCase):
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
 
-        rad = target_ds.rad
         np.testing.assert_almost_equal(
-            rad.values,
+            target_ds.rad.values,
             np.array(
                 [
-                    [np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.0, 2.0, np.nan],
-                    [3.0, 3.0, 2.0, np.nan],
-                    [np.nan, 4.0, np.nan, np.nan],
+                    [nan, nan, nan, nan],
+                    [nan, 1.0, 2.0, nan],
+                    [3.0, 3.0, 2.0, nan],
+                    [nan, 4.0, nan, nan],
                 ],
-                dtype=rad.dtype,
+                dtype=target_ds.rad.dtype,
             ),
         )
 
@@ -73,24 +72,21 @@ class RectifyDatasetTest(unittest.TestCase):
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, dtype=lon.dtype))
         np.testing.assert_almost_equal(
-            lon.values, np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=lon.dtype)
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array([56.0, 55.0, 54.0, 53.0, 52.0, 51.0, 50.0], dtype=lat.dtype),
+            lat.values, np.arange(56, 49.9, -1, dtype=lat.dtype)
         )
         np.testing.assert_almost_equal(
             rad.values,
             np.array(
                 [
-                    [np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.0, 1.0, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.0, 1.0, 1.0, 2.0, np.nan, np.nan],
-                    [np.nan, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0],
-                    [3.0, 3.0, 3.0, 5.0, 2.0, np.nan, np.nan],
-                    [np.nan, 3.0, 5.0, 5.0, np.nan, np.nan, np.nan],
-                    [np.nan, np.nan, 5.0, np.nan, np.nan, np.nan, np.nan],
+                    [nan, 1.0, nan, nan, nan, nan, nan],
+                    [nan, 1.0, 1.0, nan, nan, nan, nan],
+                    [nan, 1.0, 1.0, 1.0, 2.0, nan, nan],
+                    [nan, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0],
+                    [3.0, 3.0, 3.0, 5.0, 2.0, nan, nan],
+                    [nan, 3.0, 5.0, 5.0, nan, nan, nan],
+                    [nan, nan, 5.0, nan, nan, nan, nan],
                 ],
                 dtype=rad.dtype,
             ),
@@ -110,24 +106,21 @@ class RectifyDatasetTest(unittest.TestCase):
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=1)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, dtype=lon.dtype))
         np.testing.assert_almost_equal(
-            lon.values, np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=lon.dtype)
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array([56.0, 55.0, 54.0, 53.0, 52.0, 51.0, 50.0], dtype=lat.dtype),
+            lat.values, np.arange(56, 49.9, -1, dtype=lat.dtype)
         )
         np.testing.assert_almost_equal(
             rad.values,
             np.array(
                 [
-                    [np.nan, 1.000, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.478, 1.391, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.957, 1.870, 1.784, 1.697, np.nan, np.nan],
-                    [np.nan, 2.435, 2.348, 2.261, 2.174, 2.087, 2.000],
-                    [3.000, 3.000, 3.000, 3.000, 3.000, np.nan, np.nan],
-                    [np.nan, 4.000, 4.000, 4.000, np.nan, np.nan, np.nan],
-                    [np.nan, np.nan, 5.000, np.nan, np.nan, np.nan, np.nan],
+                    [nan, 1.000, nan, nan, nan, nan, nan],
+                    [nan, 1.478, 1.391, nan, nan, nan, nan],
+                    [nan, 1.957, 1.870, 1.784, 1.697, nan, nan],
+                    [nan, 2.435, 2.348, 2.261, 2.174, 2.087, 2.000],
+                    [3.000, 3.000, 3.000, 3.000, 3.000, nan, nan],
+                    [nan, 4.000, 4.000, 4.000, nan, nan, nan],
+                    [nan, nan, 5.000, nan, nan, nan, nan],
                 ],
                 dtype=rad.dtype,
             ),
@@ -148,38 +141,34 @@ class RectifyDatasetTest(unittest.TestCase):
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=2)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, dtype=lon.dtype))
         np.testing.assert_almost_equal(
-            lon.values, np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=lon.dtype)
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array([56.0, 55.0, 54.0, 53.0, 52.0, 51.0, 50.0], dtype=lat.dtype),
+            lat.values, np.arange(56, 49.9, -1, dtype=lat.dtype)
         )
         np.testing.assert_almost_equal(
             rad.values,
             np.array(
                 [
-                    [np.nan, 1.000, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.488, 1.410, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 1.994, 1.949, 1.858, 1.722, np.nan, np.nan],
-                    [np.nan, 2.520, 2.506, 2.448, 2.344, 2.195, 2.000],
-                    [3.000, 3.112, 3.163, 3.153, 3.082, np.nan, np.nan],
-                    [np.nan, 4.000, 4.041, 4.020, np.nan, np.nan, np.nan],
-                    [np.nan, np.nan, 5.000, np.nan, np.nan, np.nan, np.nan],
+                    [nan, 1.000, nan, nan, nan, nan, nan],
+                    [nan, 1.488, 1.410, nan, nan, nan, nan],
+                    [nan, 1.994, 1.949, 1.858, 1.722, nan, nan],
+                    [nan, 2.520, 2.506, 2.448, 2.344, 2.195, 2.000],
+                    [3.000, 3.112, 3.163, 3.153, 3.082, nan, nan],
+                    [nan, 4.000, 4.041, 4.020, nan, nan, nan],
+                    [nan, nan, 5.000, nan, nan, nan, nan],
                 ],
                 dtype=rad.dtype,
             ),
             decimal=3,
         )
 
-    def test_rectify_2x2_to_7x7_invalid_interpol(self):
+    def test_rectify_2x2_to_7x7_invalid_spline_order(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
             size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
         )
-
-        with pytest.raises(ValueError, match="invalid interpolation: 'bicubic'"):
+        with self.assertRaises(NotImplementedError):
             rectify_dataset(source_ds, target_gm=target_gm, spline_orders=3)
 
     def test_rectify_2x2_to_7x7_subset(self):
@@ -191,24 +180,21 @@ class RectifyDatasetTest(unittest.TestCase):
 
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
+        np.testing.assert_almost_equal(lon.values, np.arange(2, 8.1, dtype=lon.dtype))
         np.testing.assert_almost_equal(
-            lon.values, np.array([2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype=lon.dtype)
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array([57.0, 56.0, 55.0, 54.0, 53.0, 52.0, 51.0], dtype=lat.dtype),
+            lat.values, np.arange(57, 50.9, -1, dtype=lat.dtype)
         )
         np.testing.assert_almost_equal(
             rad.values,
             np.array(
                 [
-                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [1.0, 1.0, 2.0, np.nan, np.nan, np.nan, np.nan],
-                    [3.0, 1.0, 2.0, 2.0, 2.0, np.nan, np.nan],
-                    [3.0, 4.0, 2.0, np.nan, np.nan, np.nan, np.nan],
-                    [4.0, 4.0, np.nan, np.nan, np.nan, np.nan, np.nan],
+                    [nan, nan, nan, nan, nan, nan, nan],
+                    [nan, nan, nan, nan, nan, nan, nan],
+                    [1.0, nan, nan, nan, nan, nan, nan],
+                    [1.0, 1.0, 2.0, nan, nan, nan, nan],
+                    [3.0, 1.0, 2.0, 2.0, 2.0, nan, nan],
+                    [3.0, 4.0, 2.0, nan, nan, nan, nan],
+                    [4.0, 4.0, nan, nan, nan, nan, nan],
                 ],
                 dtype=rad.dtype,
             ),
@@ -224,34 +210,8 @@ class RectifyDatasetTest(unittest.TestCase):
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (13, 13))
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    56.0,
-                    55.5,
-                    55.0,
-                    54.5,
-                    54.0,
-                    53.5,
-                    53.0,
-                    52.5,
-                    52.0,
-                    51.5,
-                    51.0,
-                    50.5,
-                    50.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(56, 49.9, -0.5, lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_j_axis_up(self):
@@ -268,34 +228,8 @@ class RectifyDatasetTest(unittest.TestCase):
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (13, 13))
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    50.0,
-                    50.5,
-                    51.0,
-                    51.5,
-                    52.0,
-                    52.5,
-                    53.0,
-                    53.5,
-                    54.0,
-                    54.5,
-                    55.0,
-                    55.5,
-                    56.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(50, 56.1, 0.5, lat.dtype))
         np.testing.assert_almost_equal(
             rad.values, self.expected_rad_13x13(rad.dtype)[::-1]
         )
@@ -317,34 +251,8 @@ class RectifyDatasetTest(unittest.TestCase):
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((5, 5, 3), (5, 5, 3))
         )
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    50.0,
-                    50.5,
-                    51.0,
-                    51.5,
-                    52.0,
-                    52.5,
-                    53.0,
-                    53.5,
-                    54.0,
-                    54.5,
-                    55.0,
-                    55.5,
-                    56.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(50, 56.1, 0.5, lat.dtype))
         np.testing.assert_almost_equal(
             rad.values, self.expected_rad_13x13(rad.dtype)[::-1]
         )
@@ -361,35 +269,8 @@ class RectifyDatasetTest(unittest.TestCase):
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((7, 6), (7, 6))
         )
-
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    56.0,
-                    55.5,
-                    55.0,
-                    54.5,
-                    54.0,
-                    53.5,
-                    53.0,
-                    52.5,
-                    52.0,
-                    51.5,
-                    51.0,
-                    50.5,
-                    50.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(56, 49.9, -0.5, lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_dask_5x5(self):
@@ -404,35 +285,8 @@ class RectifyDatasetTest(unittest.TestCase):
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((5, 5, 3), (5, 5, 3))
         )
-
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    56.0,
-                    55.5,
-                    55.0,
-                    54.5,
-                    54.0,
-                    53.5,
-                    53.0,
-                    52.5,
-                    52.0,
-                    51.5,
-                    51.0,
-                    50.5,
-                    50.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(56, 49.9, -0.5, lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_dask_3x13(self):
@@ -451,35 +305,8 @@ class RectifyDatasetTest(unittest.TestCase):
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((13,), (3, 3, 3, 3, 1))
         )
-
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    56.0,
-                    55.5,
-                    55.0,
-                    54.5,
-                    54.0,
-                    53.5,
-                    53.0,
-                    52.5,
-                    52.0,
-                    51.5,
-                    51.0,
-                    50.5,
-                    50.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(56, 49.9, -0.5, lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_dask_13x3(self):
@@ -492,41 +319,13 @@ class RectifyDatasetTest(unittest.TestCase):
             crs=CRS_WGS84,
             tile_size=(13, 3),
         )
-
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
 
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((3, 3, 3, 3, 1), (13,))
         )
-
-        np.testing.assert_almost_equal(
-            lon.values,
-            np.array(
-                [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
-                dtype=lon.dtype,
-            ),
-        )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    56.0,
-                    55.5,
-                    55.0,
-                    54.5,
-                    54.0,
-                    53.5,
-                    53.0,
-                    52.5,
-                    52.0,
-                    51.5,
-                    51.0,
-                    50.5,
-                    50.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
+        np.testing.assert_almost_equal(lat.values, np.arange(56, 49.9, -0.5, lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_antimeridian(self):
@@ -563,27 +362,7 @@ class RectifyDatasetTest(unittest.TestCase):
                 dtype=lon.dtype,
             ),
         )
-        np.testing.assert_almost_equal(
-            lat.values,
-            np.array(
-                [
-                    56.0,
-                    55.5,
-                    55.0,
-                    54.5,
-                    54.0,
-                    53.5,
-                    53.0,
-                    52.5,
-                    52.0,
-                    51.5,
-                    51.0,
-                    50.5,
-                    50.0,
-                ],
-                dtype=lat.dtype,
-            ),
-        )
+        np.testing.assert_almost_equal(lat.values, np.arange(56, 49.9, -0.5, lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_none(self):
@@ -593,25 +372,33 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(13, 13), xy_min=(10.0, 50.0), xy_res=0.5, crs=CRS_WGS84
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
-        self.assertIsNone(target_ds)
+        np.testing.assert_array_equal(
+            np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
+        )
 
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(-10.0, 50.0), xy_res=0.5, crs=CRS_WGS84
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
-        self.assertIsNone(target_ds)
+        np.testing.assert_array_equal(
+            np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
+        )
 
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(0.0, 58.0), xy_res=0.5, crs=CRS_WGS84
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
-        self.assertIsNone(target_ds)
+        np.testing.assert_array_equal(
+            np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
+        )
 
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(0.0, 42.0), xy_res=0.5, crs=CRS_WGS84
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
-        self.assertIsNone(target_ds)
+        np.testing.assert_array_equal(
+            np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
+        )
 
     def _assert_shape_and_dim(
         self, target_ds, size, chunks=None, var_names=("rad",)
@@ -643,187 +430,19 @@ class RectifyDatasetTest(unittest.TestCase):
     def expected_rad_13x13(self, dtype):
         return np.array(
             [
-                [
-                    np.nan,
-                    np.nan,
-                    1.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    np.nan,
-                    1.0,
-                    1.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    np.nan,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    np.nan,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    2.0,
-                    2.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    3.0,
-                    3.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    np.nan,
-                    np.nan,
-                ],
-                [np.nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
-                [
-                    np.nan,
-                    3.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    1.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    3.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    4.0,
-                    4.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    3.0,
-                    3.0,
-                    3.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    2.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    np.nan,
-                    3.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    4.0,
-                    4.0,
-                    4.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
-                [
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    4.0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ],
+                [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                [nan, nan, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan],
+                [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
+                [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
+                [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
+                [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
+                [nan, nan, 3.0, 4.0, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan],
+                [nan, nan, nan, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan, nan],
+                [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
             ],
             dtype=dtype,
         )

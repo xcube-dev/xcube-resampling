@@ -24,6 +24,8 @@ import pyproj
 import pyproj.transformer as pt
 import xarray as xr
 
+from xcube_resampling.constants import FloatInt
+
 from .base import DEFAULT_TOLERANCE, GridMapping
 from .coords import new_grid_mapping_from_coords
 from .helpers import (
@@ -31,7 +33,6 @@ from .helpers import (
     _normalize_crs,
     _normalize_number_pair,
 )
-from xcube_resampling.constants import FloatInt
 
 # Cannot be used, but should, see TODO in transform_grid_mapping()
 #

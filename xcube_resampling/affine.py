@@ -20,32 +20,33 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from typing import Sequence, Iterable
+from collections.abc import Iterable, Sequence
 
+import dask.array as da
 import numpy as np
 import xarray as xr
-import dask.array as da
 from dask_image import ndinterp
 
-from .gridmapping import GridMapping
 from .constants import (
-    AggMethods,
-    AggFunction,
+    LOG,
     AffineTransformMatrix,
-    SplineOrder,
-    SplineOrders,
-    RecoverNans,
+    AggFunction,
+    AggMethods,
     FillValues,
     FloatInt,
+    RecoverNans,
+    SplineOrder,
+    SplineOrders,
 )
+from .gridmapping import GridMapping
 from .utils import (
-    normalize_grid_mapping,
     _can_apply_affine_transform,
     _get_agg_method,
+    _get_fill_value,
     _get_recover_nan,
     _get_spline_order,
-    _get_fill_value,
     _select_variables,
+    normalize_grid_mapping,
 )
 
 
@@ -59,6 +60,47 @@ def affine_transform_dataset(
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
+    """
+    Apply an affine transformation to the spatial dimensions of a dataset,
+    transforming it from the source grid mapping to the target grid mapping.
+
+    Args:
+        source_ds: The input dataset to be transformed.
+        target_gm: The target grid mapping defining the spatial reference and
+            output geometry.
+        source_gm: The grid mapping of the input dataset. If None, it is inferred
+            from the dataset.
+        variables: Optional variable(s) to transform. If None, all variables are used.
+        spline_orders: Optional spline orders to be used for upsampling spatial data
+            variables. Can be a single spline order for all variables or a dictionary
+            mapping variable names or dtypes to spline orders. A spline order is one of:
+                - `0` (nearest neighbor)
+                - `1` (linear / bilinear)
+                - `2` (quadratic)
+                - `3` (cubic)
+            The default is `0` for integer arrays, else `1`.
+        agg_methods: Optional aggregation methods for downsampling spatial variables.
+            Can be a single method for all variables or a dictionary mapping variable
+            names or dtypes to methods. Supported methods include:
+                "center", "count", "first", "last", "max", "mean", "median",
+                "mode", "min", "prod", "std", "sum", and "var".
+            Defaults to "center" for integer arrays, else "mean".
+        recover_nans: Optional boolean or mapping to enable NaN recovery during
+            upsampling (only applies when spline order > 0). Can be a single boolean or
+            a dictionary mapping variable names or dtypes to booleans. Defaults to False.
+        fill_values: Optional fill value(s) for areas outside the input bounds.
+            Can be a single value or a dictionary mapping variable names or dtypes
+            to fill values. If not provided, defaults are:
+                - float: NaN
+                - uint8: 255
+                - uint16: 65535
+                - other integers: -1
+
+    Returns:
+        A new dataset resampled and aligned to the target grid mapping.
+            Data variables without spatial dimensions are copied to the output.
+            Data variables with only one spatial dimension are ignored.
+    """
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -105,6 +147,47 @@ def resample_dataset(
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
+    """
+    Resample a dataset's spatial variables using an affine transformation.
+
+    Applies resampling to 2D or 3D data arrays with spatial dimensions matching
+    `yx_dims`. Variables that do not include the specified spatial dimensions
+    are copied unchanged.
+
+    Args:
+        dataset: The input dataset containing spatial and non-spatial variables.
+        affine_matrix: Affine transformation matrix mapping target to source coordinates.
+        yx_dims: Tuple specifying the names of the spatial dimensions (y, x).
+        target_size: The shape (height, width) of the resampled output in pixels.
+        target_tile_size: Chunk size (height, width) for tiled output arrays.
+        spline_orders: Optional spline order(s) for upsampling spatial variables.
+            Can be a single order or a dictionary mapping variable names or dtypes to:
+                - `0` (nearest neighbor)
+                - `1` (linear / bilinear)
+                - `2` (quadratic)
+                - `3` (cubic)
+            Default is `0` for integer arrays, else `1`.
+        agg_methods: Optional aggregation method(s) for downsampling spatial variables.
+            Can be a single method or a dictionary mapping variable names or dtypes to:
+                "center", "count", "first", "last", "max", "mean", "median",
+                "mode", "min", "prod", "std", "sum", or "var".
+            Default is "center" for integers, else "mean".
+        recover_nans: Optional flag or mapping to enable NaN recovery during upsampling
+            (only applies when spline order > 0). Can be a single boolean or a mapping
+            by variable name or dtype. Defaults to False.
+        fill_values: Optional value(s) to use for regions outside source extent.
+            Can be a single value or a dictionary mapping variable names or dtypes
+            to specific fill values. If not provided, defaults are:
+                - float: NaN
+                - uint8: 255
+                - uint16: 65535
+                - other integers: -1
+
+    Returns:
+        A new dataset with spatial variables resampled to the target
+            geometry. Non-spatial variables are preserved. Variables with only one
+            spatial dimension are excluded.
+    """
     data_vars = dict()
     coords = dict()
     for var_name, data_array in dataset.items():
@@ -234,6 +317,14 @@ def _upscale(
     offset = (array.ndim - 2) * (0,) + (j_off, i_off)
     scale = (array.ndim - 2) * (1,) + (j_scale, i_scale)
     matrix = np.diag(scale)
+    if array.ndim > 2 and spline_order > 1:
+        spline_order = 0 if np.issubdtype(array.dtype, np.integer) else 1
+        LOG.warning(
+            "Spline order > 1 is not supported for 3D arrays in affine transforms, "
+            "as it causes unintended blending across the non-spatial (e.g., time) "
+            "dimension. Falling back to spline_order = %d.",
+            spline_order,
+        )
     kwargs = dict(
         offset=offset,
         order=spline_order,

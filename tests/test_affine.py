@@ -25,13 +25,13 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube_resampling.gridmapping import CRS_CRS84, CRS_WGS84, GridMapping
 from xcube_resampling.affine import affine_transform_dataset
+from xcube_resampling.gridmapping import CRS_CRS84, CRS_WGS84, GridMapping
+
 from .sampledata import create_8x6_dataset_with_regular_coords
 
 
 class AffineTransformDatasetTest(unittest.TestCase):
-
     def setUp(self):
         self.source_ds = create_8x6_dataset_with_regular_coords()
         self.source_gm = GridMapping.from_dataset(self.source_ds)

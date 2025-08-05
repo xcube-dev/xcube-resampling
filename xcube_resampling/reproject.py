@@ -20,34 +20,36 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from typing import Hashable, Iterable
+from collections.abc import Hashable, Iterable
 
 import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 
-from .gridmapping import GridMapping
 from .affine import affine_transform_dataset
 from .constants import (
+    SCALE_LIMIT,
     AggMethods,
+    FillValues,
+    FloatInt,
+    RecoverNans,
     SplineOrder,
     SplineOrders,
-    RecoverNans,
-    FillValues,
-    SCALE_LIMIT,
-    FloatInt,
 )
+from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
     _get_spline_order,
+    _select_variables,
     clip_dataset_by_bbox,
     normalize_grid_mapping,
-    _select_variables,
 )
 
 
-# ToDo: add variables as kwarg, to select for variable to be reprojected, do the same for affine and rectification
+# ToDo: spline-order 1 is triangular, spline-order 2 is bilinear;
+# ToDo: in affine transformation spline-order 1 is bilinear, spline-order 2 is
+# ToDo: quadratic; need some alignment.
 def reproject_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
@@ -57,49 +59,50 @@ def reproject_dataset(
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
-):
+) -> xr.Dataset:
     """
-    Reprojects a dataset to a new coordinate reference system.
+    Reproject a dataset from one coordinate reference system (CRS) to another.
 
-    This function reprojects a dataset (`source_ds`) to a target projection defined
-    by `target_gm`, or inferred from a reference dataset (`ref_ds`) if `target_gm`
-    is not provided.
-
-    The input dataset must have two spatial coordinates. The function also
-    supports 3D data cubes, as long as the non-spatial dimension is the first
-    (e.g., variables shaped like ("time", "y", "x")). Any data variable that does not
-    have two spatial coordinates in the last two dimensions will be excluded from
-    the output.
+    This function transforms a dataset’s 2D spatial variables to match a new CRS and
+    grid layout defined by `target_gm`. It handles interpolation, optional
+    downsampling, and fill values for areas outside the input bounds.
 
     Args:
-        source_ds: The dataset to reproject.
-        target_gm: Target grid mapping.
-        source_gm: Optional. Grid mapping associated with the source dataset.If not
-            given, `source_gm` is derived from `source_ds`.
-        spline_orders: Optional. Interpolation method to use. Must be one of:
-            "nearest", "triangular", or "bilinear". Defaults to "nearest".
-            "triangular" uses 3 adjacent pixels, "bilinear" uses 4. These methods
-            apply only to floating-point data. Convert integer data to float if
-            interpolation is needed.
-        agg_methods: Optional. Aggregation method of down-sampling is involved.
-        recover_nans: Optional. whether a special algorithm
-                    shall be used that is able to recover values that would
-                    otherwise yield NaN during resampling.
-                    Default is False for all variable types since this
-                    may require considerable CPU resources on top.
-        fill_values: Optional. Fill value for areas outside input bounds. If not
-            provided, defaults are chosen based on data type:
+        source_ds: The input dataset to be reprojected.
+        target_gm: The target grid mapping that defines the spatial reference and
+            grid layout in the target CRS.
+        source_gm: Optional source grid mapping of the input dataset. If not
+            provided, it is inferred from the dataset.
+        variables: Optional variable name or list of variable names to reproject.
+            If None, all suitable variables are processed.
+        spline_orders: Optional spline order(s) for interpolation. Can be a single
+            value or a dictionary mapping variable names or data types:
+                - `0` (nearest neighbor)
+                - `1` (linear / bilinear)
+                - `2` (quadratic)
+                - `3` (cubic)
+            Default is `0` for integer types, else `1`.
+        agg_methods: Optional aggregation method(s) for downsampling. Can be a
+            single method or dictionary mapping variable names or data types.
+            Supported values include: "center", "count", "first", "last", "max",
+            "mean", "median", "mode", "min", "prod", "std", "sum", "var".
+            Defaults to "center" for integer arrays, else "mean".
+        recover_nans: Optional boolean or mapping to enable a NaN-recovery algorithm
+            during upsampling (only used if spline_order > 0). Defaults to False.
+        fill_values: Optional fill value(s) to assign outside source coverage.
+            Can be a single value or dictionary by variable or type. If not set,
+            defaults are:
                 - float: NaN
                 - uint8: 255
                 - uint16: 65535
                 - other integers: -1
 
     Returns:
-        The reprojected dataset includes only those variables whose last two
-        dimensions are spatial coordinates. The grid mapping information is
-        stored as a coordinate named `spatial_ref`, which is the default convention
-        in `xarray`.
+        A new dataset with variables reprojected to the target CRS and
+            grid. Variables without 2D spatial dimensions are copied as-is.
+            1D spatial coordinate variables are ignored in the output.
     """
+
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -135,9 +138,10 @@ def reproject_dataset(
 
     # reproject dataset
     x_name, y_name = target_gm.xy_dim_names
+    target_coords = target_gm.to_coords()
     coords = {
-        x_name: target_gm.x_coords,
-        y_name: target_gm.y_coords,
+        x_name: target_coords[x_name],
+        y_name: target_coords[y_name],
         "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
     }
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
@@ -183,7 +187,7 @@ def _reproject_data_array(
     pad_width: tuple[tuple[int]],
     spline_orders: SplineOrders | None = None,
     fill_values: FillValues | None = None,
-):
+) -> xr.DataArray:
     data_array_expanded = False
     if len(data_array.dims) == 2:
         data_array = data_array.expand_dims({"dummy": 1})
@@ -211,7 +215,7 @@ def _reproject_data_array(
     slices_reprojected = []
     # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
     dim0_end = 0
-    for chunk_size in data_array.chunks[0]:
+    for chunk_size in array.chunks[0]:
         dim0_start = dim0_end
         dim0_end = dim0_start + chunk_size
 
@@ -329,7 +333,7 @@ def _downscale_source_dataset(
     spline_orders: SplineOrders | None,
     agg_methods: AggMethods | None,
     recover_nans: RecoverNans,
-):
+) -> (xr.Dataset, GridMapping):
     bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
     xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
     yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height

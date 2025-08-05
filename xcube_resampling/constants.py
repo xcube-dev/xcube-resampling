@@ -19,8 +19,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Callable, Literal, TypeAlias, Hashable, Mapping
 import logging
+from collections.abc import Callable, Hashable, Mapping
+from typing import Literal, TypeAlias
 
 import numpy as np
 

@@ -19,45 +19,45 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Mapping, Callable, Hashable, Sequence, Iterable
+from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 
-import xarray as xr
 import numpy as np
+import xarray as xr
 
 from .constants import (
-    LOG,
     AGG_METHODS,
-    SplineOrder,
-    SplineOrders,
-    RecoverNans,
-    AggMethod,
-    AggMethods,
     FILLVALUE_FLOAT,
+    FILLVALUE_INT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
-    FILLVALUE_INT,
+    LOG,
+    AggMethod,
+    AggMethods,
     FloatInt,
+    RecoverNans,
+    SplineOrder,
+    SplineOrders,
 )
 from .gridmapping import GridMapping
 
 
 def get_spatial_dims(ds: xr.Dataset) -> (str, str):
     """
-    Determine the names of the horizontal spatial dimensions in a xarray dataset.
+    Identify the names of horizontal spatial dimensions in an xarray dataset.
 
-    This function checks for common naming conventions for horizontal spatial
-    dimensions, either ("lon", "lat") or ("x", "y"), and returns them as a tuple.
+    This function checks for standard dimension name pairs used for horizontal
+    spatial referencing: either ("lon", "lat") or ("x", "y"). It returns the
+    detected pair as a tuple in the order (x_dim, y_dim).
 
     Args:
-        ds: An xarray.Dataset whose dimensions will be inspected.
+        ds: The xarray.Dataset to inspect.
 
     Returns:
-        A tuple (x_coord, y_coord) containing the names of the horizontal spatial
-        dimensions. For example, ("lon", "lat") or ("x", "y").
+        A tuple (x_dim, y_dim) containing the names of the horizontal spatial
+        dimensions, e.g., ("lon", "lat") or ("x", "y").
 
     Raises:
-        KeyError: If the dataset does not contain recognizable spatial
-                  dimension names, i.e., ("lon", "lat") or ("x", "y").
+        KeyError: If no recognized spatial dimension pair is found in the dataset.
     """
     if "lat" in ds and "lon" in ds:
         x_coord, y_coord = "lon", "lat"
@@ -74,28 +74,32 @@ def get_spatial_dims(ds: xr.Dataset) -> (str, str):
 def clip_dataset_by_bbox(
     ds: xr.Dataset,
     bbox: Sequence[FloatInt],
-    spatial_dims: tuple[str] | None = None,
+    spatial_dims: tuple[str, str] | None = None,
 ) -> xr.Dataset:
     """
-    Clip a xarray Dataset to a given bounding box.
+    Clip a xarray Dataset to a specified bounding box.
 
-    The function selects a spatial subset of the dataset based on the provided
-    bounding box. It automatically handles datasets with increasing or decreasing
-    y-axis orientation.
+    This function extracts a spatial subset of the dataset based on the given
+    bounding box. It handles both increasing and decreasing orientation of the
+    y-axis automatically to ensure correct spatial clipping.
 
     Args:
-        ds: The input dataset to clip.
-        bbox: Bounding box in the format (min_x, min_y, max_x, max_y).
-        spatial_dims: A sequence of two spatial dimension names in the form
-                      (x_dim, y_dim), e.g. ('lon', 'lat'). If None, these
-                      will be inferred automatically.
+        ds: The input xarray.Dataset to be clipped.
+        bbox: A sequence of four numbers representing the bounding box in the form
+              (min_x, min_y, max_x, max_y).
+        spatial_dims: Optional tuple of two spatial dimension names (x_dim, y_dim),
+              e.g., ('lon', 'lat'). If None, the dimensions are inferred automatically.
 
     Returns:
-        A subset of the original xarray.Dataset clipped to the bounding box.
+        A spatial subset of the input dataset clipped to the bounding box.
 
     Raises:
-        ValueError: If `bbox` is not a 4-element tuple or list.
-        KeyError: If spatial dimensions cannot be found in the dataset.
+        ValueError: If `bbox` does not contain exactly four elements.
+        KeyError: If spatial dimension names cannot be determined from the dataset.
+
+    Notes:
+        If the bounding box does not overlap with the dataset extent, the returned
+        dataset may contain one or more zero-sized dimensions.
     """
     if len(bbox) != 4:
         raise ValueError(f"Expected bbox of length 4, got: {bbox}")
@@ -118,21 +122,21 @@ def clip_dataset_by_bbox(
 
 
 def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
-    """Normalizes the grid mapping in a dataset to use a standard "spatial_ref"
-    coordinate.
+    """
+    Normalize the grid mapping of a dataset to use a standard "spatial_ref" coordinate.
 
-    This function replaces any existing grid mapping references in the dataset with a
-    unified "spatial_ref" coordinate. It updates the "grid_mapping" attribute of all
-    data variables to reference "spatial_ref", removes the original grid mapping
-    variable (if present), and adds a new "spatial_ref" coordinate with CF-compliant
-    CRS attributes.
+    This function standardizes geospatial metadata by replacing any existing grid
+    mapping variable with a unified "spatial_ref" coordinate. It updates the
+    "grid_mapping" attribute of all data variables to reference "spatial_ref",
+    removes the original grid mapping variable (if present), and adds a new
+    "spatial_ref" coordinate with CF-compliant CRS attributes.
 
     Args:
-        ds: A dataset containing geospatial data with grid mapping metadata.
-        gm: grid-mapping associated with dataset *ds*
+        ds: The input xarray.Dataset with geospatial grid mapping metadata.
+        gm: The GridMapping object associated with the dataset.
 
     Returns:
-        A dataset with a standardized "spatial_ref" coordinate used for grid mapping.
+        A new dataset with a standardized "spatial_ref" coordinate for grid mapping.
     """
     gm_name = _get_grid_mapping_name(ds)
     if gm_name is not None:
@@ -155,21 +159,6 @@ def _select_variables(
 
 
 def _get_grid_mapping_name(ds: xr.Dataset) -> str | None:
-    """Extracts the name of the grid mapping variable from an xarray Dataset.
-
-    The function searches through the dataset's data variables for the "grid_mapping"
-    attribute, as well as for commonly used coordinate variables like "crs" and
-    "spatial_ref". It ensures that at most one unique grid mapping name is present.
-
-    Args:
-        ds: A dataset to inspect for grid mapping information.
-
-    Returns:
-        The name of the grid mapping variable if found, otherwise None.
-
-    Raises:
-        AssertionError: If more than one unique grid mapping name is detected.
-    """
     gm_names = []
     for var in ds.data_vars:
         if "grid_mapping" in ds[var].attrs:
@@ -202,9 +191,8 @@ def _get_spline_order(
     key: Hashable,
     var: xr.DataArray,
 ) -> SplineOrder:
-
     def assign_defaults(data_type: np.dtype) -> SplineOrder:
-        return 0 if np.issubdtype(data_type, np.integer) else 3
+        return 0 if np.issubdtype(data_type, np.integer) else 1
 
     if isinstance(spline_orders, Mapping):
         spline_order = spline_orders.get(str(key), spline_orders.get(var.dtype))

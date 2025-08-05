@@ -8,7 +8,7 @@ dynamic = ["version", "readme"]
 authors = [
   {name = "xcube Development Team"},
 ]
-description = "A package resaample, reproject and rectify datasets."
+description = "A package to resample, reproject, and rectify geospatial datasets."
 keywords = [
   "xcube",
   "xarray",

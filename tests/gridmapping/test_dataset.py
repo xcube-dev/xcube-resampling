@@ -1,19 +1,34 @@
-# Copyright (c) 2018-2025 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+# The MIT License (MIT)
+# Copyright (c) 2025 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import os.path
 import unittest
-from test.sampledata import create_s2plus_dataset
 
 import numpy as np
 import pyproj
 import xarray as xr
 
-import xcube.core.new
-from xcube.core.gridmapping import GridMapping
+from xcube_resampling.gridmapping import GridMapping
 
-# noinspection PyProtectedMember
+from ..sampledata import create_s2plus_dataset
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
@@ -21,46 +36,6 @@ NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 # noinspection PyMethodMayBeStatic
 class DatasetGridMappingTest(unittest.TestCase):
-    def test_from_regular_cube(self):
-        dataset = xcube.core.new.new_cube(variables=dict(rad=0.5))
-        gm = GridMapping.from_dataset(dataset)
-        self.assertEqual((360, 180), gm.size)
-        self.assertEqual((360, 180), gm.tile_size)
-        self.assertEqual(GEO_CRS, gm.crs)
-        self.assertEqual((1, 1), gm.xy_res)
-        self.assertEqual(True, gm.is_regular)
-        self.assertEqual(False, gm.is_lon_360)
-        self.assertEqual(True, gm.is_j_axis_up)
-        self.assertEqual((2, 180, 360), gm.xy_coords.shape)
-        self.assertEqual(("coord", "lat", "lon"), gm.xy_coords.dims)
-
-    def test_from_regular_cube_with_crs(self):
-        dataset = xcube.core.new.new_cube(
-            variables=dict(rad=0.5),
-            x_start=0,
-            y_start=0,
-            x_name="x",
-            y_name="y",
-            crs="epsg:25832",
-        )
-        gm1 = GridMapping.from_dataset(dataset)
-        self.assertEqual(pyproj.CRS.from_string("epsg:25832"), gm1.crs)
-        dataset = dataset.drop_vars("crs")
-        gm2 = GridMapping.from_dataset(dataset)
-        self.assertEqual(GEO_CRS, gm2.crs)
-        gm3 = GridMapping.from_dataset(dataset, crs=gm1.crs)
-        self.assertEqual(gm1.crs, gm3.crs)
-        self.assertEqual(("x", "y"), gm3.xy_var_names)
-        self.assertEqual(("x", "y"), gm3.xy_dim_names)
-
-    def test_from_regular_cube_no_chunks_and_chunks(self):
-        dataset = xcube.core.new.new_cube(variables=dict(rad=0.5))
-        gm1 = GridMapping.from_dataset(dataset)
-        self.assertEqual((360, 180), gm1.tile_size)
-        dataset = dataset.chunk(dict(lon=10, lat=20))
-        gm2 = GridMapping.from_dataset(dataset)
-        self.assertEqual((10, 20), gm2.tile_size)
-
     def test_from_non_regular_cube(self):
         lon = np.array(
             [[8, 9.3, 10.6, 11.9], [8, 9.2, 10.4, 11.6], [8, 9.1, 10.2, 11.3]],
@@ -95,9 +70,7 @@ class DatasetGridMappingTest(unittest.TestCase):
             os.path.dirname(__file__),
             "..",
             "..",
-            "..",
             "examples",
-            "notebooks",
             "inputdata",
             "S3-OLCI-L2A.zarr.zip",
         )
@@ -108,10 +81,6 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual((512, 512), gm.tile_size)
         self.assertEqual(GEO_CRS, gm.crs)
         self.assertEqual((0.0025, 0.0025), gm.xy_res)
-        # self.assertAlmostEqual(12.693771178309552, gm.x_min)
-        # self.assertAlmostEqual(20.005413821690446, gm.x_max)
-        # self.assertAlmostEqual(55.19965017830955, gm.y_min)
-        # self.assertAlmostEqual(60.63871982169044, gm.y_max)
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(False, gm.is_lon_360)
         self.assertEqual(False, gm.is_j_axis_up)

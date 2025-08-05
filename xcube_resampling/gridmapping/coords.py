@@ -27,6 +27,9 @@ import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube_resampling.constants import FloatInt
+
+from .assertions import assert_instance, assert_true
 from .base import DEFAULT_TOLERANCE, GridMapping
 from .helpers import (
     _assert_valid_xy_names,
@@ -39,8 +42,6 @@ from .helpers import (
     round_to_fraction,
     to_lon_360,
 )
-from xcube_resampling.constants import FloatInt
-from .assertions import assert_instance, assert_true
 
 _ER = 6371000
 

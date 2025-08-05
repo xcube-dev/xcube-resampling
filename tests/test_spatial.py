@@ -3,75 +3,85 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from test.sampledata import SourceDatasetMixin
 
 import numpy as np
-import pyproj
+import xarray as xr
 
-from xcube.core.gridmapping import CRS_WGS84, GridMapping
-from xcube.core.gridmapping.regular import RegularGridMapping
-from xcube.core.new import new_cube
-from xcube.core.resampling import resample_in_space
+from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
+from xcube_resampling.spatial import resample_in_space
+
+from .sampledata import (
+    create_2x2_dataset_with_irregular_coords,
+    create_4x4_dataset_with_irregular_coords,
+    create_5x5_dataset_regular_utm,
+    create_8x6_dataset_with_regular_coords,
+)
 
 nan = np.nan
 
 
-class ResampleInSpaceTest(SourceDatasetMixin, unittest.TestCase):
+# noinspection PyMethodMayBeStatic
+class ResampleInSpaceTest(unittest.TestCase):
     def test_affine_transform_dataset(self):
-        source_ds = new_cube(variables={"CHL": 10.0, "TSM": 8.5})
+        source_ds = create_8x6_dataset_with_regular_coords()
         source_gm = GridMapping.from_dataset(source_ds)
-        target_gm = GridMapping.regular(
-            size=(8, 4), xy_min=(0, 0), xy_res=2, crs=CRS_WGS84
-        )
-
+        target_gm = GridMapping.regular((3, 3), (50.0, 10.0), 0.1, source_gm.crs)
         target_ds = resample_in_space(
             source_ds,
-            source_gm=source_gm,
-            target_gm=target_gm,
-            encode_cf=True,
-            gm_name="crs",
+            target_gm,
+            spline_orders=1,
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(source_ds.variables).union(["spatial_ref"]),
+            set(target_ds.variables),
+        )
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array(
+                [
+                    [1, 0, 2],
+                    [0, 3, 0],
+                    [4, 0, 1],
+                ]
+            ),
         )
 
-        self.assertIn("crs", target_ds)
-        self.assertEqual(target_gm.crs, pyproj.CRS.from_cf(target_ds.crs.attrs))
-
-        for var_name in ("CHL", "TSM"):
-            self.assertIn(var_name, target_ds)
-            self.assertEqual("crs", target_ds[var_name].attrs.get("grid_mapping"))
-
-        actual_gm = GridMapping.from_dataset(target_ds)
-        self.assertEqual(RegularGridMapping, type(target_gm))
-        self.assertEqual(RegularGridMapping, type(actual_gm))
-        self.assertEqual(actual_gm.crs, target_gm.crs)
-        self.assertEqual(actual_gm.xy_res, target_gm.xy_res)
-        self.assertEqual(actual_gm.xy_bbox, target_gm.xy_bbox)
-        self.assertEqual(actual_gm.xy_dim_names, target_gm.xy_dim_names)
-
-    # noinspection PyMethodMayBeStatic
     def test_rectify_and_downscale_dataset(self):
-        source_ds = self.new_4x4_dataset_with_irregular_coords()
+        source_ds = create_4x4_dataset_with_irregular_coords()
         target_gm = GridMapping.regular(
             size=(2, 2), xy_min=(-1, 51), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
         np.testing.assert_almost_equal(
             target_ds.rad.values,
             np.array(
                 [
-                    [8.0, 4.0],
-                    [13 + 1 / 3, 10 + 1 / 3],
+                    [5, 2],
+                    [14, 8],
+                ],
+                dtype=target_ds.rad.dtype,
+            ),
+        )
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=1)
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [
+                    [7.5, 4.5],
+                    [12.5, 9.5],
                 ],
                 dtype=target_ds.rad.dtype,
             ),
         )
 
-    # noinspection PyMethodMayBeStatic
     def test_rectify_and_upscale_dataset(self):
-        source_ds = self.new_2x2_dataset_with_irregular_coords()
+        source_ds = create_2x2_dataset_with_irregular_coords()
         target_gm = GridMapping.regular(
             size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
         np.testing.assert_almost_equal(
             target_ds.rad.values,
             np.array(
@@ -85,14 +95,14 @@ class ResampleInSpaceTest(SourceDatasetMixin, unittest.TestCase):
             ),
         )
 
-    def test_reproject_utm(self):
-        source_ds = self.new_5x5_dataset_regular_utm()
+    def test_reproject_dataset(self):
+        source_ds = create_5x5_dataset_regular_utm()
 
         # test projected CRS similar resolution
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -112,7 +122,7 @@ class ResampleInSpaceTest(SourceDatasetMixin, unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(4320080, 3382480), xy_res=20, crs="epsg:3035"
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -131,7 +141,7 @@ class ResampleInSpaceTest(SourceDatasetMixin, unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0006, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -151,7 +161,7 @@ class ResampleInSpaceTest(SourceDatasetMixin, unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0003, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(

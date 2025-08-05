@@ -19,39 +19,39 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Iterable, Hashable, Sequence, Mapping
+from collections.abc import Hashable, Iterable, Mapping
 
 import dask.array as da
 import numba as nb
 import numpy as np
-import xarray as xr
 import pyproj
+import xarray as xr
 
-from .gridmapping import GridMapping
+from .affine import resample_dataset
 from .constants import (
+    SCALE_LIMIT,
+    UV_DELTA,
     AggMethods,
-    SplineOrder,
-    SplineOrders,
-    RecoverNans,
     FillValues,
     FloatInt,
-    UV_DELTA,
-    SCALE_LIMIT,
+    RecoverNans,
+    SplineOrder,
+    SplineOrders,
 )
+from .dask import compute_array_from_func
+from .gridmapping import GridMapping
 from .utils import (
-    normalize_grid_mapping,
-    _is_equal_crs,
     _get_fill_value,
     _get_spline_order,
+    _is_equal_crs,
     _select_variables,
+    normalize_grid_mapping,
 )
-from .affine import resample_dataset
-from .dask import compute_array_from_func
 
 
-# ToDo: spline-order 1 is triangular, spline-order 2 is bilinear; in affine transformation
-# ToDo: spline-order 1 is bilinear, spline-order 2 is quadratic; Should be we maybe aligne this? -> adjust also reproject
-# ToDo: assess which of the parameters are needed from the original function in xcube.
+# ToDo: spline-order 1 is triangular, spline-order 2 is bilinear;
+# ToDo: in affine transformation spline-order 1 is bilinear, spline-order 2 is
+# ToDo: quadratic; need some alignment.
 def rectify_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping | None = None,
@@ -63,6 +63,50 @@ def rectify_dataset(
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
+    """
+    Rectify a dataset with non-regular grid to a regular grid defined by a target
+    grid mapping.
+
+    This function transforms spatial coordinates to a regular grid while preserving
+    data values. It optionally downsamples high-resolution inputs prior to rectifying.
+
+    Args:
+        source_ds: The source dataset with 2D spatial coordinate variables.
+        target_gm: Optional target grid mapping defining the output regular grid.
+            If not provided, one is derived from the source grid mapping.
+        source_gm: Optional grid mapping of the source dataset. If not given, it is
+            inferred from the dataset.
+        variables: Optional variable(s) to rectify. If None, all eligible variables
+            are processed.
+        spline_orders: Optional spline order(s) for interpolating variables.
+            Can be a single value or a mapping by variable name or data type:
+                - `0` (nearest neighbor)
+                - `1` (linear / bilinear)
+                - `2` (quadratic)
+                - `3` (cubic)
+            Default is `0` for integer data, else `1`.
+        agg_methods: Optional aggregation method(s) for downsampling spatial variables.
+            Can be a string or a dictionary by variable or type. Supported values:
+                "center", "count", "first", "last", "max", "mean", "median", "mode",
+                "min", "prod", "std", "sum", or "var".
+            Default is "center" for integers, else "mean".
+        recover_nans: Optional boolean or mapping to enable NaN recovery during
+            upsampling (only if spline order > 0). Default is False.
+        fill_values: Optional fill value(s) for areas outside input coverage.
+            Can be a single value or dictionary by variable or type. If not provided,
+            defaults based on data type are used:
+                - float: NaN
+                - uint8: 255
+                - uint16: 65535
+                - other ints: -1
+        tile_size: Optional tile size for inferring a regular grid, if `target_gm` is
+            not provided.
+
+    Returns:
+        A new dataset with spatial variables rectified to a regular grid.
+            Variables not having 2D spatial dimensions are copied as-is. 1D spatial
+            coordinate variables are ignored in the output.
+    """
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -94,9 +138,10 @@ def rectify_dataset(
 
     # rectify dataset
     x_name, y_name = target_gm.xy_dim_names
+    target_coords = target_gm.to_coords()
     coords = {
-        x_name: target_gm.x_coords,
-        y_name: target_gm.y_coords,
+        x_name: target_coords[x_name],
+        y_name: target_coords[y_name],
         "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
     }
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
@@ -176,16 +221,18 @@ def _downscale_source_dataset(
     spline_orders: int | Mapping[np.dtype | str, int] | None,
     agg_methods: AggMethods | None,
     recover_nans: RecoverNans,
-):
+) -> (xr.Dataset, GridMapping):
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
+        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
+        downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
         source_ds = resample_dataset(
             source_ds,
             ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),
-            source_gm.xy_dim_names,
-            target_gm.size,
-            target_gm.tile_size,
+            (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
+            downscaled_size,
+            source_gm.tile_size,
             spline_orders,
             agg_methods,
             recover_nans,
@@ -229,7 +276,7 @@ def _rectify_data_array(
         )
         slices_rectified.append(data_rectified)
     array_rectified = da.concatenate(slices_rectified, axis=0)
-    if is_numpy_array:
+    if is_numpy_array and not target_gm.is_tiled:
         array_rectified = array_rectified.compute()
     if data_array_expanded:
         array_rectified = array_rectified[0, :, :]
