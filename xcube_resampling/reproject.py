@@ -319,7 +319,7 @@ def _reproject_block(
         data_reprojected = value_u0 + diff_iy * (value_u1 - value_u0)
     else:
         # cubic
-        # TODO need to be implemented
+        # ToDo need to be implemented
         raise NotImplementedError()
 
     return data_reprojected

@@ -25,7 +25,7 @@ import unittest
 import numpy as np
 import pyproj
 import xarray as xr
-from xcube.core.gridmapping.cfconv import (
+from xcube_resampling.gridmapping.cfconv import (
     GridCoords,
     GridMappingProxy,
     get_dataset_grid_mapping_proxies,
