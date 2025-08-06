@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools >= 61.2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xcube-resampling"
+dynamic = ["version", "readme"]
+authors = [
+  {name = "xcube Development Team"},
+]
+description = "A package to resample, reproject, and rectify geospatial datasets."
+keywords = [
+  "xcube",
+  "xarray",
+  "dask",
+  "reprojection",
+  "rectification",
+  "affine transformation",
+  "parallel processing",
+]
+license = {text = "MIT"}
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Typing :: Typed",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+]
+
+requires-python = ">=3.10"
+
+dependencies = [
+  "affine>=2.2",
+  "dask>=2021.6",
+  "dask-image>=0.6",
+  "deprecated>=1.2",
+  "numba>=0.52",
+  "numpy>=1.16",
+  "pyproj>=3.0",
+  "xarray>=2024.7",
+  "zarr>=2.11,<3"
+]
+
+[project.optional-dependencies]
+dev = [
+  # Build tools
+  "build",
+  "hatch",
+  "twine",
+  # Code Style / QA
+  "black",
+  "isort",
+  "ruff",
+  # Testing
+  "pytest",
+  "pytest-cov",
+  # Notebooks / Visualisation
+  "jupyterlab",
+  "matplotlib",
+]
+doc = [
+  "mkdocs",
+  "mkdocs-autorefs",
+  "mkdocs-material",
+  "mkdocstrings",
+  "mkdocstrings-python"
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "xcube_resampling.__version__"}
+readme = {file = "README.md", content-type = "text/markdown"}
+
+[tool.setuptools.packages.find]
+exclude = [
+  "tests",
+  "docs"
+]
+
+[tool.flake8]
+max-line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+# There is a problem with ruff when linting imports
+exclude = ["**/*.ipynb"]
+
+[project.urls]
+Documentation = "https://github.com/xcube-dev/xcube-resampling"
+Repository = "https://github.com/xcube-dev/xcube-resampling"
+Changelog = "https://github.com/xcube-dev/xcube-resampling/blob/main/CHANGES.md"
+Issues = "https://github.com/xcube-dev/xcube-resampling/issues"

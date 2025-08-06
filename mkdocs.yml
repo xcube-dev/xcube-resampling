@@ -1,0 +1,61 @@
+site_name: xcube-resampling
+repo_url: https://github.com/xcube-dev/xcube-resampling
+repo_name: xcube-dev/xcube-resampling
+
+copyright: Copyright &copy; 2025 Brockmann Consult
+
+nav:
+  - Overview: index.md
+  - Getting Started: start.md
+  - User Guide: guide.md
+  - Python API: api.md
+  - About: about.md
+
+theme:
+  name: material
+  # logo: assets/logo.png
+  # favicon: assets/logo-small.png
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: blue grey
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: blue grey
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/xcube-dev/xcube-resampling
+    #- icon: fontawesome/brands/python
+    #  link: https://pypi.org/project/xcube-resampling/
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_toc_entry: true
+            show_root_heading: true
+            show_source: true
+            heading_level: 2
+            annotations_path: brief
+            members_order: source

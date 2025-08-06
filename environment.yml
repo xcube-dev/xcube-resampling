@@ -1,18 +1,24 @@
 name: xcube-resampling
 channels:
   - conda-forge
-  - defaults
 dependencies:
   # Python
   - python >=3.8
   # Required
+  - affine >=2.2
   - dask >=2021.6
   - dask-image >=0.6
   - deprecated >=1.2
   - numba >=0.52
   - numpy >=1.16
   - pyproj >=3.0
+  - xarray >=2024.7
+  - zarr >=2.11,<3  # until we can ensure zarr 3 compatibility
   # Testing
   - flake8 >=3.7
   - pytest >=4.4
   - pytest-cov >=2.6
+  # Development Dependencies - Demos
+  - jupyterlab
+  - matplotlib
+
