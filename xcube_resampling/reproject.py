@@ -34,28 +34,26 @@ from .constants import (
     FillValues,
     FloatInt,
     RecoverNans,
-    SplineOrder,
-    SplineOrders,
+    InterpMethods,
+    InterpMethod,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_spline_order,
+    _get_interp_method,
+    _prep_interp_methods_downscale,
     _select_variables,
     clip_dataset_by_bbox,
     normalize_grid_mapping,
 )
 
 
-# ToDo: spline-order 1 is triangular, spline-order 2 is bilinear;
-# ToDo: in affine transformation spline-order 1 is bilinear, spline-order 2 is
-# ToDo: quadratic; need some alignment.
 def reproject_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
@@ -75,20 +73,26 @@ def reproject_dataset(
             provided, it is inferred from the dataset.
         variables: Optional variable name or list of variable names to reproject.
             If None, all suitable variables are processed.
-        spline_orders: Optional spline order(s) for interpolation. Can be a single
-            value or a dictionary mapping variable names or data types:
+        interp_methods: Optional interpolation method to be used for upsampling spatial
+            data variables. Can be a single interpolation method for all variables or a
+            dictionary mapping variable names or dtypes to interpolation method.
+            Supported methods include:
                 - `0` (nearest neighbor)
                 - `1` (linear / bilinear)
-                - `2` (quadratic)
-                - `3` (cubic)
-            Default is `0` for integer types, else `1`.
-        agg_methods: Optional aggregation method(s) for downsampling. Can be a
-            single method or dictionary mapping variable names or data types.
-            Supported values include: "center", "count", "first", "last", "max",
-            "mean", "median", "mode", "min", "prod", "std", "sum", "var".
+                - `"nearest"`
+                - `"triangular"`
+                - `"bilinear"`
+            The default is `0` for integer arrays, else `1`.
+        agg_methods: Optional aggregation methods for downsampling spatial variables.
+            Can be a single method for all variables or a dictionary mapping variable
+            names or dtypes to methods. Supported methods include:
+                "center", "count", "first", "last", "max", "mean", "median",
+                "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
-        recover_nans: Optional boolean or mapping to enable a NaN-recovery algorithm
-            during upsampling (only used if spline_order > 0). Defaults to False.
+        recover_nans: Optional boolean or mapping to enable NaN recovery during
+            upsampling (only applies when interpolation method is not nearest).
+            Can be a single boolean or a dictionary mapping variable names or dtypes
+            to booleans. Defaults to False.
         fill_values: Optional fill value(s) to assign outside source coverage.
             Can be a single value or dictionary by variable or type. If not set,
             defaults are:
@@ -119,7 +123,7 @@ def reproject_dataset(
         source_gm,
         target_gm,
         transformer,
-        spline_orders,
+        interp_methods,
         agg_methods,
         recover_nans,
     )
@@ -165,7 +169,7 @@ def reproject_dataset(
                 y_coords,
                 scr_ij_bboxes,
                 pad_width,
-                spline_orders,
+                interp_methods,
                 fill_values,
             )
         elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
@@ -185,7 +189,7 @@ def _reproject_data_array(
     y_coords: da.Array,
     scr_ij_bboxes: np.ndarray,
     pad_width: tuple[tuple[int]],
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     fill_values: FillValues | None = None,
 ) -> xr.DataArray:
     data_array_expanded = False
@@ -203,7 +207,9 @@ def _reproject_data_array(
     # reorganize data array slice to align with the
     # chunks of source_xx and source_yy
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    spline_order = _get_spline_order(spline_orders, var_name, data_array)
+    interp_method = _get_interp_method(
+        interp_methods, var_name, data_array, return_str=True
+    )
     scr_data = _reorganize_data_array_slice(
         array,
         x_coords,
@@ -234,7 +240,7 @@ def _reproject_data_array(
             ),
             scr_x_res=source_gm.x_res,
             scr_y_res=source_gm.y_res,
-            spline_order=spline_order,
+            interp_method=interp_method,
         )
         data_reprojected = data_reprojected[:, : target_gm.height, : target_gm.width]
         slices_reprojected.append(data_reprojected)
@@ -261,18 +267,16 @@ def _reproject_block(
     y_coord: np.ndarray,
     scr_x_res: int | float,
     scr_y_res: int | float,
-    spline_order: SplineOrder,
+    interp_method: InterpMethod,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / scr_x_res
     iy = (source_yy - y_coord[0]) / -scr_y_res
 
-    if spline_order == 0:
-        # nearest
+    if interp_method == "nearest":
         ix = np.rint(ix).astype(np.int16)
         iy = np.rint(iy).astype(np.int16)
         data_reprojected = scr_data[:, iy, ix]
-    elif spline_order == 1:
-        # triangular
+    elif interp_method == "triangular":
         ix_ceil = np.ceil(ix).astype(np.int16)
         ix_floor = np.floor(ix).astype(np.int16)
         iy_ceil = np.ceil(iy).astype(np.int16)
@@ -302,8 +306,7 @@ def _reproject_block(
             + (1.0 - diff_ix[~mask_3d]) * (value_10[~mask_3d] - value_11[~mask_3d])
             + (1.0 - diff_iy[~mask_3d]) * (value_01[~mask_3d] - value_11[~mask_3d])
         )
-    elif spline_order == 2:
-        # bilinear
+    elif interp_method == "bilinear":
         ix_ceil = np.ceil(ix).astype(np.int16)
         ix_floor = np.floor(ix).astype(np.int16)
         iy_ceil = np.ceil(iy).astype(np.int16)
@@ -318,9 +321,9 @@ def _reproject_block(
         value_u1 = value_10 + diff_ix * (value_11 - value_10)
         data_reprojected = value_u0 + diff_iy * (value_u1 - value_u0)
     else:
-        # cubic
-        # ToDo need to be implemented
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular'. "
+        )
 
     return data_reprojected
 
@@ -330,7 +333,7 @@ def _downscale_source_dataset(
     source_gm: GridMapping,
     target_gm: GridMapping,
     transformer: pyproj.Transformer,
-    spline_orders: SplineOrders | None,
+    interp_methods: InterpMethods | None,
     agg_methods: AggMethods | None,
     recover_nans: RecoverNans,
 ) -> (xr.Dataset, GridMapping):
@@ -363,7 +366,7 @@ def _downscale_source_dataset(
             source_ds,
             downscale_target_gm,
             source_gm=source_gm,
-            spline_orders=spline_orders,
+            interp_methods=_prep_interp_methods_downscale(interp_methods),
             agg_methods=agg_methods,
             recover_nans=recover_nans,
         )

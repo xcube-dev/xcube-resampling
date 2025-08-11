@@ -63,8 +63,9 @@ AGG_METHODS: dict[AggMethod, AggFunction] = {
     "sum": np.nansum,
     "var": var,
 }
-SplineOrder: TypeAlias = Literal[0, 1, 2, 3]
-SplineOrders: TypeAlias = SplineOrder | Mapping[np.dtype | Hashable, SplineOrder]
+InterpMethod: TypeAlias = Literal[0, 1, "nearest", "triangular", "bilinear"]
+InterpMethods: TypeAlias = InterpMethod | Mapping[np.dtype | Hashable, InterpMethod]
+INTERP_METHOD_MAPPING = {0: "nearest", 1: "bilinear", "nearest": 0, "bilinear": 1}
 RecoverNans: TypeAlias = bool | Mapping[np.dtype | str, bool]
 FillValues: TypeAlias = FloatInt | Mapping[np.dtype | str, FloatInt]
 

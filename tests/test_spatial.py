@@ -29,7 +29,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_ds = resample_in_space(
             source_ds,
             target_gm,
-            spline_orders=1,
+            interp_methods=1,
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -53,7 +53,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(2, 2), xy_min=(-1, 51), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
             target_ds.rad.values,
             np.array(
@@ -64,7 +64,7 @@ class ResampleInSpaceTest(unittest.TestCase):
                 dtype=target_ds.rad.dtype,
             ),
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=1)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=1)
         np.testing.assert_almost_equal(
             target_ds.rad.values,
             np.array(
@@ -81,7 +81,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
             target_ds.rad.values,
             np.array(
@@ -102,7 +102,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -122,7 +122,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(4320080, 3382480), xy_res=20, crs="epsg:3035"
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -141,7 +141,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0006, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
@@ -161,7 +161,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0003, crs=CRS_WGS84
         )
-        target_ds = resample_in_space(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
