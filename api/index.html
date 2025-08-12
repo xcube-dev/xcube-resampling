@@ -518,7 +518,7 @@
 
 
 <h2 id="xcube_resampling.spatial.resample_in_space" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spline_orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -615,17 +615,23 @@ resampled. If None, all data variables will be processed.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>spline_orders</code>
+                <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.SplineOrders">SplineOrders</span> | None</code>
+                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Spline orders used for upsampling spatial data variables.
-Can be a single spline order (0=nearest, 1=linear, 2=bilinear, 3=cubic),
-or a dictionary mapping variable names or data dtypes to spline orders.
-Defaults to 3 for floating-point data and 0 for integers.</p>
+                <p>Optional interpolation method to be used for upsampling spatial
+data variables. Can be a single interpolation method for all variables or a
+dictionary mapping variable names or dtypes to interpolation method.
+Supported methods include:
+    - <code>0</code> (nearest neighbor)
+    - <code>1</code> (linear / bilinear)
+    - <code>"nearest"</code>
+    - <code>"triangular"</code>
+    - <code>"bilinear"</code>
+The default is <code>0</code> for integer arrays, else <code>1</code>.</p>
               </div>
             </td>
             <td>
@@ -641,10 +647,12 @@ Defaults to 3 for floating-point data and 0 for integers.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Aggregation methods for downsampling spatial data variables.
-Can be a single method (e.g., <code>np.mean</code>) or a dictionary mapping variable
-names or dtypes to aggregation methods. These are passed to
-<code>dask.array.coarsen</code>.</p>
+                <p>Optional aggregation methods for downsampling spatial variables.
+Can be a single method for all variables or a dictionary mapping variable
+names or dtypes to methods. Supported methods include:
+    "center", "count", "first", "last", "max", "mean", "median",
+    "mode", "min", "prod", "std", "sum", and "var".
+Defaults to "center" for integer arrays, else "mean".</p>
               </div>
             </td>
             <td>
@@ -660,10 +668,10 @@ names or dtypes to aggregation methods. These are passed to
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Whether to apply a special algorithm to recover values that
-would otherwise become NaN during resampling. This can be a single boolean
-or a dictionary mapping variable names or dtypes to booleans. Defaults to
-False.</p>
+                <p>Optional boolean or mapping to enable NaN recovery during
+upsampling (only applies when interpolation method is not nearest).
+Can be a single boolean or a dictionary mapping variable names or dtypes
+to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -679,7 +687,13 @@ False.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Fill values to use for areas where data is unavailable.</p>
+                <p>Optional fill value(s) for areas outside input coverage.
+Can be a single value or dictionary by variable or type. If not provided,
+defaults based on data type are used:
+    - float: NaN
+    - uint8: 255
+    - uint16: 65535
+    - other ints: -1</p>
               </div>
             </td>
             <td>
@@ -860,12 +874,26 @@ mapping.</p>
 <span class="normal">147</span>
 <span class="normal">148</span>
 <span class="normal">149</span>
-<span class="normal">150</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resample_in_space</span><span class="p">(</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resample_in_space</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">source_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">spline_orders</span><span class="p">:</span> <span class="n">SplineOrders</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">interp_methods</span><span class="p">:</span> <span class="n">InterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">AggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -890,19 +918,33 @@ mapping.</p>
 <span class="sd">            `GridMapping.from_dataset(source_ds)`.</span>
 <span class="sd">        variables: A single variable name or iterable of variable names to be</span>
 <span class="sd">            resampled. If None, all data variables will be processed.</span>
-<span class="sd">        spline_orders: Spline orders used for upsampling spatial data variables.</span>
-<span class="sd">            Can be a single spline order (0=nearest, 1=linear, 2=bilinear, 3=cubic),</span>
-<span class="sd">            or a dictionary mapping variable names or data dtypes to spline orders.</span>
-<span class="sd">            Defaults to 3 for floating-point data and 0 for integers.</span>
-<span class="sd">        agg_methods: Aggregation methods for downsampling spatial data variables.</span>
-<span class="sd">            Can be a single method (e.g., `np.mean`) or a dictionary mapping variable</span>
-<span class="sd">            names or dtypes to aggregation methods. These are passed to</span>
-<span class="sd">            `dask.array.coarsen`.</span>
-<span class="sd">        recover_nans: Whether to apply a special algorithm to recover values that</span>
-<span class="sd">            would otherwise become NaN during resampling. This can be a single boolean</span>
-<span class="sd">            or a dictionary mapping variable names or dtypes to booleans. Defaults to</span>
-<span class="sd">            False.</span>
-<span class="sd">        fill_values: Fill values to use for areas where data is unavailable.</span>
+<span class="sd">        interp_methods: Optional interpolation method to be used for upsampling spatial</span>
+<span class="sd">            data variables. Can be a single interpolation method for all variables or a</span>
+<span class="sd">            dictionary mapping variable names or dtypes to interpolation method.</span>
+<span class="sd">            Supported methods include:</span>
+<span class="sd">                - `0` (nearest neighbor)</span>
+<span class="sd">                - `1` (linear / bilinear)</span>
+<span class="sd">                - `&quot;nearest&quot;`</span>
+<span class="sd">                - `&quot;triangular&quot;`</span>
+<span class="sd">                - `&quot;bilinear&quot;`</span>
+<span class="sd">            The default is `0` for integer arrays, else `1`.</span>
+<span class="sd">        agg_methods: Optional aggregation methods for downsampling spatial variables.</span>
+<span class="sd">            Can be a single method for all variables or a dictionary mapping variable</span>
+<span class="sd">            names or dtypes to methods. Supported methods include:</span>
+<span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
+<span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
+<span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
+<span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
+<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
+<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
+<span class="sd">            to booleans. Defaults to False.</span>
+<span class="sd">        fill_values: Optional fill value(s) for areas outside input coverage.</span>
+<span class="sd">            Can be a single value or dictionary by variable or type. If not provided,</span>
+<span class="sd">            defaults based on data type are used:</span>
+<span class="sd">                - float: NaN</span>
+<span class="sd">                - uint8: 255</span>
+<span class="sd">                - uint16: 65535</span>
+<span class="sd">                - other ints: -1</span>
 <span class="sd">        tile_size: Optional tile size used when generating a regular grid from</span>
 <span class="sd">            an irregular source grid mapping. Only used if `target_gm` is not provided.</span>
 
@@ -932,7 +974,7 @@ mapping.</p>
             <span class="n">target_gm</span><span class="o">=</span><span class="n">target_gm</span><span class="p">,</span>
             <span class="n">source_gm</span><span class="o">=</span><span class="n">source_gm</span><span class="p">,</span>
             <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>
-            <span class="n">spline_orders</span><span class="o">=</span><span class="n">spline_orders</span><span class="p">,</span>
+            <span class="n">interp_methods</span><span class="o">=</span><span class="n">interp_methods</span><span class="p">,</span>
             <span class="n">agg_methods</span><span class="o">=</span><span class="n">agg_methods</span><span class="p">,</span>
             <span class="n">recover_nans</span><span class="o">=</span><span class="n">recover_nans</span><span class="p">,</span>
             <span class="n">fill_values</span><span class="o">=</span><span class="n">fill_values</span><span class="p">,</span>
@@ -955,7 +997,7 @@ mapping.</p>
                 <span class="n">target_gm</span><span class="p">,</span>
                 <span class="n">source_gm</span><span class="o">=</span><span class="n">source_gm</span><span class="p">,</span>
                 <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>
-                <span class="n">spline_orders</span><span class="o">=</span><span class="n">spline_orders</span><span class="p">,</span>
+                <span class="n">interp_methods</span><span class="o">=</span><span class="n">interp_methods</span><span class="p">,</span>
                 <span class="n">agg_methods</span><span class="o">=</span><span class="n">agg_methods</span><span class="p">,</span>
                 <span class="n">recover_nans</span><span class="o">=</span><span class="n">recover_nans</span><span class="p">,</span>
                 <span class="n">fill_values</span><span class="o">=</span><span class="n">fill_values</span><span class="p">,</span>
@@ -966,7 +1008,7 @@ mapping.</p>
                 <span class="n">target_gm</span><span class="p">,</span>
                 <span class="n">source_gm</span><span class="o">=</span><span class="n">source_gm</span><span class="p">,</span>
                 <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>
-                <span class="n">spline_orders</span><span class="o">=</span><span class="n">spline_orders</span><span class="p">,</span>
+                <span class="n">interp_methods</span><span class="o">=</span><span class="n">interp_methods</span><span class="p">,</span>
                 <span class="n">agg_methods</span><span class="o">=</span><span class="n">agg_methods</span><span class="p">,</span>
                 <span class="n">recover_nans</span><span class="o">=</span><span class="n">recover_nans</span><span class="p">,</span>
                 <span class="n">fill_values</span><span class="o">=</span><span class="n">fill_values</span><span class="p">,</span>
@@ -981,7 +1023,7 @@ mapping.</p>
 
 
 <h2 id="xcube_resampling.affine.affine_transform_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">affine_transform_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spline_orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">affine_transform_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1071,20 +1113,21 @@ from the dataset.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>spline_orders</code>
+                <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.SplineOrders">SplineOrders</span> | None</code>
+                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional spline orders to be used for upsampling spatial data
-variables. Can be a single spline order for all variables or a dictionary
-mapping variable names or dtypes to spline orders. A spline order is one of:
+                <p>Optional interpolation method to be used for upsampling spatial
+data variables. Can be a single interpolation method for all variables or a
+dictionary mapping variable names or dtypes to interpolation method.
+Supported methods include:
     - <code>0</code> (nearest neighbor)
     - <code>1</code> (linear / bilinear)
-    - <code>2</code> (quadratic)
-    - <code>3</code> (cubic)
+    - <code>"nearest"</code>
+    - <code>"bilinear"</code>
 The default is <code>0</code> for integer arrays, else <code>1</code>.</p>
               </div>
             </td>
@@ -1123,8 +1166,9 @@ Defaults to "center" for integer arrays, else "mean".</p>
             <td>
               <div class="doc-md-description">
                 <p>Optional boolean or mapping to enable NaN recovery during
-upsampling (only applies when spline order &gt; 0). Can be a single boolean or
-a dictionary mapping variable names or dtypes to booleans. Defaults to False.</p>
+upsampling (only applies when interpolation method is not nearest).
+Can be a single boolean or a dictionary mapping variable names or dtypes
+to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -1184,7 +1228,8 @@ Data variables with only one spatial dimension are ignored.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/affine.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 53</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 52</span>
+<span class="normal"> 53</span>
 <span class="normal"> 54</span>
 <span class="normal"> 55</span>
 <span class="normal"> 56</span>
@@ -1267,12 +1312,13 @@ Data variables with only one spatial dimension are ignored.</p>
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span>
-<span class="normal">136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">affine_transform_dataset</span><span class="p">(</span>
+<span class="normal">136</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">affine_transform_dataset</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">,</span>
     <span class="n">source_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">spline_orders</span><span class="p">:</span> <span class="n">SplineOrders</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">interp_methods</span><span class="p">:</span> <span class="n">InterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">AggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1288,13 +1334,14 @@ Data variables with only one spatial dimension are ignored.</p>
 <span class="sd">        source_gm: The grid mapping of the input dataset. If None, it is inferred</span>
 <span class="sd">            from the dataset.</span>
 <span class="sd">        variables: Optional variable(s) to transform. If None, all variables are used.</span>
-<span class="sd">        spline_orders: Optional spline orders to be used for upsampling spatial data</span>
-<span class="sd">            variables. Can be a single spline order for all variables or a dictionary</span>
-<span class="sd">            mapping variable names or dtypes to spline orders. A spline order is one of:</span>
+<span class="sd">        interp_methods: Optional interpolation method to be used for upsampling spatial</span>
+<span class="sd">            data variables. Can be a single interpolation method for all variables or a</span>
+<span class="sd">            dictionary mapping variable names or dtypes to interpolation method.</span>
+<span class="sd">            Supported methods include:</span>
 <span class="sd">                - `0` (nearest neighbor)</span>
 <span class="sd">                - `1` (linear / bilinear)</span>
-<span class="sd">                - `2` (quadratic)</span>
-<span class="sd">                - `3` (cubic)</span>
+<span class="sd">                - `&quot;nearest&quot;`</span>
+<span class="sd">                - `&quot;bilinear&quot;`</span>
 <span class="sd">            The default is `0` for integer arrays, else `1`.</span>
 <span class="sd">        agg_methods: Optional aggregation methods for downsampling spatial variables.</span>
 <span class="sd">            Can be a single method for all variables or a dictionary mapping variable</span>
@@ -1303,8 +1350,9 @@ Data variables with only one spatial dimension are ignored.</p>
 <span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
 <span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
 <span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
-<span class="sd">            upsampling (only applies when spline order &gt; 0). Can be a single boolean or</span>
-<span class="sd">            a dictionary mapping variable names or dtypes to booleans. Defaults to False.</span>
+<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
+<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
+<span class="sd">            to booleans. Defaults to False.</span>
 <span class="sd">        fill_values: Optional fill value(s) for areas outside the input bounds.</span>
 <span class="sd">            Can be a single value or a dictionary mapping variable names or dtypes</span>
 <span class="sd">            to fill values. If not provided, defaults are:</span>
@@ -1335,7 +1383,7 @@ Data variables with only one spatial dimension are ignored.</p>
         <span class="p">(</span><span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
         <span class="n">target_gm</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
         <span class="n">target_gm</span><span class="o">.</span><span class="n">tile_size</span><span class="p">,</span>
-        <span class="n">spline_orders</span><span class="p">,</span>
+        <span class="n">interp_methods</span><span class="p">,</span>
         <span class="n">agg_methods</span><span class="p">,</span>
         <span class="n">recover_nans</span><span class="p">,</span>
         <span class="n">fill_values</span><span class="p">,</span>
@@ -1361,7 +1409,7 @@ Data variables with only one spatial dimension are ignored.</p>
 
 
 <h2 id="xcube_resampling.reproject.reproject_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">reproject</span><span class="o">.</span><span class="n">reproject_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spline_orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">reproject</span><span class="o">.</span><span class="n">reproject_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1454,20 +1502,23 @@ If None, all suitable variables are processed.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>spline_orders</code>
+                <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.SplineOrders">SplineOrders</span> | None</code>
+                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional spline order(s) for interpolation. Can be a single
-value or a dictionary mapping variable names or data types:
+                <p>Optional interpolation method to be used for upsampling spatial
+data variables. Can be a single interpolation method for all variables or a
+dictionary mapping variable names or dtypes to interpolation method.
+Supported methods include:
     - <code>0</code> (nearest neighbor)
     - <code>1</code> (linear / bilinear)
-    - <code>2</code> (quadratic)
-    - <code>3</code> (cubic)
-Default is <code>0</code> for integer types, else <code>1</code>.</p>
+    - <code>"nearest"</code>
+    - <code>"triangular"</code>
+    - <code>"bilinear"</code>
+The default is <code>0</code> for integer arrays, else <code>1</code>.</p>
               </div>
             </td>
             <td>
@@ -1483,10 +1534,11 @@ Default is <code>0</code> for integer types, else <code>1</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional aggregation method(s) for downsampling. Can be a
-single method or dictionary mapping variable names or data types.
-Supported values include: "center", "count", "first", "last", "max",
-"mean", "median", "mode", "min", "prod", "std", "sum", "var".
+                <p>Optional aggregation methods for downsampling spatial variables.
+Can be a single method for all variables or a dictionary mapping variable
+names or dtypes to methods. Supported methods include:
+    "center", "count", "first", "last", "max", "mean", "median",
+    "mode", "min", "prod", "std", "sum", and "var".
 Defaults to "center" for integer arrays, else "mean".</p>
               </div>
             </td>
@@ -1503,8 +1555,10 @@ Defaults to "center" for integer arrays, else "mean".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional boolean or mapping to enable a NaN-recovery algorithm
-during upsampling (only used if spline_order &gt; 0). Defaults to False.</p>
+                <p>Optional boolean or mapping to enable NaN recovery during
+upsampling (only applies when interpolation method is not nearest).
+Can be a single boolean or a dictionary mapping variable names or dtypes
+to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -1564,6 +1618,497 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/reproject.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_dataset</span><span class="p">(</span>
+    <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">,</span>
+    <span class="n">source_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">interp_methods</span><span class="p">:</span> <span class="n">InterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">agg_methods</span><span class="p">:</span> <span class="n">AggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reproject a dataset from one coordinate reference system (CRS) to another.</span>
+
+<span class="sd">    This function transforms a dataset’s 2D spatial variables to match a new CRS and</span>
+<span class="sd">    grid layout defined by `target_gm`. It handles interpolation, optional</span>
+<span class="sd">    downsampling, and fill values for areas outside the input bounds.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source_ds: The input dataset to be reprojected.</span>
+<span class="sd">        target_gm: The target grid mapping that defines the spatial reference and</span>
+<span class="sd">            grid layout in the target CRS.</span>
+<span class="sd">        source_gm: Optional source grid mapping of the input dataset. If not</span>
+<span class="sd">            provided, it is inferred from the dataset.</span>
+<span class="sd">        variables: Optional variable name or list of variable names to reproject.</span>
+<span class="sd">            If None, all suitable variables are processed.</span>
+<span class="sd">        interp_methods: Optional interpolation method to be used for upsampling spatial</span>
+<span class="sd">            data variables. Can be a single interpolation method for all variables or a</span>
+<span class="sd">            dictionary mapping variable names or dtypes to interpolation method.</span>
+<span class="sd">            Supported methods include:</span>
+<span class="sd">                - `0` (nearest neighbor)</span>
+<span class="sd">                - `1` (linear / bilinear)</span>
+<span class="sd">                - `&quot;nearest&quot;`</span>
+<span class="sd">                - `&quot;triangular&quot;`</span>
+<span class="sd">                - `&quot;bilinear&quot;`</span>
+<span class="sd">            The default is `0` for integer arrays, else `1`.</span>
+<span class="sd">        agg_methods: Optional aggregation methods for downsampling spatial variables.</span>
+<span class="sd">            Can be a single method for all variables or a dictionary mapping variable</span>
+<span class="sd">            names or dtypes to methods. Supported methods include:</span>
+<span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
+<span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
+<span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
+<span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
+<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
+<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
+<span class="sd">            to booleans. Defaults to False.</span>
+<span class="sd">        fill_values: Optional fill value(s) to assign outside source coverage.</span>
+<span class="sd">            Can be a single value or dictionary by variable or type. If not set,</span>
+<span class="sd">            defaults are:</span>
+<span class="sd">                - float: NaN</span>
+<span class="sd">                - uint8: 255</span>
+<span class="sd">                - uint16: 65535</span>
+<span class="sd">                - other integers: -1</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A new dataset with variables reprojected to the target CRS and</span>
+<span class="sd">            grid. Variables without 2D spatial dimensions are copied as-is.</span>
+<span class="sd">            1D spatial coordinate variables are ignored in the output.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">source_gm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">source_gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">)</span>
+    <span class="n">source_ds</span> <span class="o">=</span> <span class="n">normalize_grid_mapping</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">)</span>
+
+    <span class="n">source_ds</span> <span class="o">=</span> <span class="n">_select_variables</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
+
+    <span class="n">transformer</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span>
+        <span class="n">target_gm</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+    <span class="c1"># If source has higher resolution than target, downscale first, then reproject</span>
+    <span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span> <span class="o">=</span> <span class="n">_downscale_source_dataset</span><span class="p">(</span>
+        <span class="n">source_ds</span><span class="p">,</span>
+        <span class="n">source_gm</span><span class="p">,</span>
+        <span class="n">target_gm</span><span class="p">,</span>
+        <span class="n">transformer</span><span class="p">,</span>
+        <span class="n">interp_methods</span><span class="p">,</span>
+        <span class="n">agg_methods</span><span class="p">,</span>
+        <span class="n">recover_nans</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># For each bounding box in the target grid mapping:</span>
+    <span class="c1"># - determine the indices of the bbox in the source dataset</span>
+    <span class="c1"># - extract the corresponding coordinates for each bbox in the source dataset</span>
+    <span class="c1"># - compute the pad_width to handle areas requested by target_gm that exceed the</span>
+    <span class="c1">#   bounds of source_gm.</span>
+    <span class="n">scr_ij_bboxes</span><span class="p">,</span> <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">pad_width</span> <span class="o">=</span> <span class="n">_get_scr_bboxes_indices</span><span class="p">(</span>
+        <span class="n">transformer</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">,</span> <span class="n">target_gm</span>
+    <span class="p">)</span>
+
+    <span class="c1"># transform grid points from target grid mapping to source grid mapping</span>
+    <span class="n">source_xx</span><span class="p">,</span> <span class="n">source_yy</span> <span class="o">=</span> <span class="n">_transform_gridpoints</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">)</span>
+
+    <span class="c1"># reproject dataset</span>
+    <span class="n">x_name</span><span class="p">,</span> <span class="n">y_name</span> <span class="o">=</span> <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_dim_names</span>
+    <span class="n">target_coords</span> <span class="o">=</span> <span class="n">target_gm</span><span class="o">.</span><span class="n">to_coords</span><span class="p">()</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">x_name</span><span class="p">:</span> <span class="n">target_coords</span><span class="p">[</span><span class="n">x_name</span><span class="p">],</span>
+        <span class="n">y_name</span><span class="p">:</span> <span class="n">target_coords</span><span class="p">[</span><span class="n">y_name</span><span class="p">],</span>
+        <span class="s2">&quot;spatial_ref&quot;</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">target_gm</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">to_cf</span><span class="p">()),</span>
+    <span class="p">}</span>
+    <span class="n">target_ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">source_ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+
+    <span class="n">yx_dims</span> <span class="o">=</span> <span class="p">(</span><span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">data_array</span> <span class="ow">in</span> <span class="n">source_ds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">==</span> <span class="n">yx_dims</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="mi">2</span><span class="p">,</span>
+                <span class="mi">3</span><span class="p">,</span>
+            <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Data variable </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2"> has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span><span class="si">}</span><span class="s2"> dimensions.&quot;</span>
+
+            <span class="n">target_ds</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_data_array</span><span class="p">(</span>
+                <span class="n">data_array</span><span class="p">,</span>
+                <span class="n">var_name</span><span class="p">,</span>
+                <span class="n">source_gm</span><span class="p">,</span>
+                <span class="n">target_gm</span><span class="p">,</span>
+                <span class="n">source_xx</span><span class="p">,</span>
+                <span class="n">source_yy</span><span class="p">,</span>
+                <span class="n">x_coords</span><span class="p">,</span>
+                <span class="n">y_coords</span><span class="p">,</span>
+                <span class="n">scr_ij_bboxes</span><span class="p">,</span>
+                <span class="n">pad_width</span><span class="p">,</span>
+                <span class="n">interp_methods</span><span class="p">,</span>
+                <span class="n">fill_values</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">yx_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_array</span><span class="o">.</span><span class="n">dims</span> <span class="ow">and</span> <span class="n">yx_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+            <span class="n">target_ds</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_array</span>
+
+    <span class="k">return</span> <span class="n">target_ds</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="xcube_resampling.rectify.rectify_dataset" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">rectify</span><span class="o">.</span><span class="n">rectify_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents first">
+
+        <p>Rectify a dataset with non-regular grid to a regular grid defined by a target
+grid mapping.</p>
+<p>This function transforms spatial coordinates to a regular grid while preserving
+data values. It optionally downsamples high-resolution inputs prior to rectifying.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_ds</code>
+            </td>
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The source dataset with 2D spatial coordinate variables.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>target_gm</code>
+            </td>
+            <td>
+                  <code><span title="xcube_resampling.gridmapping.GridMapping">GridMapping</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional target grid mapping defining the output regular grid.
+If not provided, one is derived from the source grid mapping.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_gm</code>
+            </td>
+            <td>
+                  <code><span title="xcube_resampling.gridmapping.GridMapping">GridMapping</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional grid mapping of the source dataset. If not given, it is
+inferred from the dataset.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>variables</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional variable(s) to rectify. If None, all eligible variables
+are processed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>interp_methods</code>
+            </td>
+            <td>
+                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional interpolation method to be used for upsampling spatial
+data variables. Can be a single interpolation method for all variables or a
+dictionary mapping variable names or dtypes to interpolation method.
+Supported methods include:
+    - <code>0</code> (nearest neighbor)
+    - <code>1</code> (linear / bilinear)
+    - <code>"nearest"</code>
+    - <code>"triangular"</code>
+    - <code>"bilinear"</code>
+The default is <code>0</code> for integer arrays, else <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>agg_methods</code>
+            </td>
+            <td>
+                  <code><span title="xcube_resampling.constants.AggMethods">AggMethods</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional aggregation methods for downsampling spatial variables.
+Can be a single method for all variables or a dictionary mapping variable
+names or dtypes to methods. Supported methods include:
+    "center", "count", "first", "last", "max", "mean", "median",
+    "mode", "min", "prod", "std", "sum", and "var".
+Defaults to "center" for integer arrays, else "mean".</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>recover_nans</code>
+            </td>
+            <td>
+                  <code><span title="xcube_resampling.constants.RecoverNans">RecoverNans</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional boolean or mapping to enable NaN recovery during
+upsampling (only applies when interpolation method is not nearest).
+Can be a single boolean or a dictionary mapping variable names or dtypes
+to booleans. Defaults to False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>fill_values</code>
+            </td>
+            <td>
+                  <code><span title="xcube_resampling.constants.FillValues">FillValues</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional fill value(s) for areas outside input coverage.
+Can be a single value or dictionary by variable or type. If not provided,
+defaults based on data type are used:
+    - float: NaN
+    - uint8: 255
+    - uint16: 65535
+    - other ints: -1</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>tile_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="tuple">tuple</span>[<span title="int">int</span>, <span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional tile size for inferring a regular grid, if <code>target_gm</code> is
+not provided.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A new dataset with spatial variables rectified to a regular grid.
+Variables not having 2D spatial dimensions are copied as-is. 1D spatial
+coordinate variables are ignored in the output.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/rectify.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 53</span>
 <span class="normal"> 54</span>
 <span class="normal"> 55</span>
@@ -1685,480 +2230,13 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span>
-<span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_dataset</span><span class="p">(</span>
-    <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
-    <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">,</span>
-    <span class="n">source_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">spline_orders</span><span class="p">:</span> <span class="n">SplineOrders</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">agg_methods</span><span class="p">:</span> <span class="n">AggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Reproject a dataset from one coordinate reference system (CRS) to another.</span>
-
-<span class="sd">    This function transforms a dataset’s 2D spatial variables to match a new CRS and</span>
-<span class="sd">    grid layout defined by `target_gm`. It handles interpolation, optional</span>
-<span class="sd">    downsampling, and fill values for areas outside the input bounds.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        source_ds: The input dataset to be reprojected.</span>
-<span class="sd">        target_gm: The target grid mapping that defines the spatial reference and</span>
-<span class="sd">            grid layout in the target CRS.</span>
-<span class="sd">        source_gm: Optional source grid mapping of the input dataset. If not</span>
-<span class="sd">            provided, it is inferred from the dataset.</span>
-<span class="sd">        variables: Optional variable name or list of variable names to reproject.</span>
-<span class="sd">            If None, all suitable variables are processed.</span>
-<span class="sd">        spline_orders: Optional spline order(s) for interpolation. Can be a single</span>
-<span class="sd">            value or a dictionary mapping variable names or data types:</span>
-<span class="sd">                - `0` (nearest neighbor)</span>
-<span class="sd">                - `1` (linear / bilinear)</span>
-<span class="sd">                - `2` (quadratic)</span>
-<span class="sd">                - `3` (cubic)</span>
-<span class="sd">            Default is `0` for integer types, else `1`.</span>
-<span class="sd">        agg_methods: Optional aggregation method(s) for downsampling. Can be a</span>
-<span class="sd">            single method or dictionary mapping variable names or data types.</span>
-<span class="sd">            Supported values include: &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;,</span>
-<span class="sd">            &quot;mean&quot;, &quot;median&quot;, &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, &quot;var&quot;.</span>
-<span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
-<span class="sd">        recover_nans: Optional boolean or mapping to enable a NaN-recovery algorithm</span>
-<span class="sd">            during upsampling (only used if spline_order &gt; 0). Defaults to False.</span>
-<span class="sd">        fill_values: Optional fill value(s) to assign outside source coverage.</span>
-<span class="sd">            Can be a single value or dictionary by variable or type. If not set,</span>
-<span class="sd">            defaults are:</span>
-<span class="sd">                - float: NaN</span>
-<span class="sd">                - uint8: 255</span>
-<span class="sd">                - uint16: 65535</span>
-<span class="sd">                - other integers: -1</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        A new dataset with variables reprojected to the target CRS and</span>
-<span class="sd">            grid. Variables without 2D spatial dimensions are copied as-is.</span>
-<span class="sd">            1D spatial coordinate variables are ignored in the output.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">if</span> <span class="n">source_gm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">source_gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">)</span>
-    <span class="n">source_ds</span> <span class="o">=</span> <span class="n">normalize_grid_mapping</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">)</span>
-
-    <span class="n">source_ds</span> <span class="o">=</span> <span class="n">_select_variables</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
-
-    <span class="n">transformer</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span>
-        <span class="n">target_gm</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">)</span>
-
-    <span class="c1"># If source has higher resolution than target, downscale first, then reproject</span>
-    <span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span> <span class="o">=</span> <span class="n">_downscale_source_dataset</span><span class="p">(</span>
-        <span class="n">source_ds</span><span class="p">,</span>
-        <span class="n">source_gm</span><span class="p">,</span>
-        <span class="n">target_gm</span><span class="p">,</span>
-        <span class="n">transformer</span><span class="p">,</span>
-        <span class="n">spline_orders</span><span class="p">,</span>
-        <span class="n">agg_methods</span><span class="p">,</span>
-        <span class="n">recover_nans</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># For each bounding box in the target grid mapping:</span>
-    <span class="c1"># - determine the indices of the bbox in the source dataset</span>
-    <span class="c1"># - extract the corresponding coordinates for each bbox in the source dataset</span>
-    <span class="c1"># - compute the pad_width to handle areas requested by target_gm that exceed the</span>
-    <span class="c1">#   bounds of source_gm.</span>
-    <span class="n">scr_ij_bboxes</span><span class="p">,</span> <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">pad_width</span> <span class="o">=</span> <span class="n">_get_scr_bboxes_indices</span><span class="p">(</span>
-        <span class="n">transformer</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">,</span> <span class="n">target_gm</span>
-    <span class="p">)</span>
-
-    <span class="c1"># transform grid points from target grid mapping to source grid mapping</span>
-    <span class="n">source_xx</span><span class="p">,</span> <span class="n">source_yy</span> <span class="o">=</span> <span class="n">_transform_gridpoints</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">)</span>
-
-    <span class="c1"># reproject dataset</span>
-    <span class="n">x_name</span><span class="p">,</span> <span class="n">y_name</span> <span class="o">=</span> <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_dim_names</span>
-    <span class="n">target_coords</span> <span class="o">=</span> <span class="n">target_gm</span><span class="o">.</span><span class="n">to_coords</span><span class="p">()</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">x_name</span><span class="p">:</span> <span class="n">target_coords</span><span class="p">[</span><span class="n">x_name</span><span class="p">],</span>
-        <span class="n">y_name</span><span class="p">:</span> <span class="n">target_coords</span><span class="p">[</span><span class="n">y_name</span><span class="p">],</span>
-        <span class="s2">&quot;spatial_ref&quot;</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">target_gm</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">to_cf</span><span class="p">()),</span>
-    <span class="p">}</span>
-    <span class="n">target_ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">source_ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
-
-    <span class="n">yx_dims</span> <span class="o">=</span> <span class="p">(</span><span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">data_array</span> <span class="ow">in</span> <span class="n">source_ds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">==</span> <span class="n">yx_dims</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
-                <span class="mi">2</span><span class="p">,</span>
-                <span class="mi">3</span><span class="p">,</span>
-            <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Data variable </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2"> has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span><span class="si">}</span><span class="s2"> dimensions.&quot;</span>
-
-            <span class="n">target_ds</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_data_array</span><span class="p">(</span>
-                <span class="n">data_array</span><span class="p">,</span>
-                <span class="n">var_name</span><span class="p">,</span>
-                <span class="n">source_gm</span><span class="p">,</span>
-                <span class="n">target_gm</span><span class="p">,</span>
-                <span class="n">source_xx</span><span class="p">,</span>
-                <span class="n">source_yy</span><span class="p">,</span>
-                <span class="n">x_coords</span><span class="p">,</span>
-                <span class="n">y_coords</span><span class="p">,</span>
-                <span class="n">scr_ij_bboxes</span><span class="p">,</span>
-                <span class="n">pad_width</span><span class="p">,</span>
-                <span class="n">spline_orders</span><span class="p">,</span>
-                <span class="n">fill_values</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">yx_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_array</span><span class="o">.</span><span class="n">dims</span> <span class="ow">and</span> <span class="n">yx_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_array</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
-            <span class="n">target_ds</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_array</span>
-
-    <span class="k">return</span> <span class="n">target_ds</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="xcube_resampling.rectify.rectify_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">rectify</span><span class="o">.</span><span class="n">rectify_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spline_orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
-
-</h2>
-
-
-    <div class="doc doc-contents first">
-
-        <p>Rectify a dataset with non-regular grid to a regular grid defined by a target
-grid mapping.</p>
-<p>This function transforms spatial coordinates to a regular grid while preserving
-data values. It optionally downsamples high-resolution inputs prior to rectifying.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>source_ds</code>
-            </td>
-            <td>
-                  <code><span title="xarray.Dataset">Dataset</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The source dataset with 2D spatial coordinate variables.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>target_gm</code>
-            </td>
-            <td>
-                  <code><span title="xcube_resampling.gridmapping.GridMapping">GridMapping</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional target grid mapping defining the output regular grid.
-If not provided, one is derived from the source grid mapping.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>source_gm</code>
-            </td>
-            <td>
-                  <code><span title="xcube_resampling.gridmapping.GridMapping">GridMapping</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional grid mapping of the source dataset. If not given, it is
-inferred from the dataset.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>variables</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional variable(s) to rectify. If None, all eligible variables
-are processed.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>spline_orders</code>
-            </td>
-            <td>
-                  <code><span title="xcube_resampling.constants.SplineOrders">SplineOrders</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional spline order(s) for interpolating variables.
-Can be a single value or a mapping by variable name or data type:
-    - <code>0</code> (nearest neighbor)
-    - <code>1</code> (linear / bilinear)
-    - <code>2</code> (quadratic)
-    - <code>3</code> (cubic)
-Default is <code>0</code> for integer data, else <code>1</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>agg_methods</code>
-            </td>
-            <td>
-                  <code><span title="xcube_resampling.constants.AggMethods">AggMethods</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional aggregation method(s) for downsampling spatial variables.
-Can be a string or a dictionary by variable or type. Supported values:
-    "center", "count", "first", "last", "max", "mean", "median", "mode",
-    "min", "prod", "std", "sum", or "var".
-Default is "center" for integers, else "mean".</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>recover_nans</code>
-            </td>
-            <td>
-                  <code><span title="xcube_resampling.constants.RecoverNans">RecoverNans</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional boolean or mapping to enable NaN recovery during
-upsampling (only if spline order &gt; 0). Default is False.</p>
-              </div>
-            </td>
-            <td>
-                  <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>fill_values</code>
-            </td>
-            <td>
-                  <code><span title="xcube_resampling.constants.FillValues">FillValues</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional fill value(s) for areas outside input coverage.
-Can be a single value or dictionary by variable or type. If not provided,
-defaults based on data type are used:
-    - float: NaN
-    - uint8: 255
-    - uint16: 65535
-    - other ints: -1</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>tile_size</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span> | <span title="tuple">tuple</span>[<span title="int">int</span>, <span title="int">int</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional tile size for inferring a regular grid, if <code>target_gm</code> is
-not provided.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="xarray.Dataset">Dataset</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A new dataset with spatial variables rectified to a regular grid.
-Variables not having 2D spatial dimensions are copied as-is. 1D spatial
-coordinate variables are ignored in the output.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="quote">
-              <summary>Source code in <code>xcube_resampling/rectify.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 55</span>
-<span class="normal"> 56</span>
-<span class="normal"> 57</span>
-<span class="normal"> 58</span>
-<span class="normal"> 59</span>
-<span class="normal"> 60</span>
-<span class="normal"> 61</span>
-<span class="normal"> 62</span>
-<span class="normal"> 63</span>
-<span class="normal"> 64</span>
-<span class="normal"> 65</span>
-<span class="normal"> 66</span>
-<span class="normal"> 67</span>
-<span class="normal"> 68</span>
-<span class="normal"> 69</span>
-<span class="normal"> 70</span>
-<span class="normal"> 71</span>
-<span class="normal"> 72</span>
-<span class="normal"> 73</span>
-<span class="normal"> 74</span>
-<span class="normal"> 75</span>
-<span class="normal"> 76</span>
-<span class="normal"> 77</span>
-<span class="normal"> 78</span>
-<span class="normal"> 79</span>
-<span class="normal"> 80</span>
-<span class="normal"> 81</span>
-<span class="normal"> 82</span>
-<span class="normal"> 83</span>
-<span class="normal"> 84</span>
-<span class="normal"> 85</span>
-<span class="normal"> 86</span>
-<span class="normal"> 87</span>
-<span class="normal"> 88</span>
-<span class="normal"> 89</span>
-<span class="normal"> 90</span>
-<span class="normal"> 91</span>
-<span class="normal"> 92</span>
-<span class="normal"> 93</span>
-<span class="normal"> 94</span>
-<span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span>
-<span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rectify_dataset</span><span class="p">(</span>
+<span class="normal">174</span>
+<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rectify_dataset</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">source_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">spline_orders</span><span class="p">:</span> <span class="n">SplineOrders</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">interp_methods</span><span class="p">:</span> <span class="n">InterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">AggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2179,20 +2257,26 @@ coordinate variables are ignored in the output.</p>
 <span class="sd">            inferred from the dataset.</span>
 <span class="sd">        variables: Optional variable(s) to rectify. If None, all eligible variables</span>
 <span class="sd">            are processed.</span>
-<span class="sd">        spline_orders: Optional spline order(s) for interpolating variables.</span>
-<span class="sd">            Can be a single value or a mapping by variable name or data type:</span>
+<span class="sd">        interp_methods: Optional interpolation method to be used for upsampling spatial</span>
+<span class="sd">            data variables. Can be a single interpolation method for all variables or a</span>
+<span class="sd">            dictionary mapping variable names or dtypes to interpolation method.</span>
+<span class="sd">            Supported methods include:</span>
 <span class="sd">                - `0` (nearest neighbor)</span>
 <span class="sd">                - `1` (linear / bilinear)</span>
-<span class="sd">                - `2` (quadratic)</span>
-<span class="sd">                - `3` (cubic)</span>
-<span class="sd">            Default is `0` for integer data, else `1`.</span>
-<span class="sd">        agg_methods: Optional aggregation method(s) for downsampling spatial variables.</span>
-<span class="sd">            Can be a string or a dictionary by variable or type. Supported values:</span>
-<span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;, &quot;mode&quot;,</span>
-<span class="sd">                &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, or &quot;var&quot;.</span>
-<span class="sd">            Default is &quot;center&quot; for integers, else &quot;mean&quot;.</span>
+<span class="sd">                - `&quot;nearest&quot;`</span>
+<span class="sd">                - `&quot;triangular&quot;`</span>
+<span class="sd">                - `&quot;bilinear&quot;`</span>
+<span class="sd">            The default is `0` for integer arrays, else `1`.</span>
+<span class="sd">        agg_methods: Optional aggregation methods for downsampling spatial variables.</span>
+<span class="sd">            Can be a single method for all variables or a dictionary mapping variable</span>
+<span class="sd">            names or dtypes to methods. Supported methods include:</span>
+<span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
+<span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
+<span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
 <span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
-<span class="sd">            upsampling (only if spline order &gt; 0). Default is False.</span>
+<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
+<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
+<span class="sd">            to booleans. Defaults to False.</span>
 <span class="sd">        fill_values: Optional fill value(s) for areas outside input coverage.</span>
 <span class="sd">            Can be a single value or dictionary by variable or type. If not provided,</span>
 <span class="sd">            defaults based on data type are used:</span>
@@ -2229,7 +2313,7 @@ coordinate variables are ignored in the output.</p>
         <span class="n">source_ds</span><span class="p">,</span>
         <span class="n">source_gm</span><span class="p">,</span>
         <span class="n">target_gm</span><span class="p">,</span>
-        <span class="n">spline_orders</span><span class="p">,</span>
+        <span class="n">interp_methods</span><span class="p">,</span>
         <span class="n">agg_methods</span><span class="p">,</span>
         <span class="n">recover_nans</span><span class="p">,</span>
     <span class="p">)</span>
@@ -2262,7 +2346,7 @@ coordinate variables are ignored in the output.</p>
                 <span class="n">var_name</span><span class="p">,</span>
                 <span class="n">target_gm</span><span class="p">,</span>
                 <span class="n">target_source_ij</span><span class="p">,</span>
-                <span class="n">spline_orders</span><span class="p">,</span>
+                <span class="n">interp_methods</span><span class="p">,</span>
                 <span class="n">fill_values</span><span class="p">,</span>
             <span class="p">)</span>
 
