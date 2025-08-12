@@ -322,7 +322,7 @@ def _reproject_block(
         data_reprojected = value_u0 + diff_iy * (value_u1 - value_u0)
     else:
         raise NotImplementedError(
-            "interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular'. "
+            "interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular'."
         )
 
     return data_reprojected

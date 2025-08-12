@@ -716,7 +716,10 @@ def _compute_var_image_for_dest_line(
             value_u1 = value_10 + u * (value_11 - value_10)
             dst_var_value = value_u0 + v * (value_u1 - value_u0)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                "interp_methods must be one of 0, 1, 'nearest', "
+                "'bilinear', 'triangular'."
+            )
 
         dst_var_image[..., dst_j, dst_i] = dst_var_value
 
