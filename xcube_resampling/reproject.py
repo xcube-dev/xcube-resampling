@@ -137,13 +137,13 @@ def reproject_dataset(
     source_xx, source_yy = _transform_gridpoints(transformer, target_gm)
 
     # reproject dataset
-    x_name, y_name = target_gm.xy_dim_names
-    target_coords = target_gm.to_coords()
-    coords = {
-        x_name: target_coords[x_name],
-        y_name: target_coords[y_name],
-        "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
-    }
+    x_name, y_name = source_gm.xy_var_names
+    coords = source_ds.coords.to_dataset()
+    coords = coords.drop_vars((x_name, y_name))
+    x_name, y_name = target_gm.xy_var_names
+    coords[x_name] = target_gm.x_coords
+    coords[y_name] = target_gm.y_coords
+    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])

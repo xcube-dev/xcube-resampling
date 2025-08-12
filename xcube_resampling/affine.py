@@ -125,13 +125,10 @@ def affine_transform_dataset(
     )
 
     # assign coordinates from target grid-mapping
-    x_name, y_name = target_gm.xy_dim_names
-    coords = {
-        x_name: target_gm.x_coords,
-        y_name: target_gm.y_coords,
-        "spatial_ref": source_ds.spatial_ref,
-    }
-    target_ds = target_ds.assign_coords(coords)
+    x_name, y_name = target_gm.xy_var_names
+    target_ds = target_ds.assign_coords(
+        {x_name: target_gm.x_coords, y_name: target_gm.y_coords}
+    )
 
     return target_ds
 
@@ -190,7 +187,7 @@ def resample_dataset(
     """
     data_vars = dict()
     coords = dict()
-    for var_name, data_array in dataset.items():
+    for var_name, data_array in dataset.variables.items():
         new_data_array = None
         if data_array.dims[-2:] == yx_dims:
             if isinstance(data_array.data, np.ndarray):

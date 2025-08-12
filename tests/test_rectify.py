@@ -29,6 +29,7 @@ from xcube_resampling.rectify import rectify_dataset
 
 from .sampledata import (
     create_2x2_dataset_with_irregular_coords,
+    create_2x2x2_dataset_with_irregular_coords,
     create_2x2_dataset_with_irregular_coords_antimeridian,
 )
 
@@ -53,6 +54,38 @@ class RectifyDatasetTest(unittest.TestCase):
                     [nan, 1.0, 2.0, nan],
                     [3.0, 3.0, 2.0, nan],
                     [nan, 4.0, nan, nan],
+                ],
+                dtype=target_ds.rad.dtype,
+            ),
+        )
+
+    def test_rectify_2x2x2_to_default(self):
+        source_ds = create_2x2x2_dataset_with_irregular_coords()
+
+        target_gm = GridMapping.regular(
+            size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
+        )
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        self.assertEqual(
+            set(source_ds.variables).union(["spatial_ref"]),
+            set(target_ds.variables),
+        )
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [
+                    [
+                        [nan, nan, nan, nan],
+                        [nan, 1.0, 2.0, nan],
+                        [3.0, 3.0, 2.0, nan],
+                        [nan, 4.0, nan, nan],
+                    ],
+                    [
+                        [nan, nan, nan, nan],
+                        [nan, 1.0, 2.0, nan],
+                        [3.0, 3.0, 2.0, nan],
+                        [nan, 4.0, nan, nan],
+                    ],
                 ],
                 dtype=target_ds.rad.dtype,
             ),
