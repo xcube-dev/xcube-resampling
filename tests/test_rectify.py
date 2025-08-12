@@ -199,13 +199,14 @@ class RectifyDatasetTest(unittest.TestCase):
             decimal=3,
         )
 
-    def test_rectify_2x2_to_7x7_invalid_spline_order(self):
+    def test_rectify_2x2_to_7x7_invalid_interp_methods(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
             size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
         )
         with self.assertRaises(NotImplementedError):
+            # noinspection PyTypeChecker
             rectify_dataset(source_ds, target_gm=target_gm, interp_methods="cubic")
 
     def test_rectify_2x2_to_7x7_subset(self):

@@ -28,8 +28,8 @@ from .constants import (
     LOG,
     AggMethods,
     FillValues,
-    RecoverNans,
     InterpMethods,
+    RecoverNans,
 )
 from .gridmapping import GridMapping
 from .rectify import rectify_dataset

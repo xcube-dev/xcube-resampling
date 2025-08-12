@@ -33,9 +33,9 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
-    RecoverNans,
-    InterpMethods,
     InterpMethod,
+    InterpMethods,
+    RecoverNans,
 )
 from .gridmapping import GridMapping
 from .utils import (

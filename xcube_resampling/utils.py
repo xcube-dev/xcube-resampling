@@ -30,14 +30,14 @@ from .constants import (
     FILLVALUE_INT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
+    INTERP_METHOD_MAPPING,
     LOG,
     AggMethod,
     AggMethods,
     FloatInt,
-    RecoverNans,
-    InterpMethods,
     InterpMethod,
-    INTERP_METHOD_MAPPING,
+    InterpMethods,
+    RecoverNans,
 )
 from .gridmapping import GridMapping
 

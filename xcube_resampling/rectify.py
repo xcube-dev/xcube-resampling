@@ -34,17 +34,17 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
-    RecoverNans,
     InterpMethod,
     InterpMethods,
+    RecoverNans,
 )
 from .dask import compute_array_from_func
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
     _get_interp_method,
-    _prep_interp_methods_downscale,
     _is_equal_crs,
+    _prep_interp_methods_downscale,
     _select_variables,
     normalize_grid_mapping,
 )

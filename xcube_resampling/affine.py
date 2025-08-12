@@ -33,17 +33,17 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
-    RecoverNans,
-    InterpMethods,
     InterpMethod,
+    InterpMethods,
+    RecoverNans,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _can_apply_affine_transform,
     _get_agg_method,
     _get_fill_value,
-    _get_recover_nan,
     _get_interp_method,
+    _get_recover_nan,
     _select_variables,
     normalize_grid_mapping,
 )

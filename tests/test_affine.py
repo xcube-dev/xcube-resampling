@@ -158,7 +158,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             self.source_ds,
             target_gm,
             source_gm=self.source_gm,
-            interp_methods=1,
+            interp_methods="bilinear",
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -184,7 +184,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             self.source_ds,
             target_gm,
             source_gm=self.source_gm,
-            interp_methods=1,
+            interp_methods={"refl": "bilinear"},
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -210,7 +210,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             self.source_ds,
             target_gm,
             source_gm=self.source_gm,
-            interp_methods=1,
+            interp_methods={"refl": 1},
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
