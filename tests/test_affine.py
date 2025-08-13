@@ -124,7 +124,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
         target_ds = affine_transform_dataset(
             self.source_ds_3d,
             target_gm,
-            spline_orders=1,
+            interp_methods=1,
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(

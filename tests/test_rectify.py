@@ -65,7 +65,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         self.assertEqual(
             set(source_ds.variables).union(["spatial_ref"]),
             set(target_ds.variables),
