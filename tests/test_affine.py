@@ -23,17 +23,23 @@ import unittest
 
 import numpy as np
 import pyproj
+import pandas as pd
 import xarray as xr
 
 from xcube_resampling.affine import affine_transform_dataset
 from xcube_resampling.gridmapping import CRS_CRS84, CRS_WGS84, GridMapping
 
-from .sampledata import create_8x6_dataset_with_regular_coords
+from .sampledata import (
+    create_8x6_dataset_with_regular_coords,
+    create_2x8x6_dataset_with_regular_coords,
+)
 
 
 class AffineTransformDatasetTest(unittest.TestCase):
     def setUp(self):
         self.source_ds = create_8x6_dataset_with_regular_coords()
+        self.source_ds_3d = create_2x8x6_dataset_with_regular_coords()
+
         self.source_gm = GridMapping.from_dataset(self.source_ds)
         self.res = 0.1
 
@@ -105,6 +111,39 @@ class AffineTransformDatasetTest(unittest.TestCase):
                     [1.25, 1.5, 0.75],
                     [1.0, 1.25, 1.5],
                     [1.75, 1.0, 1.25],
+                ]
+            ),
+        )
+
+    def test_subset_3d(self):
+        target_gm = GridMapping.regular(
+            (3, 3), (50.0, 10.0), self.res, self.source_gm.crs
+        )
+        target_ds = affine_transform_dataset(
+            self.source_ds_3d,
+            target_gm,
+            spline_orders=1,
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(self.source_ds_3d.variables).union(["spatial_ref"]),
+            set(target_ds.variables),
+        )
+        self.assertEqual((2, 3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array(
+                [
+                    [
+                        [1, 0, 2],
+                        [0, 3, 0],
+                        [4, 0, 1],
+                    ],
+                    [
+                        [1, 0, 2],
+                        [0, 3, 0],
+                        [4, 0, 1],
+                    ],
                 ]
             ),
         )

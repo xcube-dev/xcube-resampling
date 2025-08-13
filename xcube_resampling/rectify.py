@@ -137,13 +137,14 @@ def rectify_dataset(
     target_source_ij = _compute_target_source_ij(source_gm, target_gm, UV_DELTA)
 
     # rectify dataset
-    x_name, y_name = target_gm.xy_dim_names
+    x_name, y_name = source_gm.xy_var_names
+    coords = source_ds.coords.to_dataset()
+    coords = coords.drop_vars((x_name, y_name))
+    x_name, y_name = target_gm.xy_var_names
     target_coords = target_gm.to_coords()
-    coords = {
-        x_name: target_coords[x_name],
-        y_name: target_coords[y_name],
-        "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
-    }
+    coords[x_name] = target_coords[x_name]
+    coords[y_name] = target_coords[y_name]
+    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
