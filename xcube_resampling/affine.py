@@ -74,10 +74,12 @@ def affine_transform_dataset(
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
-                - `0` (nearest neighbor)
-                - `1` (linear / bilinear)
-                - `"nearest"`
-                - `"bilinear"`
+
+            - `0` (nearest neighbor)
+            - `1` (linear / bilinear)
+            - `"nearest"`
+            - `"bilinear"`
+
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
@@ -163,10 +165,12 @@ def resample_dataset(
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
-                - `0` (nearest neighbor)
-                - `1` (linear / bilinear)
-                - `"nearest"`
-                - `"bilinear"`
+
+            - `0` (nearest neighbor)
+            - `1` (linear / bilinear)
+            - `"nearest"`
+            - `"bilinear"`
+
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
