@@ -12,7 +12,7 @@
         <link rel="prev" href="../start/">
       
       
-        <link rel="next" href="../api/">
+        <link rel="next" href="../examples/coords/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -47,6 +47,8 @@
     
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/xarray_dataset.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -306,6 +308,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -338,6 +342,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -346,17 +352,313 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#user-guide-for-xcube-resampling" class="md-nav__link">
+  <a href="#gridmapping-the-grid-mapping-object" class="md-nav__link">
     <span class="md-ellipsis">
-      User Guide for xcube-resampling
+      GridMapping – the grid mapping object
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="GridMapping – the grid mapping object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-gridmapping-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a GridMapping object
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating a GridMapping object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-regular-grid-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Regular grid mapping
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-create-a-grid-mapping-from-an-existing-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Create a grid mapping from an existing dataset
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-a-grid-mapping-from-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Create a grid mapping from coordinates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derive-new-gridmapping-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      Derive new GridMapping instances
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resampling-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resampling Algorithms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resampling Algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-parameters-for-all-resampling-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common parameters for all resampling algorithms
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-affine-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Affine Transformation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-reprojection" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Reprojection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-rectification" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Rectification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpolation-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpolation Methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interpolation Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nearest-neighbor-nearest-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nearest Neighbor - "nearest", 0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bilinear-bilinear-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bilinear - "bilinear", 1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#triangular-triangular" class="md-nav__link">
+    <span class="md-ellipsis">
+      Triangular - "triangular"
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Remarks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
     </ul>
   
 </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Example Notebooks
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Example Notebooks
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/coords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    GridMapping instance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/affine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Affine Transformation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/rectify_sentinel3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Rectification to a Sentinel-3 OLCI scene
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/resample_in_space_large_example_reproject_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reproject the ESA-CCI land cover map for Europe
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -423,6 +725,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -431,11 +735,170 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#user-guide-for-xcube-resampling" class="md-nav__link">
+  <a href="#gridmapping-the-grid-mapping-object" class="md-nav__link">
     <span class="md-ellipsis">
-      User Guide for xcube-resampling
+      GridMapping – the grid mapping object
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="GridMapping – the grid mapping object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-gridmapping-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a GridMapping object
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating a GridMapping object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-regular-grid-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Regular grid mapping
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-create-a-grid-mapping-from-an-existing-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Create a grid mapping from an existing dataset
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-a-grid-mapping-from-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Create a grid mapping from coordinates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derive-new-gridmapping-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      Derive new GridMapping instances
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resampling-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resampling Algorithms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resampling Algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-parameters-for-all-resampling-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common parameters for all resampling algorithms
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-affine-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Affine Transformation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-reprojection" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Reprojection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-rectification" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Rectification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpolation-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpolation Methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interpolation Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nearest-neighbor-nearest-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nearest Neighbor - "nearest", 0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bilinear-bilinear-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bilinear - "bilinear", 1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#triangular-triangular" class="md-nav__link">
+    <span class="md-ellipsis">
+      Triangular - "triangular"
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Remarks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -458,10 +921,275 @@
   
 
 
-  <h1>User Guide</h1>
+<h1 id="user-guide-for-xcube-resampling">User Guide for xcube-resampling</h1>
+<p><strong>xcube-resampling</strong> provides algorithms for representing a dataset in a different grid
+mapping. It supports:</p>
+<ul>
+<li>Simple resampling via affine transformation  </li>
+<li>Reprojection between coordinate reference systems (CRS)  </li>
+<li>Rectification of non-regular grids to regular grids  </li>
+</ul>
+<p>All resampling methods are built around the <a href="../api/#xcube_resampling.gridmapping.GridMapping"><code>GridMapping</code></a>
+class, which represents a spatial grid mapping and contains all necessary information
+for resampling.  </p>
+<p>We first introduce the <code>GridMapping</code> class before explaining the three resampling
+algorithms.</p>
+<hr />
+<h2 id="gridmapping-the-grid-mapping-object"><code>GridMapping</code> – the grid mapping object</h2>
+<p>A <code>GridMapping</code> describes the spatial structure of a dataset. It stores metadata such
+as the coordinate reference system (CRS), spatial resolution, bounding box, spatial
+dimensions, coordinates, and tile size (for chunked datasets).</p>
+<p>Grids can be defined in two ways:</p>
+<ul>
+<li><strong>1D coordinates</strong> – regular grids defined by evenly spaced x/y or lat/lon axes.  </li>
+<li><strong>2D coordinates</strong> – irregular grids where each pixel has its own pair of x/y or 
+  lat/lon coordinates.</li>
+</ul>
+<h3 id="creating-a-gridmapping-object">Creating a <code>GridMapping</code> object</h3>
+<p>There are three main ways to create a <code>GridMapping</code> instance:</p>
+<h4 id="1-regular-grid-mapping">1. Regular grid mapping</h4>
+<p>Use <a href="../api/#xcube_resampling.gridmapping.GridMapping.regular"><code>GridMapping.regular</code></a>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">xcube_resampling.gridmapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridMapping</span>
 
-<h2 id="user-guide-for-xcube-resampling">User Guide for xcube-resampling</h2>
-<p>under construction</p>
+<span class="n">gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">regular</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">xy_min</span><span class="p">,</span> <span class="n">xy_res</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+</code></pre></div>
+<p>Parameter descriptions can be found <a href="../api/#xcube_resampling.gridmapping.GridMapping.regular">here</a>.</p>
+<h4 id="2-create-a-grid-mapping-from-an-existing-dataset">2. Create a grid mapping from an existing dataset</h4>
+<p>Use the <a href="../api/#xcube_resampling.gridmapping.GridMapping.from_dataset"><code>GridMapping.from_dataset</code></a>
+method:</p>
+<p><div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">xcube_resampling.gridmapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridMapping</span>
+
+<span class="n">gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+Here, <code>ds</code> is a <code>xarray.Dataset</code>. Further optional parameters can be found <a href="../api/#xcube_resampling.gridmapping.GridMapping.from_dataset">here</a>.</p>
+<blockquote>
+<p><strong>Note:</strong> If no grid mapping is provided for the input dataset, the resampling functions 
+use this method to derive one.</p>
+</blockquote>
+<h4 id="3-create-a-grid-mapping-from-coordinates">3. Create a grid mapping from coordinates</h4>
+<p>Use the <a href="../api/#xcube_resampling.gridmapping.GridMapping.from_coords"><code>GridMapping.from_coords</code></a>
+method:</p>
+<p><div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">xcube_resampling.gridmapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridMapping</span>
+
+<span class="n">gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_coords</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+</code></pre></div>
+Here, <code>x_coords</code> and <code>y_coords</code> are <code>xarray.Array</code> instances, and <code>crs</code> is the 
+coordinate reference system (CRS). Further details of the parameters can be found
+<a href="../api/#xcube_resampling.gridmapping.GridMapping.from_dataset">here</a>.</p>
+<h4 id="derive-new-gridmapping-instances">Derive new <code>GridMapping</code> instances</h4>
+<p>You can create new grid mappings from existing ones using:</p>
+<ul>
+<li><a href="../api/#xcube_resampling.gridmapping.GridMapping.derive">derive</a>: 
+  change selected properties.</li>
+<li><a href="../api/#xcube_resampling.gridmapping.GridMapping.scale">scale</a>: 
+  create a scaled version of a regular grid mapping.</li>
+<li><a href="../api/#xcube_resampling.gridmapping.GridMapping.derive">to_regular</a>:
+  convert an irregular grid mapping to a regular one.</li>
+<li><a href="../api/#xcube_resampling.gridmapping.GridMapping.transform">transform</a>:
+  change the CRS of a grid mapping (regular → irregular with 2D coordinates).</li>
+</ul>
+<p>An examples is available in the <a href="../examples/coords/">Example Notebooks</a>.</p>
+<hr />
+<h3 id="resampling-algorithms">Resampling Algorithms</h3>
+<p>The function <a href="../api/#xcube_resampling.spatial.resample_in_space"><code>resample_in_space</code></a>
+integrates all three resampling algorithms and automatically selects the most
+appropriate one:</p>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Function</th>
+<th>Selection Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Affine Transformation</strong></td>
+<td><a href="../api/#xcube_resampling.affine.affine_transform_dataset"><code>affine_transform_dataset</code></a></td>
+<td>Source and target grids are both regular and share the same CRS.</td>
+</tr>
+<tr>
+<td><strong>Reprojection</strong></td>
+<td><a href="../api/#xcube_resampling.reproject.reproject_dataset"><code>reproject_dataset</code></a></td>
+<td>Source and target grids are both regular but have different CRS.</td>
+</tr>
+<tr>
+<td><strong>Rectification</strong></td>
+<td><a href="../api/#xcube_resampling.rectify.rectify_dataset"><code>rectify_dataset</code></a></td>
+<td>Source grid is irregular with 2D coordinates.</td>
+</tr>
+</tbody>
+</table>
+<p>With <code>resample_in_space</code>, users do <strong>not</strong> need to worry about selecting the right
+algorithm—the function determines and applies it automatically.</p>
+<h4 id="common-parameters-for-all-resampling-algorithms">Common parameters for all resampling algorithms</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type / Accepted Values</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td><code>str</code> or iterable of <code>str</code></td>
+<td>Name(s) of variables to resample. If <code>None</code>, all data variables are processed.</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>interp_methods</code></td>
+<td><code>int</code>, <code>str</code>, or <code>dict</code> mapping var/dtype to method. Supported:<br>• <code>0</code> — nearest neighbor<br>• <code>1</code> — linear / bilinear<br>• <code>"nearest"</code><br>• <code>"triangular"</code><br>• <code>"bilinear"</code></td>
+<td>Interpolation method for upsampling spatial data variables. Can be a single value or per-variable/dtype mapping.</td>
+<td><code>0</code> for integer arrays, else <code>1</code></td>
+</tr>
+<tr>
+<td><code>agg_methods</code></td>
+<td><code>str</code> or <code>dict</code> mapping var/dtype to method. Supported:<br><code>"center"</code>, <code>"count"</code>, <code>"first"</code>, <code>"last"</code>, <code>"max"</code>, <code>"mean"</code>, <code>"median"</code>, <code>"mode"</code>, <code>"min"</code>, <code>"prod"</code>, <code>"std"</code>, <code>"sum"</code>, <code>"var"</code></td>
+<td>Aggregation method for downsampling spatial data variables.</td>
+<td><code>"center"</code> for integer arrays, else <code>"mean"</code></td>
+</tr>
+<tr>
+<td><code>recover_nans</code></td>
+<td><code>bool</code> or <code>dict</code> mapping var/dtype to <code>bool</code></td>
+<td>Enable NaN recovery during upsampling (only applies when interpolation method is not nearest).</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>fill_values</code></td>
+<td>scalar or <code>dict</code> mapping var/dtype to value.</td>
+<td>Fill value(s) for areas outside input coverage.</td>
+<td><br>• float — NaN<br>• uint8 — 255<br>• uint16 — 65535<br>• other ints — -1</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1-affine-transformation">1. Affine Transformation</h4>
+<p>An <strong>affine transformation</strong> can be applied when both the source and target grid
+mappings are <strong>regular</strong> and share the same CRS. The function
+<a href="../api/#xcube_resampling.affine.affine_transform_dataset"><code>affine_transform_dataset</code></a> 
+requires the input dataset and the target grid mapping.  </p>
+<p>For any data array in the dataset with <strong>two spatial dimensions as the last two axes</strong>,
+an affine transformation is performed using
+<a href="https://image.dask.org/en/latest/dask_image.ndinterp.html"><code>dask_image.ndinterp.affine_transform</code></a>.
+The resulting dataset contains resampled data arrays aligned to the target grid mapping.  </p>
+<ul>
+<li>Data variables <strong>without spatial dimensions</strong> are copied to the output.  </li>
+<li>Variables with <strong>only one spatial dimension</strong> are ignored.  </li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> The <code>interp_methods</code> parameter corresponds to the <code>order</code> parameter in
+<a href="https://image.dask.org/en/latest/dask_image.ndinterp.html"><code>dask_image.ndinterp.affine_transform</code></a>.
+Only spline orders <code>[0, 1]</code> are supported to avoid unintended blending across
+non-spatial dimensions (e.g., time) in 3D arrays.  </p>
+</blockquote>
+<p>Simple examples of affine transformations are shown in the
+<a href="../examples/affine/">Example Notebook Affine Transformation</a>.</p>
+<hr />
+<h4 id="2-reprojection">2. Reprojection</h4>
+<p><strong>Reprojection</strong> can be applied when both source and target grid mappings are
+<strong>regular</strong> but use <strong>different CRSs</strong>. The function
+<a href="../api/#xcube_resampling.reproject.reproject_dataset"><code>reproject_dataset</code></a>
+requires the input dataset and the target grid mapping.  </p>
+<p>The procedure is as follows:</p>
+<ol>
+<li>Check if the <strong>target grid resolution</strong> is coarser than the source grid resolution.
+   If so, the source dataset is <strong>downsampled/aggregated</strong> using affine resampling.  </li>
+<li>Transform the <strong>target coordinates</strong> to the source CRS, producing <strong>2D irregular
+   coordinates</strong>.  </li>
+<li>For each transformed irregular pixel location, identify <strong>sub-pixel values</strong> in
+   the regular source grid.  </li>
+<li>Perform the selected <strong>interpolation</strong> using these sub-pixel values.  </li>
+</ol>
+<p>Supported interpolation methods are described in <a href="#interpolation-methods">Section Interpolation Methods</a>.  </p>
+<p>A large-scale example is shown in the
+<a href="../examples/resample_in_space_large_example_reproject_dataset/">Example Notebooks</a>.</p>
+<hr />
+<h4 id="3-rectification">3. Rectification</h4>
+<p><strong>Rectification</strong> is used when the source dataset has an <strong>irregular grid</strong>. The
+function <a href="../api/#xcube_resampling.rectify.rectify_dataset"><code>rectify_dataset</code></a> 
+requires only the input dataset.  </p>
+<p>If no target grid mapping is provided, the source grid mapping is <strong>converted to a
+regular grid</strong>, and interpolation is performed so that the new dataset is defined on
+this regular grid.  </p>
+<p>The procedure is as follows:</p>
+<ol>
+<li>If the <strong>CRS differs</strong>, the 2D irregular source grid is transformed to the target
+   CRS, resulting in 2D coordinates in the target CRS.  </li>
+<li>If the <strong>target resolution</strong> is coarser than the source resolution, the source
+   dataset is <strong>downsampled/aggregated</strong> using affine resampling.  </li>
+<li>For each regular target grid point, determine the <strong>sub-pixel position</strong> in the
+   irregular (optionally transformed) source grid.  </li>
+</ol>
+<blockquote>
+<p><strong>Note:</strong> Determining sub-pixel positions in an irregular grid is more
+<strong>computationally expensive</strong> than the reprojection algorithm, as the lookup grid is
+irregular. These positions determine the <strong>neighboring points</strong> used for the selected
+interpolation method.  </p>
+</blockquote>
+<p>Supported interpolation methods are described in <a href="#interpolation-methods">Section Interpolation Methods</a>.  </p>
+<p>An example notebook demonstrating Sentinel-3 scene rectification is available in the
+<a href="../examples/rectify_sentinel3/">Example Notebooks</a>.</p>
+<h3 id="interpolation-methods">Interpolation Methods</h3>
+<p>As mentioned in <a href="#2-reprojection">Section Reprojection</a> and
+<a href="#3-rectification">Section Rectification</a>, two 2D coordinate images are generated,
+showing the subpixel fractions <em>u, v</em> of a target point with respect to the source
+grid points, as depicted in the following image:</p>
+<p><img alt="Algorithm #2" src="../images/algo-1.png" /></p>
+<p>This is the starting point for all three interpolation methods described below.</p>
+<h4 id="nearest-neighbor-nearest-0">Nearest Neighbor - <code>"nearest"</code>, <code>0</code></h4>
+<p>The simplest case is a <strong>nearest neighbor lookup</strong>, which determines the pixel value <em>V</em>
+of point <em>P</em> in the target grid mapping according to:</p>
+<ul>
+<li><em>V = V1 if u &lt;= ½ and v &lt;= ½</em>  </li>
+<li><em>V = V2 if u &gt; ½ and v &lt;= ½</em>  </li>
+<li><em>V = V3 if u &lt;= ½ and v &gt; ½</em>  </li>
+<li><em>V = V4 if u &gt; ½ and v &gt; ½</em>  </li>
+</ul>
+<p>where <em>V1</em>, <em>V2</em>, <em>V3</em>, <em>V4</em> are the pixel values of the corresponding points in the
+source dataset.  </p>
+<p>The interpolation is shown in the following image:</p>
+<p><img alt="Algorithm #3" src="../images/algo-3.png" /></p>
+<h4 id="bilinear-bilinear-1">Bilinear - <code>"bilinear"</code>, <code>1</code></h4>
+<p><strong>Bilinear interpolation</strong> uses the four adjacent source pixels to compute the value
+<em>V</em> of point <em>P</em> in the target grid mapping according to:</p>
+<p><em>V = VA + v (VB − VA)</em>  </p>
+<p>with  </p>
+<p><em>VA = V1 + u (V2 − V1)</em><br />
+<em>VB = V3 + u (V4 − V3)</em>  </p>
+<p>where <em>V1</em>, <em>V2</em>, <em>V3</em>, <em>V4</em> are the pixel values of the corresponding points in the
+source dataset.</p>
+<h4 id="triangular-triangular">Triangular - <code>"triangular"</code></h4>
+<p>The triangluar interpolation can be used to speed up the bilinear interpolation. It 
+uses three adjacent source pixels to determine the pixel value <em>V</em> of point <em>P</em> in 
+the target grid mapping according to:</p>
+<ul>
+<li><em>V = V1 + u (V2 − V1) + v (V3 − V1), if u+v &lt; 1</em>  </li>
+<li><em>V = V4 + (1 - u) (V3 − V4) + (1 - v) (V2 − V4), if u+v &gt;= 1</em>  </li>
+</ul>
+<p>where <em>V1</em>, <em>V2</em>, <em>V3</em>, <em>V4</em> are the pixel values of the points in the source dataset.</p>
+<h3 id="remarks">Remarks</h3>
+<ol>
+<li>
+<p>If the <strong>target pixel size is much smaller</strong> than the source pixel size, and the
+   source has low spatial resolution, results may be inaccurate. Curved source pixel
+   boundaries must be considered for many projections.  </p>
+</li>
+<li>
+<p>If <em>x, y</em> are decimal longitude and latitude, and the north or south poles are in
+   the scene, the algorithm may fail. Workarounds include:  </p>
+</li>
+<li>
+<p>Transforming source coordinates into another suitable CRS first.  </p>
+</li>
+<li>
+<p>Transforming longitude values <em>x</em> into complex numbers and normalizing latitudes
+     <em>y</em> to the range [-1, +1]:  </p>
+<p><em>x' = cos(x) + i sin(x)</em><br />
+<em>y' = 2y / π</em></p>
+</li>
+</ol>
 
 
 
