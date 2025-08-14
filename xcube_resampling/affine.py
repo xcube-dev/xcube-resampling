@@ -21,7 +21,6 @@
 
 import math
 from collections.abc import Iterable, Sequence
-from typing import Literal
 
 import dask.array as da
 import numpy as np
@@ -34,6 +33,7 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
+    InterpMethodInt,
     InterpMethods,
     RecoverNans,
 )
@@ -158,7 +158,7 @@ def resample_dataset(
         yx_dims: Tuple specifying the names of the spatial dimensions (y, x).
         target_size: The shape (height, width) of the resampled output in pixels.
         target_tile_size: Chunk size (height, width) for tiled output arrays.
-        interp_methods: Optional intepolation method to be used for upsampling spatial
+        interp_methods: Optional interpolation method to be used for upsampling spatial
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
@@ -174,7 +174,7 @@ def resample_dataset(
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
         recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when interpolation method > 0, i.e. not nearest).
+            upsampling (only applies when interpolation method is not nearest).
             Can be a single boolean or a dictionary mapping variable names or dtypes
             to booleans. Defaults to False.
         fill_values: Optional value(s) to use for regions outside source extent.
@@ -239,7 +239,7 @@ def _resample_array(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: Literal[0, 1],
+    interp_method: InterpMethodInt,
     agg_method: AggFunction,
     recover_nan: bool,
     fill_value: FloatInt,
@@ -274,7 +274,7 @@ def _downscale(
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
     agg_method: AggFunction,
-    interp_method: Literal[0, 1],
+    interp_method: InterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -312,7 +312,7 @@ def _upscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: Literal[0, 1],
+    interp_method: InterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
