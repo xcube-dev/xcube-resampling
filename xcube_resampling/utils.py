@@ -250,7 +250,7 @@ def _prep_interp_methods_downscale(
                 interp_downscale[key] = "bilinear"
             else:
                 interp_downscale[key] = val
-        return interp_methods
+        return interp_downscale
     return interp_methods
 
 
