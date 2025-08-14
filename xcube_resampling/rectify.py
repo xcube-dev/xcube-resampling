@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Hashable, Iterable, Mapping
+from collections.abc import Hashable, Iterable
 
 import dask.array as da
 import numba as nb
@@ -34,30 +34,29 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
+    InterpMethod,
+    InterpMethodStr,
+    InterpMethods,
     RecoverNans,
-    SplineOrder,
-    SplineOrders,
 )
 from .dask import compute_array_from_func
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_spline_order,
+    _get_interp_method_str,
     _is_equal_crs,
+    _prep_interp_methods_downscale,
     _select_variables,
     normalize_grid_mapping,
 )
 
 
-# ToDo: spline-order 1 is triangular, spline-order 2 is bilinear;
-# ToDo: in affine transformation spline-order 1 is bilinear, spline-order 2 is
-# ToDo: quadratic; need some alignment.
 def rectify_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
@@ -78,20 +77,26 @@ def rectify_dataset(
             inferred from the dataset.
         variables: Optional variable(s) to rectify. If None, all eligible variables
             are processed.
-        spline_orders: Optional spline order(s) for interpolating variables.
-            Can be a single value or a mapping by variable name or data type:
+        interp_methods: Optional interpolation method to be used for upsampling spatial
+            data variables. Can be a single interpolation method for all variables or a
+            dictionary mapping variable names or dtypes to interpolation method.
+            Supported methods include:
                 - `0` (nearest neighbor)
                 - `1` (linear / bilinear)
-                - `2` (quadratic)
-                - `3` (cubic)
-            Default is `0` for integer data, else `1`.
-        agg_methods: Optional aggregation method(s) for downsampling spatial variables.
-            Can be a string or a dictionary by variable or type. Supported values:
-                "center", "count", "first", "last", "max", "mean", "median", "mode",
-                "min", "prod", "std", "sum", or "var".
-            Default is "center" for integers, else "mean".
+                - `"nearest"`
+                - `"triangular"`
+                - `"bilinear"`
+            The default is `0` for integer arrays, else `1`.
+        agg_methods: Optional aggregation methods for downsampling spatial variables.
+            Can be a single method for all variables or a dictionary mapping variable
+            names or dtypes to methods. Supported methods include:
+                "center", "count", "first", "last", "max", "mean", "median",
+                "mode", "min", "prod", "std", "sum", and "var".
+            Defaults to "center" for integer arrays, else "mean".
         recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only if spline order > 0). Default is False.
+            upsampling (only applies when interpolation method is not nearest).
+            Can be a single boolean or a dictionary mapping variable names or dtypes
+            to booleans. Defaults to False.
         fill_values: Optional fill value(s) for areas outside input coverage.
             Can be a single value or dictionary by variable or type. If not provided,
             defaults based on data type are used:
@@ -128,7 +133,7 @@ def rectify_dataset(
         source_ds,
         source_gm,
         target_gm,
-        spline_orders,
+        interp_methods,
         agg_methods,
         recover_nans,
     )
@@ -162,7 +167,7 @@ def rectify_dataset(
                 var_name,
                 target_gm,
                 target_source_ij,
-                spline_orders,
+                interp_methods,
                 fill_values,
             )
 
@@ -219,7 +224,7 @@ def _downscale_source_dataset(
     source_ds: xr.Dataset,
     source_gm: GridMapping,
     target_gm: GridMapping,
-    spline_orders: int | Mapping[np.dtype | str, int] | None,
+    interp_methods: InterpMethods | None,
     agg_methods: AggMethods | None,
     recover_nans: RecoverNans,
 ) -> (xr.Dataset, GridMapping):
@@ -228,13 +233,14 @@ def _downscale_source_dataset(
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
         w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+
         source_ds = resample_dataset(
             source_ds,
             ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),
             (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
             downscaled_size,
             source_gm.tile_size,
-            spline_orders,
+            _prep_interp_methods_downscale(interp_methods),
             agg_methods,
             recover_nans,
         )
@@ -248,7 +254,7 @@ def _rectify_data_array(
     var_name: Hashable,
     target_gm: GridMapping,
     target_source_ij: da.Array,
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     fill_values: FillValues | None = None,
 ) -> xr.DataArray:
     data_array_expanded = False
@@ -263,7 +269,7 @@ def _rectify_data_array(
         is_numpy_array = False
 
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    spline_order = _get_spline_order(spline_orders, var_name, data_array)
+    interp_method = _get_interp_method_str(interp_methods, var_name, data_array)
 
     # calculate rectification of each chunk along the 1st (non-spatial) dimension.
     slices_rectified = []
@@ -273,7 +279,7 @@ def _rectify_data_array(
         dim0_end = dim0_start + chunk_size
 
         data_rectified = _compute_var_image(
-            data_array[dim0_start:dim0_end], target_source_ij, fill_value, spline_order
+            data_array[dim0_start:dim0_end], target_source_ij, fill_value, interp_method
         )
         slices_rectified.append(data_rectified)
     array_rectified = da.concatenate(slices_rectified, axis=0)
@@ -562,8 +568,8 @@ def _compute_target_source_ij_line(
 def _compute_var_image(
     src_var: xr.DataArray,
     dst_src_ij_images: da.Array,
-    fill_value: FloatInt = np.nan,
-    spline_order: SplineOrders = 0,
+    fill_value: FloatInt,
+    interp_method: InterpMethodStr,
 ) -> da.Array:
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
@@ -576,7 +582,7 @@ def _compute_var_image(
         dst_src_ij_images,
         src_var,
         fill_value,
-        spline_order,
+        interp_method,
         chunksize,
         dtype=src_var.dtype,
         chunks=chunksize,
@@ -589,7 +595,7 @@ def _compute_var_image_block(
     dst_src_ij_images: np.ndarray,
     src_var_image: xr.DataArray,
     fill_value: FloatInt,
-    spline_order: SplineOrder,
+    interp_method: InterpMethodStr,
     chunksize: tuple[int],
 ) -> np.ndarray:
     """Extract source pixels from np.ndarray source
@@ -612,7 +618,7 @@ def _compute_var_image_block(
         ..., src_bbox[1] : src_bbox[3], src_bbox[0] : src_bbox[2]
     ].values.astype(np.float64)
     _compute_var_image_sequential(
-        src_var_image, dst_src_ij_images, dst_values, src_bbox, spline_order
+        src_var_image, dst_src_ij_images, dst_values, src_bbox, interp_method
     )
     dst_out[..., :dst_height, :dst_width] = dst_values
     return dst_out
@@ -626,7 +632,7 @@ def _compute_var_image_sequential(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    spline_order: SplineOrder,
+    interp_method: InterpMethodStr,
 ):
     """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
@@ -639,7 +645,7 @@ def _compute_var_image_sequential(
             dst_src_ij_images,
             dst_var_image,
             src_bbox,
-            spline_order,
+            interp_method,
         )
 
 
@@ -650,7 +656,7 @@ def _compute_var_image_for_dest_line(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    spline_order: SplineOrder,
+    interp_method: InterpMethodStr,
 ):
     """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.
@@ -673,15 +679,13 @@ def _compute_var_image_for_dest_line(
         src_j0 = int(src_j_f)
         u = src_i_f - src_i0
         v = src_j_f - src_j0
-        if spline_order == 0:
-            # nearest-neighbor
+        if interp_method == "nearest":
             if u > 0.5:
                 src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             if v > 0.5:
                 src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             dst_var_value = src_var_image[..., src_j0, src_i0]
-        elif spline_order == 1:
-            # triangular
+        elif interp_method == "triangular":
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_01 = src_var_image[..., src_j0, src_i1]
@@ -700,8 +704,7 @@ def _compute_var_image_for_dest_line(
                     + (1.0 - u) * (value_10 - value_11)
                     + (1.0 - v) * (value_01 - value_11)
                 )
-        elif spline_order == 2:
-            # bilinear
+        elif interp_method == "bilinear":
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_00 = src_var_image[..., src_j0, src_i0]
@@ -712,9 +715,10 @@ def _compute_var_image_for_dest_line(
             value_u1 = value_10 + u * (value_11 - value_10)
             dst_var_value = value_u0 + v * (value_u1 - value_u0)
         else:
-            # cubic
-            # TODO need to be implemented
-            raise NotImplementedError()
+            raise NotImplementedError(
+                f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', "
+                f"'triangular', was '{interp_method}'."
+            )
 
         dst_var_image[..., dst_j, dst_i] = dst_var_value
 

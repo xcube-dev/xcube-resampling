@@ -28,23 +28,22 @@ import xarray as xr
 from dask_image import ndinterp
 
 from .constants import (
-    LOG,
     AffineTransformMatrix,
     AggFunction,
     AggMethods,
     FillValues,
     FloatInt,
+    InterpMethodInt,
+    InterpMethods,
     RecoverNans,
-    SplineOrder,
-    SplineOrders,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _can_apply_affine_transform,
     _get_agg_method,
     _get_fill_value,
+    _get_interp_method_int,
     _get_recover_nan,
-    _get_spline_order,
     _select_variables,
     normalize_grid_mapping,
 )
@@ -55,7 +54,7 @@ def affine_transform_dataset(
     target_gm: GridMapping,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
@@ -71,13 +70,14 @@ def affine_transform_dataset(
         source_gm: The grid mapping of the input dataset. If None, it is inferred
             from the dataset.
         variables: Optional variable(s) to transform. If None, all variables are used.
-        spline_orders: Optional spline orders to be used for upsampling spatial data
-            variables. Can be a single spline order for all variables or a dictionary
-            mapping variable names or dtypes to spline orders. A spline order is one of:
+        interp_methods: Optional interpolation method to be used for upsampling spatial
+            data variables. Can be a single interpolation method for all variables or a
+            dictionary mapping variable names or dtypes to interpolation method.
+            Supported methods include:
                 - `0` (nearest neighbor)
                 - `1` (linear / bilinear)
-                - `2` (quadratic)
-                - `3` (cubic)
+                - `"nearest"`
+                - `"bilinear"`
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
@@ -86,8 +86,9 @@ def affine_transform_dataset(
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
         recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when spline order > 0). Can be a single boolean or
-            a dictionary mapping variable names or dtypes to booleans. Defaults to False.
+            upsampling (only applies when interpolation method is not nearest).
+            Can be a single boolean or a dictionary mapping variable names or dtypes
+            to booleans. Defaults to False.
         fill_values: Optional fill value(s) for areas outside the input bounds.
             Can be a single value or a dictionary mapping variable names or dtypes
             to fill values. If not provided, defaults are:
@@ -118,7 +119,7 @@ def affine_transform_dataset(
         (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
         target_gm.size,
         target_gm.tile_size,
-        spline_orders,
+        interp_methods,
         agg_methods,
         recover_nans,
         fill_values,
@@ -139,7 +140,7 @@ def resample_dataset(
     yx_dims: tuple[str, str],
     target_size: tuple[int, int],
     target_tile_size: tuple[int, int],
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
@@ -157,21 +158,25 @@ def resample_dataset(
         yx_dims: Tuple specifying the names of the spatial dimensions (y, x).
         target_size: The shape (height, width) of the resampled output in pixels.
         target_tile_size: Chunk size (height, width) for tiled output arrays.
-        spline_orders: Optional spline order(s) for upsampling spatial variables.
-            Can be a single order or a dictionary mapping variable names or dtypes to:
+        interp_methods: Optional interpolation method to be used for upsampling spatial
+            data variables. Can be a single interpolation method for all variables or a
+            dictionary mapping variable names or dtypes to interpolation method.
+            Supported methods include:
                 - `0` (nearest neighbor)
                 - `1` (linear / bilinear)
-                - `2` (quadratic)
-                - `3` (cubic)
-            Default is `0` for integer arrays, else `1`.
-        agg_methods: Optional aggregation method(s) for downsampling spatial variables.
-            Can be a single method or a dictionary mapping variable names or dtypes to:
+                - `"nearest"`
+                - `"bilinear"`
+            The default is `0` for integer arrays, else `1`.
+        agg_methods: Optional aggregation methods for downsampling spatial variables.
+            Can be a single method for all variables or a dictionary mapping variable
+            names or dtypes to methods. Supported methods include:
                 "center", "count", "first", "last", "max", "mean", "median",
-                "mode", "min", "prod", "std", "sum", or "var".
-            Default is "center" for integers, else "mean".
-        recover_nans: Optional flag or mapping to enable NaN recovery during upsampling
-            (only applies when spline order > 0). Can be a single boolean or a mapping
-            by variable name or dtype. Defaults to False.
+                "mode", "min", "prod", "std", "sum", and "var".
+            Defaults to "center" for integer arrays, else "mean".
+        recover_nans: Optional boolean or mapping to enable NaN recovery during
+            upsampling (only applies when interpolation method is not nearest).
+            Can be a single boolean or a dictionary mapping variable names or dtypes
+            to booleans. Defaults to False.
         fill_values: Optional value(s) to use for regions outside source extent.
             Can be a single value or a dictionary mapping variable names or dtypes
             to specific fill values. If not provided, defaults are:
@@ -188,6 +193,7 @@ def resample_dataset(
     data_vars = dict()
     coords = dict()
     for var_name, data_array in dataset.variables.items():
+        data_array = xr.DataArray(data_array)
         new_data_array = None
         if data_array.dims[-2:] == yx_dims:
             if isinstance(data_array.data, np.ndarray):
@@ -207,7 +213,7 @@ def resample_dataset(
                 affine_matrix,
                 output_shape,
                 output_chunks,
-                _get_spline_order(spline_orders, var_name, data_array),
+                _get_interp_method_int(interp_methods, var_name, data_array),
                 _get_agg_method(agg_methods, var_name, data_array),
                 _get_recover_nan(recover_nans, var_name, data_array),
                 _get_fill_value(fill_values, var_name, data_array),
@@ -233,19 +239,19 @@ def _resample_array(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    spline_order: SplineOrder,
+    interp_method: InterpMethodInt,
     agg_method: AggFunction,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    if (affine_matrix[0][0] > 1 or affine_matrix[1][0] > 1) and spline_order != 0:
+    if (affine_matrix[0][0] > 1 or affine_matrix[1][0] > 1) and interp_method != 0:
         array = _downscale(
             array,
             affine_matrix,
             output_shape,
             output_chunks,
             agg_method,
-            spline_order,
+            interp_method,
             recover_nan,
             fill_value,
         )
@@ -255,7 +261,7 @@ def _resample_array(
             affine_matrix,
             output_shape,
             output_chunks,
-            spline_order,
+            interp_method,
             recover_nan,
             fill_value,
         )
@@ -268,7 +274,7 @@ def _downscale(
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
     agg_method: AggFunction,
-    spline_order: SplineOrder,
+    interp_method: InterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -289,7 +295,7 @@ def _downscale(
         affine_matrix,
         output_shape,
         output_chunks,
-        spline_order,
+        interp_method,
         recover_nan,
         fill_value,
     )
@@ -306,7 +312,7 @@ def _upscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    spline_order: SplineOrder,
+    interp_method: InterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -314,23 +320,22 @@ def _upscale(
     offset = (array.ndim - 2) * (0,) + (j_off, i_off)
     scale = (array.ndim - 2) * (1,) + (j_scale, i_scale)
     matrix = np.diag(scale)
-    if array.ndim > 2 and spline_order > 1:
-        spline_order = 0 if np.issubdtype(array.dtype, np.integer) else 1
-        LOG.warning(
-            "Spline order > 1 is not supported for 3D arrays in affine transforms, "
+    if interp_method > 1:
+        raise ValueError(
+            "interp_methods must be one of 0, 1, 'nearest', 'bilinear'. "
+            "Higher order is not supported for 3D arrays in affine transforms, "
             "as it causes unintended blending across the non-spatial (e.g., time) "
-            "dimension. Falling back to spline_order = %d.",
-            spline_order,
+            "dimension."
         )
     kwargs = dict(
         offset=offset,
-        order=spline_order,
+        order=interp_method,
         output_shape=output_shape,
         output_chunks=output_chunks,
         mode="constant",
         cval=fill_value,
     )
-    if recover_nan and spline_order > 0:
+    if recover_nan and interp_method > 0:
         # We can "recover" values that are neighbours to NaN values
         # that would otherwise become NaN too.
         mask = da.isnan(array)

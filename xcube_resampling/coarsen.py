@@ -26,6 +26,8 @@ or have special implementations compared to their numpy equivalents.
 
 import numba as nb
 import numpy as np
+import warnings
+
 
 _ALL = slice(None)
 
@@ -79,6 +81,7 @@ def std(block: np.ndarray, axis: tuple[int, ...] | None = None) -> np.ndarray:
     return _reduce(np.std, np.nanstd, block, axis)
 
 
+# noinspection PyShadowingBuiltins
 def sum(block: np.ndarray, axis: tuple[int, ...] | None = None) -> np.ndarray:
     return _reduce(np.sum, np.nansum, block, axis)
 
@@ -95,7 +98,9 @@ def _reduce(
         return block
     elif np.issubdtype(block.dtype, np.floating):
         # For floating point types use nan-reducer
-        return nan_reducer(block, axis)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            return nan_reducer(block, axis)
     else:
         # For integer and boolean types use "normal" reducer
         a = reducer(block, axis)

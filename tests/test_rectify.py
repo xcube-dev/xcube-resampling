@@ -44,7 +44,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         np.testing.assert_almost_equal(
             target_ds.rad.values,
@@ -65,7 +65,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         self.assertEqual(
             set(source_ds.variables).union(["spatial_ref"]),
             set(target_ds.variables),
@@ -102,7 +102,7 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
         np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, dtype=lon.dtype))
@@ -125,7 +125,7 @@ class RectifyDatasetTest(unittest.TestCase):
             ),
         )
 
-    def test_rectify_2x2_to_7x7_spline_orders_1(self):
+    def test_rectify_2x2_to_7x7_interp_methods_1(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
         # Add offset to "rad" so its values do not lie on a plane
         source_ds["rad"] = source_ds.rad + xr.DataArray(
@@ -136,7 +136,9 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=1)
+        target_ds = rectify_dataset(
+            source_ds, target_gm=target_gm, interp_methods="triangular"
+        )
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
         np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, dtype=lon.dtype))
@@ -171,7 +173,9 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=2)
+        target_ds = rectify_dataset(
+            source_ds, target_gm=target_gm, interp_methods="bilinear"
+        )
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
         np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, dtype=lon.dtype))
@@ -195,14 +199,15 @@ class RectifyDatasetTest(unittest.TestCase):
             decimal=3,
         )
 
-    def test_rectify_2x2_to_7x7_invalid_spline_order(self):
+    def test_rectify_2x2_to_7x7_invalid_interp_methods(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
             size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
         )
         with self.assertRaises(NotImplementedError):
-            rectify_dataset(source_ds, target_gm=target_gm, spline_orders=3)
+            # noinspection PyTypeChecker
+            rectify_dataset(source_ds, target_gm=target_gm, interp_methods="cubic")
 
     def test_rectify_2x2_to_7x7_subset(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
@@ -211,7 +216,9 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(7, 7), xy_min=(1.5, 50.5), xy_res=1.0, crs=CRS_WGS84
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(
+            source_ds, target_gm=target_gm, interp_methods="nearest"
+        )
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
         np.testing.assert_almost_equal(lon.values, np.arange(2, 8.1, dtype=lon.dtype))
         np.testing.assert_almost_equal(
@@ -240,7 +247,7 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(13, 13), xy_min=(-0.25, 49.75), xy_res=0.5, crs=CRS_WGS84
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (13, 13))
         np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
@@ -258,7 +265,7 @@ class RectifyDatasetTest(unittest.TestCase):
             is_j_axis_up=True,
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (13, 13))
         np.testing.assert_almost_equal(lon.values, np.arange(0, 6.1, 0.5, lon.dtype))
@@ -279,7 +286,7 @@ class RectifyDatasetTest(unittest.TestCase):
             is_j_axis_up=True,
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((5, 5, 3), (5, 5, 3))
@@ -297,7 +304,7 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(13, 13), xy_min=(-0.25, 49.75), xy_res=0.5, crs=CRS_WGS84, tile_size=7
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((7, 6), (7, 6))
@@ -313,7 +320,7 @@ class RectifyDatasetTest(unittest.TestCase):
             size=(13, 13), xy_min=(-0.25, 49.75), xy_res=0.5, crs=CRS_WGS84, tile_size=5
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((5, 5, 3), (5, 5, 3))
@@ -333,7 +340,7 @@ class RectifyDatasetTest(unittest.TestCase):
             tile_size=(3, 13),
         )
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((13,), (3, 3, 3, 3, 1))
@@ -352,7 +359,7 @@ class RectifyDatasetTest(unittest.TestCase):
             crs=CRS_WGS84,
             tile_size=(13, 3),
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         lon, lat, rad = self._assert_shape_and_dim(
             target_ds, (13, 13), chunks=((3, 3, 3, 3, 1), (13,))
@@ -370,7 +377,7 @@ class RectifyDatasetTest(unittest.TestCase):
 
         self.assertEqual(True, target_gm.is_lon_360)
 
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
 
         self.assertIsNotNone(target_ds)
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (13, 13))
@@ -404,7 +411,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(10.0, 50.0), xy_res=0.5, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_array_equal(
             np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
         )
@@ -412,7 +419,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(-10.0, 50.0), xy_res=0.5, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_array_equal(
             np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
         )
@@ -420,7 +427,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(0.0, 58.0), xy_res=0.5, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_array_equal(
             np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
         )
@@ -428,7 +435,7 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(13, 13), xy_min=(0.0, 42.0), xy_res=0.5, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, spline_orders=0)
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_array_equal(
             np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
         )

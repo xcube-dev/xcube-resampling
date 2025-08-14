@@ -28,8 +28,8 @@ from .constants import (
     LOG,
     AggMethods,
     FillValues,
+    InterpMethods,
     RecoverNans,
-    SplineOrders,
 )
 from .gridmapping import GridMapping
 from .rectify import rectify_dataset
@@ -42,7 +42,7 @@ def resample_in_space(
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    spline_orders: SplineOrders | None = None,
+    interp_methods: InterpMethods | None = None,
     agg_methods: AggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
@@ -67,19 +67,33 @@ def resample_in_space(
             `GridMapping.from_dataset(source_ds)`.
         variables: A single variable name or iterable of variable names to be
             resampled. If None, all data variables will be processed.
-        spline_orders: Spline orders used for upsampling spatial data variables.
-            Can be a single spline order (0=nearest, 1=linear, 2=bilinear, 3=cubic),
-            or a dictionary mapping variable names or data dtypes to spline orders.
-            Defaults to 3 for floating-point data and 0 for integers.
-        agg_methods: Aggregation methods for downsampling spatial data variables.
-            Can be a single method (e.g., `np.mean`) or a dictionary mapping variable
-            names or dtypes to aggregation methods. These are passed to
-            `dask.array.coarsen`.
-        recover_nans: Whether to apply a special algorithm to recover values that
-            would otherwise become NaN during resampling. This can be a single boolean
-            or a dictionary mapping variable names or dtypes to booleans. Defaults to
-            False.
-        fill_values: Fill values to use for areas where data is unavailable.
+        interp_methods: Optional interpolation method to be used for upsampling spatial
+            data variables. Can be a single interpolation method for all variables or a
+            dictionary mapping variable names or dtypes to interpolation method.
+            Supported methods include:
+                - `0` (nearest neighbor)
+                - `1` (linear / bilinear)
+                - `"nearest"`
+                - `"triangular"`
+                - `"bilinear"`
+            The default is `0` for integer arrays, else `1`.
+        agg_methods: Optional aggregation methods for downsampling spatial variables.
+            Can be a single method for all variables or a dictionary mapping variable
+            names or dtypes to methods. Supported methods include:
+                "center", "count", "first", "last", "max", "mean", "median",
+                "mode", "min", "prod", "std", "sum", and "var".
+            Defaults to "center" for integer arrays, else "mean".
+        recover_nans: Optional boolean or mapping to enable NaN recovery during
+            upsampling (only applies when interpolation method is not nearest).
+            Can be a single boolean or a dictionary mapping variable names or dtypes
+            to booleans. Defaults to False.
+        fill_values: Optional fill value(s) for areas outside input coverage.
+            Can be a single value or dictionary by variable or type. If not provided,
+            defaults based on data type are used:
+                - float: NaN
+                - uint8: 255
+                - uint16: 65535
+                - other ints: -1
         tile_size: Optional tile size used when generating a regular grid from
             an irregular source grid mapping. Only used if `target_gm` is not provided.
 
@@ -109,7 +123,7 @@ def resample_in_space(
             target_gm=target_gm,
             source_gm=source_gm,
             variables=variables,
-            spline_orders=spline_orders,
+            interp_methods=interp_methods,
             agg_methods=agg_methods,
             recover_nans=recover_nans,
             fill_values=fill_values,
@@ -132,7 +146,7 @@ def resample_in_space(
                 target_gm,
                 source_gm=source_gm,
                 variables=variables,
-                spline_orders=spline_orders,
+                interp_methods=interp_methods,
                 agg_methods=agg_methods,
                 recover_nans=recover_nans,
                 fill_values=fill_values,
@@ -143,7 +157,7 @@ def resample_in_space(
                 target_gm,
                 source_gm=source_gm,
                 variables=variables,
-                spline_orders=spline_orders,
+                interp_methods=interp_methods,
                 agg_methods=agg_methods,
                 recover_nans=recover_nans,
                 fill_values=fill_values,

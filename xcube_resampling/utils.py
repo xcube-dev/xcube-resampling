@@ -30,13 +30,16 @@ from .constants import (
     FILLVALUE_INT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
+    INTERP_METHOD_MAPPING,
     LOG,
     AggMethod,
     AggMethods,
     FloatInt,
+    InterpMethod,
+    InterpMethodStr,
+    InterpMethodInt,
+    InterpMethods,
     RecoverNans,
-    SplineOrder,
-    SplineOrders,
 )
 from .gridmapping import GridMapping
 
@@ -186,29 +189,66 @@ def _is_equal_crs(source_gm: GridMapping, target_gm: GridMapping) -> bool:
     return geographic or source_gm.crs.equals(target_gm.crs)
 
 
-def _get_spline_order(
-    spline_orders: SplineOrders | None,
+def _get_interp_method(
+    interp_methods: InterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
-) -> SplineOrder:
-    def assign_defaults(data_type: np.dtype) -> SplineOrder:
+) -> InterpMethod:
+    def assign_defaults(data_type: np.dtype) -> InterpMethod:
         return 0 if np.issubdtype(data_type, np.integer) else 1
 
-    if isinstance(spline_orders, Mapping):
-        spline_order = spline_orders.get(str(key), spline_orders.get(var.dtype))
-        if spline_order is None:
+    if isinstance(interp_methods, Mapping):
+        interp_method = interp_methods.get(str(key), interp_methods.get(var.dtype))
+        if interp_method is None:
             LOG.warning(
-                f"Spline order could not be derived from the mapping `spline_orders` "
-                f"for data variable {key!r} with data type {var.dtype!r}. Defaults "
-                f"are assigned."
+                f"Interpolation method could not be derived from the mapping "
+                f"`interp_methods` for data variable {key!r} with data type "
+                f"{var.dtype!r}. Defaults are assigned."
             )
-            spline_order = assign_defaults(var.dtype)
-    elif isinstance(spline_orders, int):
-        spline_order = spline_orders
+            interp_method = assign_defaults(var.dtype)
+    elif isinstance(interp_methods, int) or isinstance(interp_methods, str):
+        interp_method = interp_methods
     else:
-        spline_order = assign_defaults(var.dtype)
+        interp_method = assign_defaults(var.dtype)
 
-    return spline_order
+    return interp_method
+
+
+def _get_interp_method_int(
+    interp_methods: InterpMethods | None,
+    key: Hashable,
+    var: xr.DataArray,
+) -> InterpMethodInt:
+    interp_method = _get_interp_method(interp_methods, key, var)
+    if isinstance(interp_method, str):
+        interp_method = INTERP_METHOD_MAPPING[interp_method]
+    return interp_method
+
+
+def _get_interp_method_str(
+    interp_methods: InterpMethods | None,
+    key: Hashable,
+    var: xr.DataArray,
+) -> InterpMethodStr:
+    interp_method = _get_interp_method(interp_methods, key, var)
+    if isinstance(interp_method, int):
+        interp_method = INTERP_METHOD_MAPPING[interp_method]
+    return interp_method
+
+
+def _prep_interp_methods_downscale(
+    interp_methods: InterpMethods | None,
+) -> InterpMethods | None:
+    if interp_methods == "triangular":
+        return "bilinear"
+    elif (
+        isinstance(interp_methods, Mapping) and "triangular" in interp_methods.values()
+    ):
+        return {
+            k: ("bilinear" if v == "triangular" else v)
+            for k, v in interp_methods.items()
+        }
+    return interp_methods
 
 
 def _get_agg_method(
