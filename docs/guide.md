@@ -18,9 +18,17 @@ resampling algorithms.
 
 ### `GridMapping` – the grid mapping object
 
-A `GridMapping` object contains metadata such as the coordinate reference system (CRS),
-spatial resolution, bounding box, spatial size, coordinates, and tile size (if the
-dataset is chunked).  
+
+A `GridMapping` describes the spatial structure of a dataset. It stores metadata such
+as the coordinate reference system (CRS), spatial resolution, bounding box, 
+spatial dimensions, coordinates, and tile size (for chunked datasets).
+
+Grids can be defined in two ways:
+
+- **1D coordinates** – regular grids defined by evenly spaced x/y or lat/lon axes.  
+- **2D coordinates** – irregular grids where each pixel has its own pair of x/y or 
+  lat/lon coordinates.
+
 
 There are three main ways to create a `GridMapping` object:
 
@@ -78,6 +86,9 @@ You can create new grid mappings from existing ones using:
 - [transform](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.gridmapping.GridMapping.transform):
   change the CRS of a grid mapping (regular → irregular with 2D coordinates).
 
+A few examples on how to use the `GridMapping` instance are shown in the [Example Notebooks](examples/coords.ipynb).
+
+
 ### Resampling Algorithms
 
 The function [`resample_in_space`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.spatial.resample_in_space)
@@ -114,27 +125,59 @@ For any data array in the dataset with two spatial dimensions as the last two ax
 
 > **Note:** The `interp_methods` parameter corresponds to the `order` parameter in [`dask_image.ndinterp.affine_transform`](https://image.dask.org/en/latest/dask_image.ndinterp.html). Only spline orders `[0, 1]` are supported to avoid unintended blending across non-spatial dimensions (e.g., time) in 3D arrays.
 
+Simple examples of affine transformations are shown in the [Example Notebooks](examples/affine.ipynb).
+
 #### 2. Reprojection
 
-Reprojection can be applied when both source and target grid mappings are regular but use different CRSs. The function [`reproject_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.reproject.reproject_dataset) requires the input dataset and the target grid mapping.  
+Reprojection can be applied when both source and target grid mappings are regular but 
+use different CRSs. The function [`reproject_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.reproject.reproject_dataset)
+requires the input dataset and the target grid mapping.  
 
-During reprojection, the coordinates of the target grid mapping are transformed to the source CRS, producing 2D irregular coordinates. For each transformed irregular pixel location, neighboring pixels are identified, and their values are used to perform the selected interpolation. Supported interpolation methods are described in [Section Interpolation Methods](#interpolation-methods).
+During reprojection, the coordinates of the target grid mapping are transformed to the 
+source CRS, producing 2D irregular coordinates. For each transformed irregular pixel 
+location, sub-pixel values in the regular source grid mapping are identified. These
+sub-pixel values are used to perform the selected interpolation. Supported interpolation 
+methods are described in [Section Interpolation Methods](#interpolation-methods). 
+
+A large-scale example is shown in the [Example Notebooks](examples/resample_in_space_large_example_reproject_dataset.ipynb).
 
 #### 3. Rectification
 
-Rectification is used when the source dataset has an irregular grid. The function [`rectify_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.rectify.rectify_dataset) requires only the input dataset. If no target grid mapping is provided, the source grid mapping is converted to a regular grid, and interpolation is performed so that the new dataset is defined on this regular grid.  
+Rectification is used when the source dataset has an irregular grid. The function 
+[`rectify_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.rectify.rectify_dataset) 
+requires only the input dataset. If no target grid mapping is provided, the source grid
+mapping is converted to a regular grid, and interpolation is performed so that the new
+dataset is defined on this regular grid.  
 
-For each regular target grid point, neighboring pixels from the irregular source grid are located, and their values are used for the selected interpolation method. Supported interpolation methods are described in [Section Interpolation Methods](#interpolation-methods).
+If a change in CRS is requested (meaning source and target CRS differ), the 2d irregular 
+source grid is transformed to the target CRS, resulting in 2d coordinates defined in 
+the target  CRS. Then, for each regular target grid point, the sub-pixel position in the
+irregular (optionally transformed) source grid is determined. Note, that the determination
+of each sub-pixel position is more complicated/ computational expensive compared to
+the reprojection algorithm explained in [2. Reprojection](#2-reprojection), since the
+soure grid where the look up is done is irregular. 
+This sub-pixel position
+determines the neighboring points which values are used for 
+the selected interpolation method. Supported interpolation methods are described 
+in [Section Interpolation Methods](#interpolation-methods).
 
-
-add stuff from xcube doc. 
+More details on the rectification algorithm shown on the Sentinel-3 example is given in
+[Advanced](advanced/sentinel3.md). An example notebook is given in 
+[Example Notebooks](examples/rectify_dataset.ipynb).
 
 
 ### Interpolation Methods
- add from xcube docs. 
 
-#### nearest 
+As mentioned in [Section 2. Reprojection](#2-reprojection) and [Section 3. Rectification](#3-rectification),
+two 2d coordinates images are generated showning the subpixel position of a target point 
+with respect to the source grid points, as depicted in the following image: 
 
-#### triangular
+![Algorithm #2](images/algo-2.png)
+
+
+
+#### nearest
 
 #### bilinear
+
+#### triangular

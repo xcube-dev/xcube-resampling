@@ -73,8 +73,9 @@ doc = [
   "mkdocs",
   "mkdocs-autorefs",
   "mkdocs-material",
+  "mkdocs-jupyter",
   "mkdocstrings",
-  "mkdocstrings-python"
+  "mkdocstrings-python",
 ]
 
 [tool.setuptools.dynamic]

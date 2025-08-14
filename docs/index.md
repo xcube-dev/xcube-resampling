@@ -39,6 +39,8 @@ based on the criteria below.
 With `resample_in_space`, users do **not** need to worry about selecting the right
 algorithm—the function determines and applies it automatically.
 
+👉 For usage examples and details, see the [User Guide](guide.md).
+
 
 ## License
 
