@@ -244,13 +244,10 @@ def _prep_interp_methods_downscale(
     elif (
         isinstance(interp_methods, Mapping) and "triangular" in interp_methods.values()
     ):
-        interp_downscale = dict()
-        for key, val in interp_methods.items():
-            if val == "triangular":
-                interp_downscale[key] = "bilinear"
-            else:
-                interp_downscale[key] = val
-        return interp_downscale
+        return {
+            k: ("bilinear" if v == "triangular" else v)
+            for k, v in interp_methods.items()
+        }
     return interp_methods
 
 
