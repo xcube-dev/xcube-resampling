@@ -193,7 +193,7 @@ def _get_interp_method(
     interp_methods: InterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
-) -> InterpMethodInt:
+) -> InterpMethod:
     def assign_defaults(data_type: np.dtype) -> InterpMethod:
         return 0 if np.issubdtype(data_type, np.integer) else 1
 
@@ -211,9 +211,17 @@ def _get_interp_method(
     else:
         interp_method = assign_defaults(var.dtype)
 
+    return interp_method
+
+
+def _get_interp_method_int(
+    interp_methods: InterpMethods | None,
+    key: Hashable,
+    var: xr.DataArray,
+) -> InterpMethodInt:
+    interp_method = _get_interp_method(interp_methods, key, var)
     if isinstance(interp_method, str):
         interp_method = INTERP_METHOD_MAPPING[interp_method]
-
     return interp_method
 
 
@@ -222,9 +230,7 @@ def _get_interp_method_str(
     key: Hashable,
     var: xr.DataArray,
 ) -> InterpMethodStr:
-
     interp_method = _get_interp_method(interp_methods, key, var)
-
     if isinstance(interp_method, int):
         interp_method = INTERP_METHOD_MAPPING[interp_method]
     return interp_method
