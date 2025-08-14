@@ -8,12 +8,10 @@ nav:
   - Overview: index.md
   - Getting Started: start.md
   - User Guide: guide.md
-  - Advanced:
-      - Rectification of a Sentinel-3 tile: advanced/sentinel3.md
   - Example Notebooks:
       - GridMapping instance: examples/coords.ipynb
-      - Affine transfomation: examples/affine.ipynb
-      - Rectification of a Sentinel-3 tile: examples/rectify_dataset.ipynb
+      - Affine Transformation: examples/affine.ipynb
+      - Rectification of a Sentinel-3 tile: examples/rectify_sentinel3.ipynb
       - Reprojection of large Land Cover Map: examples/resample_in_space_large_example_reproject_dataset.ipynb
   - Python API: api.md
   - About: about.md

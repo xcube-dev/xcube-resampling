@@ -13,7 +13,7 @@ as they are powered by [Dask](https://www.dask.org/).
 ## Overview
 
 The resampling methods are built around the
-[`GridMapping`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.gridmapping.GridMapping)
+[`GridMapping`](api.md/#xcube_resampling.gridmapping.GridMapping)
 class, which represents a spatial grid mapping and contains all necessary information
 for resampling.  
 
@@ -26,15 +26,15 @@ performed while staying in the same CRS.
 ### `resample_in_space` — the gateway to xcube-resampling
 
 The **central function** in this package is
-[`resample_in_space`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.spatial.resample_in_space),
+[`resample_in_space`](api.md/#xcube_resampling.spatial.resample_in_space),
 which integrates all three algorithms and **automatically selects** the appropriate one
 based on the criteria below.
 
-| Algorithm             | Function                                                                                                                      | Selection Criteria                                                                                   |
-|-----------------------|-------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| **Affine Transformation** | [`affine_transform_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.affine.affine_transform_dataset) | Source and target grids are both regular and share the same CRS.                                    |
-| **Reprojection**      | [`reproject_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.reproject.reproject_dataset)         | Source and target grids are both regular but have different CRS.                                    |
-| **Rectification**     | [`rectify_dataset`](https://xcube-dev.github.io/xcube-resampling/api/#xcube_resampling.rectify.rectify_dataset)               | Source grid is irregular and contains 2D coordinates.                                               |
+| Algorithm             | Function                                                                               | Selection Criteria                                                                                   |
+|-----------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| **Affine Transformation** | [`affine_transform_dataset`](api.md/#xcube_resampling.affine.affine_transform_dataset) | Source and target grids are both regular and share the same CRS.                                    |
+| **Reprojection**      | [`reproject_dataset`](api.md/#xcube_resampling.reproject.reproject_dataset)            | Source and target grids are both regular but have different CRS.                                    |
+| **Rectification**     | [`rectify_dataset`](api.md/#xcube_resampling.rectify.rectify_dataset)                  | Source grid is irregular and contains 2D coordinates.                                               |
 
 With `resample_in_space`, users do **not** need to worry about selecting the right
 algorithm—the function determines and applies it automatically.
