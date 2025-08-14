@@ -63,7 +63,9 @@ AGG_METHODS: dict[AggMethod, AggFunction] = {
     "sum": np.nansum,
     "var": var,
 }
-InterpMethod: TypeAlias = Literal[0, 1, "nearest", "triangular", "bilinear"]
+InterpMethodInt = Literal[0, 1]
+InterpMethodStr = Literal["nearest", "triangular", "bilinear"]
+InterpMethod = InterpMethodInt | InterpMethodStr
 InterpMethods: TypeAlias = InterpMethod | Mapping[np.dtype | Hashable, InterpMethod]
 INTERP_METHOD_MAPPING = {0: "nearest", 1: "bilinear", "nearest": 0, "bilinear": 1}
 RecoverNans: TypeAlias = bool | Mapping[np.dtype | str, bool]

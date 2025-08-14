@@ -35,6 +35,7 @@ from .constants import (
     FillValues,
     FloatInt,
     InterpMethod,
+    InterpMethodStr,
     InterpMethods,
     RecoverNans,
 )
@@ -42,7 +43,7 @@ from .dask import compute_array_from_func
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_interp_method,
+    _get_interp_method_str,
     _is_equal_crs,
     _prep_interp_methods_downscale,
     _select_variables,
@@ -268,9 +269,7 @@ def _rectify_data_array(
         is_numpy_array = False
 
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_interp_method(
-        interp_methods, var_name, data_array, return_str=True
-    )
+    interp_method = _get_interp_method_str(interp_methods, var_name, data_array)
 
     # calculate rectification of each chunk along the 1st (non-spatial) dimension.
     slices_rectified = []
@@ -569,8 +568,8 @@ def _compute_target_source_ij_line(
 def _compute_var_image(
     src_var: xr.DataArray,
     dst_src_ij_images: da.Array,
-    fill_value: FloatInt = np.nan,
-    interp_method: InterpMethod = 0,
+    fill_value: FloatInt,
+    interp_method: InterpMethodStr,
 ) -> da.Array:
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
@@ -596,7 +595,7 @@ def _compute_var_image_block(
     dst_src_ij_images: np.ndarray,
     src_var_image: xr.DataArray,
     fill_value: FloatInt,
-    interp_method: InterpMethod,
+    interp_method: InterpMethodStr,
     chunksize: tuple[int],
 ) -> np.ndarray:
     """Extract source pixels from np.ndarray source
@@ -633,7 +632,7 @@ def _compute_var_image_sequential(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    interp_method: InterpMethod,
+    interp_method: InterpMethodStr,
 ):
     """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
@@ -657,7 +656,7 @@ def _compute_var_image_for_dest_line(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    interp_method: InterpMethod,
+    interp_method: InterpMethodStr,
 ):
     """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.
@@ -717,8 +716,8 @@ def _compute_var_image_for_dest_line(
             dst_var_value = value_u0 + v * (value_u1 - value_u0)
         else:
             raise NotImplementedError(
-                "interp_methods must be one of 0, 1, 'nearest', "
-                "'bilinear', 'triangular'."
+                f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', "
+                f"'triangular', was '{interp_method}'."
             )
 
         dst_var_image[..., dst_j, dst_i] = dst_var_value

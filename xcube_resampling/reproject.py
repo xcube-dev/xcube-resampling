@@ -33,14 +33,14 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
-    InterpMethod,
+    InterpMethodStr,
     InterpMethods,
     RecoverNans,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_interp_method,
+    _get_interp_method_str,
     _prep_interp_methods_downscale,
     _select_variables,
     clip_dataset_by_bbox,
@@ -207,9 +207,7 @@ def _reproject_data_array(
     # reorganize data array slice to align with the
     # chunks of source_xx and source_yy
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_interp_method(
-        interp_methods, var_name, data_array, return_str=True
-    )
+    interp_method = _get_interp_method_str(interp_methods, var_name, data_array)
     scr_data = _reorganize_data_array_slice(
         array,
         x_coords,
@@ -267,7 +265,7 @@ def _reproject_block(
     y_coord: np.ndarray,
     scr_x_res: int | float,
     scr_y_res: int | float,
-    interp_method: InterpMethod,
+    interp_method: InterpMethodStr,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / scr_x_res
     iy = (source_yy - y_coord[0]) / -scr_y_res
@@ -322,7 +320,8 @@ def _reproject_block(
         data_reprojected = value_u0 + diff_iy * (value_u1 - value_u0)
     else:
         raise NotImplementedError(
-            "interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular'."
+            f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular', "
+            f"was '{interp_method}'."
         )
 
     return data_reprojected

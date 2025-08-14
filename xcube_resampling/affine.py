@@ -21,6 +21,7 @@
 
 import math
 from collections.abc import Iterable, Sequence
+from typing import Literal
 
 import dask.array as da
 import numpy as np
@@ -33,7 +34,6 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
-    InterpMethod,
     InterpMethods,
     RecoverNans,
 )
@@ -193,6 +193,7 @@ def resample_dataset(
     data_vars = dict()
     coords = dict()
     for var_name, data_array in dataset.variables.items():
+        data_array = xr.DataArray(data_array)
         new_data_array = None
         if data_array.dims[-2:] == yx_dims:
             if isinstance(data_array.data, np.ndarray):
@@ -238,7 +239,7 @@ def _resample_array(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: InterpMethod,
+    interp_method: Literal[0, 1],
     agg_method: AggFunction,
     recover_nan: bool,
     fill_value: FloatInt,
@@ -273,7 +274,7 @@ def _downscale(
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
     agg_method: AggFunction,
-    interp_method: InterpMethod,
+    interp_method: Literal[0, 1],
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -311,7 +312,7 @@ def _upscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: InterpMethod,
+    interp_method: Literal[0, 1],
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
