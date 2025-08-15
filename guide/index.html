@@ -1173,23 +1173,18 @@ the target grid mapping according to:</p>
 <p>where <em>V1</em>, <em>V2</em>, <em>V3</em>, <em>V4</em> are the pixel values of the points in the source dataset.</p>
 <h3 id="remarks">Remarks</h3>
 <ol>
-<li>
-<p>If the <strong>target pixel size is much smaller</strong> than the source pixel size, and the
+<li>If the <strong>target pixel size is much smaller</strong> than the source pixel size, and the
    source has low spatial resolution, results may be inaccurate. Curved source pixel
-   boundaries must be considered for many projections.  </p>
+   boundaries must be considered for many projections.</li>
+<li>If <em>x, y</em> are decimal longitude and latitude, and the north or south poles are in
+   the scene, the algorithm may fail. Workarounds include:<ul>
+<li>Transforming source coordinates into another suitable CRS first.  </li>
+<li>Transforming longitude values <em>x</em> into complex numbers and normalizing latitudes
+  <em>y</em> to the range [-1, +1]:  <pre><code>x' = cos(x) + i sin(x)  
+y' = 2y / π
+</code></pre>
 </li>
-<li>
-<p>If <em>x, y</em> are decimal longitude and latitude, and the north or south poles are in
-   the scene, the algorithm may fail. Workarounds include:  </p>
-</li>
-<li>
-<p>Transforming source coordinates into another suitable CRS first.  </p>
-</li>
-<li>
-<p>Transforming longitude values <em>x</em> into complex numbers and normalizing latitudes
-     <em>y</em> to the range [-1, +1]:  </p>
-<p><em>x' = cos(x) + i sin(x)</em><br />
-<em>y' = 2y / π</em></p>
+</ul>
 </li>
 </ol>
 
