@@ -309,6 +309,20 @@ class GridMappingTest(unittest.TestCase):
         self.assertIsNot(xy_coords, scaled_xy_coords)
         self.assertEqual(((2,), (180,), (180,)), scaled_xy_coords.chunks)
 
+        scaled_gm = gm.scale((0.25, 0.5), tile_size=(90, 90))
+
+        self.assertIsNot(gm, scaled_gm)
+        self.assertIsInstance(scaled_gm, RegularGridMapping)
+        self.assertEqual((180, 180), scaled_gm.size)
+        self.assertEqual((90, 90), scaled_gm.tile_size)
+        self.assertEqual(False, scaled_gm.is_j_axis_up)
+        self.assertEqual(("x", "y"), scaled_gm.xy_var_names)
+        self.assertEqual(("x", "y"), scaled_gm.xy_dim_names)
+
+        scaled_xy_coords = scaled_gm.xy_coords
+        self.assertIsNot(xy_coords, scaled_xy_coords)
+        self.assertEqual(((2,), (90, 90), (90, 90)), scaled_xy_coords.chunks)
+
     def test_transform(self):
         gm = _TestGridMapping(
             **self.kwargs(
@@ -427,6 +441,18 @@ class GridMappingTest(unittest.TestCase):
         self.assertFalse(gm1.is_close(gm2, tolerance=tolerance))
         self.assertFalse(gm2.is_close(gm1, tolerance=tolerance))
 
+    def test_is_regular_raise_error(self):
+        gm = _TestGridMapping(**self.kwargs(is_regular=False))
+        with self.assertRaises(ValueError) as cm:
+            GridMapping.assert_regular(gm)
+        self.assertIn("must be a regular grid mapping", str(cm.exception))
+
+        with self.assertRaises(NotImplementedError) as cm:
+            gm._assert_regular()
+        self.assertIn(
+            "Operation not implemented for non-regular grid mappings", str(cm.exception)
+        )
+
     def test_ij_bbox_from_xy_bbox(self):
         gm = _TestGridMapping(**self.kwargs())
 
@@ -484,3 +510,15 @@ class GridMappingTest(unittest.TestCase):
                 dtype=np.int64,
             ),
         )
+
+    def test_repr_markdown(self):
+        gm = _TestGridMapping(**self.kwargs())
+        md = gm._repr_markdown_()
+
+        # Basic structure
+        self.assertIn("class: **_TestGridMapping**", md)
+        self.assertIn("* is_regular: True", md)
+        self.assertIn("* is_j_axis_up: False", md)
+        self.assertIn("* is_lon_360: False", md)
+        self.assertIn("* crs: EPSG:4326", md)
+        self.assertIn("* xy_res: (0.5, 0.5)", md)

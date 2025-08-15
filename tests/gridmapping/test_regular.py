@@ -312,3 +312,26 @@ class RegularGridMappingTest(unittest.TestCase):
         self.assertEqual((size[1], 2), y_bnds.shape)
         np.testing.assert_almost_equal(y_bnds.values[0], y_bnds_values[0])
         np.testing.assert_almost_equal(y_bnds.values[-1], y_bnds_values[-1])
+
+    def test_to_regular(self):
+        gm = GridMapping.regular((1000, 1000), (10, 53), 0.01, CRS_WGS84)
+        gm_test = gm.to_regular()
+        self.assertEqual(gm_test.size, (1000, 1000))
+        self.assertEqual(gm_test.tile_size, (1000, 1000))
+        self.assertEqual(gm_test.crs, CRS_WGS84)
+        self.assertEqual(gm_test.xy_res, (0.01, 0.01))
+        self.assertFalse(gm_test.is_j_axis_up)
+
+        gm_test = gm.to_regular(tile_size=500)
+        self.assertEqual(gm_test.size, (1000, 1000))
+        self.assertEqual(gm_test.tile_size, (500, 500))
+        self.assertEqual(gm_test.crs, CRS_WGS84)
+        self.assertEqual(gm_test.xy_res, (0.01, 0.01))
+        self.assertFalse(gm_test.is_j_axis_up)
+
+        gm_test = gm.to_regular(is_j_axis_up=True)
+        self.assertEqual(gm_test.size, (1000, 1000))
+        self.assertEqual(gm_test.tile_size, (1000, 1000))
+        self.assertEqual(gm_test.crs, CRS_WGS84)
+        self.assertEqual(gm_test.xy_res, (0.01, 0.01))
+        self.assertTrue(gm_test.is_j_axis_up)

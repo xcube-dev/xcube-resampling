@@ -213,10 +213,11 @@ def _transform_coords(
     target_xx_yy = target_xx_yy[:, : source_gm.height, : source_gm.width]
     source_ds = source_ds.drop_vars(source_gm.xy_var_names)
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    if target_gm.crs.is_geographic:
-        yx_var_names = ("lon", "lat")
-    else:
-        yx_var_names = ("transformed_x", "transformed_y")
+    yx_var_names = (
+        ("lon", "lat")
+        if target_gm.crs.is_geographic
+        else ("transformed_x", "transformed_y")
+    )
     if is_numpy_array:
         target_xx_yy = target_xx_yy.compute()
     source_ds = source_ds.assign_coords(

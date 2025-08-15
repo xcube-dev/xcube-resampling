@@ -478,6 +478,27 @@ class RectifyDatasetTest(unittest.TestCase):
             ),
         )
 
+    def test_rectify_different_crs_dask(self):
+        source_ds = create_4x4_dataset_with_irregular_coords()
+        source_ds = source_ds.chunk(dict(y=2, x=2))
+        target_gm = GridMapping.regular(
+            size=(3, 3), xy_min=(3600000, 3200000), xy_res=100000, crs="epsg:3035"
+        )
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
+        np.testing.assert_almost_equal(
+            target_ds.x.values, np.array([3650000.0, 3750000.0, 3850000.0])
+        )
+        np.testing.assert_almost_equal(
+            target_ds.y.values, np.array([3450000.0, 3350000.0, 3250000.0])
+        )
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [[10.0, 6.0, 3.0], [10.0, 7.0, 3.0], [11.0, 11.0, 8.0]],
+                dtype=target_ds.rad.dtype,
+            ),
+        )
+
     def _assert_shape_and_dim(
         self, target_ds, size, chunks=None, var_names=("rad",)
     ) -> tuple[xr.DataArray, ...]:

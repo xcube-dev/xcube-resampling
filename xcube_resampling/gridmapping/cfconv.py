@@ -88,7 +88,6 @@ def get_dataset_grid_mapping_proxies(
     grid_mapping_proxies: dict[Hashable | None, GridMappingProxy] = dict()
 
     # Find any grid mapping variables by CF 'grid_mapping' attribute
-    #
     for var_name, var in dataset.variables.items():
         grid_mapping_var_name = var.attrs.get("grid_mapping")
         if (
@@ -102,7 +101,6 @@ def get_dataset_grid_mapping_proxies(
 
     # If no grid mapping variables found,
     # try if CRS is encoded in some variable's attributes
-    #
     if not grid_mapping_proxies:
         for var_name, var in dataset.variables.items():
             gmp = _parse_crs_from_attrs(var.attrs)
@@ -112,14 +110,12 @@ def get_dataset_grid_mapping_proxies(
 
     # If no grid mapping variables found,
     # try if CRS is encoded in dataset attributes
-    #
     if not grid_mapping_proxies:
         gmp = _parse_crs_from_attrs(dataset.attrs)
         if gmp is not None:
             grid_mapping_proxies[None] = gmp
 
     # Find coordinate variables.
-    #
     latitude_longitude_coords = GridCoords()
     rotated_latitude_longitude_coords = GridCoords()
     projected_coords = GridCoords()
@@ -127,7 +123,6 @@ def get_dataset_grid_mapping_proxies(
     potential_coord_vars = _find_potential_coord_vars(dataset)
 
     # Find coordinate variables that use a CF standard_name.
-    #
     coords_standard_names = (
         (latitude_longitude_coords, "longitude", "latitude"),
         (rotated_latitude_longitude_coords, "grid_longitude", "grid_latitude"),
@@ -135,8 +130,6 @@ def get_dataset_grid_mapping_proxies(
     )
     for var_name in potential_coord_vars:
         var = dataset[var_name]
-        if var.ndim not in (1, 2):
-            continue
         standard_name = var.attrs.get("standard_name")
         for coords, x_name, y_name in coords_standard_names:
             if coords.x is None and standard_name == x_name:
@@ -145,7 +138,6 @@ def get_dataset_grid_mapping_proxies(
                 coords.y = var
 
     # Find coordinate variables by common naming convention.
-    #
     coords_var_names = (
         (latitude_longitude_coords, ("lon", "longitude"), ("lat", "latitude")),
         (
@@ -157,8 +149,6 @@ def get_dataset_grid_mapping_proxies(
     )
     for var_name in potential_coord_vars:
         var = dataset[var_name]
-        if var.ndim not in (1, 2):
-            continue
         for coords, x_names, y_names in coords_var_names:
             if coords.x is None and var_name in x_names:
                 coords.x = var
@@ -166,7 +156,6 @@ def get_dataset_grid_mapping_proxies(
                 coords.y = var
 
     # Assign found coordinates to grid mappings
-    #
     for gmp in grid_mapping_proxies.values():
         if gmp.name == "latitude_longitude":
             gmp.coords = latitude_longitude_coords

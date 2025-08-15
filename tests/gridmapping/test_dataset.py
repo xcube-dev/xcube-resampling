@@ -65,6 +65,21 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
         self.assertEqual((0.8, 0.8), gm.xy_res)
 
+    def test_crs(self):
+        ds = xr.Dataset(
+            {
+                "var": (("lat", "lon"), np.random.rand(2, 2)),
+            },
+            coords={
+                "lon": ("lon", [0, 1]),
+                "lat": ("lat", [0, 1]),
+            },
+        )
+
+        result = GridMapping.from_dataset(ds, crs="EPSG:4326")
+        self.assertTrue(result.is_regular)
+        self.assertEqual(result.crs.to_string(), "EPSG:4326")
+
     def test_from_real_olci(self):
         olci_l2_path = os.path.join(
             os.path.dirname(__file__),
