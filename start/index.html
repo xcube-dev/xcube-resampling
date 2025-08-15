@@ -666,6 +666,8 @@ datasets: </p>
 <span class="n">target_gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">regular</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mf">50.05</span><span class="p">,</span> <span class="mf">10.05</span><span class="p">),</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">&quot;EPSG:4326&quot;</span><span class="p">)</span>
 <span class="n">target_ds</span> <span class="o">=</span> <span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="n">target_gm</span><span class="p">)</span>
 </code></pre></div>
+<p>The resulting dataset <code>target_ds</code> has a size of 3×3, as defined by the target 
+grid mapping:</p>
 <div class="highlight"><pre><span></span><code>&lt;xarray.Dataset&gt; Size: 128B
 Dimensions:      (lat: 3, lon: 3)
 Coordinates:
@@ -675,6 +677,8 @@ Coordinates:
 Data variables:
     refl         (lat, lon) float64 72B 0.875 1.375 1.375 1.5 ... 1.25 1.5 1.0
 </code></pre></div>
+<p>For more examples, including visualization, please refer to the
+<a href="../examples/affine/">Example Notebooks</a>.</p>
 
 
 
