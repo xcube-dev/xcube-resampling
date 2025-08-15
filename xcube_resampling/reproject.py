@@ -77,11 +77,13 @@ def reproject_dataset(
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
-                - `0` (nearest neighbor)
-                - `1` (linear / bilinear)
-                - `"nearest"`
-                - `"triangular"`
-                - `"bilinear"`
+
+            - `0` (nearest neighbor)
+            - `1` (linear / bilinear)
+            - `"nearest"`
+            - `"triangular"`
+            - `"bilinear"`
+
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
@@ -96,10 +98,11 @@ def reproject_dataset(
         fill_values: Optional fill value(s) to assign outside source coverage.
             Can be a single value or dictionary by variable or type. If not set,
             defaults are:
-                - float: NaN
-                - uint8: 255
-                - uint16: 65535
-                - other integers: -1
+
+            - float: NaN
+            - uint8: 255
+            - uint16: 65535
+            - other integers: -1
 
     Returns:
         A new dataset with variables reprojected to the target CRS and

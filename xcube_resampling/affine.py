@@ -74,10 +74,12 @@ def affine_transform_dataset(
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
-                - `0` (nearest neighbor)
-                - `1` (linear / bilinear)
-                - `"nearest"`
-                - `"bilinear"`
+
+            - `0` (nearest neighbor)
+            - `1` (linear / bilinear)
+            - `"nearest"`
+            - `"bilinear"`
+
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
@@ -92,10 +94,11 @@ def affine_transform_dataset(
         fill_values: Optional fill value(s) for areas outside the input bounds.
             Can be a single value or a dictionary mapping variable names or dtypes
             to fill values. If not provided, defaults are:
-                - float: NaN
-                - uint8: 255
-                - uint16: 65535
-                - other integers: -1
+
+            - float: NaN
+            - uint8: 255
+            - uint16: 65535
+            - other integers: -1
 
     Returns:
         A new dataset resampled and aligned to the target grid mapping.
@@ -162,10 +165,12 @@ def resample_dataset(
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
-                - `0` (nearest neighbor)
-                - `1` (linear / bilinear)
-                - `"nearest"`
-                - `"bilinear"`
+
+            - `0` (nearest neighbor)
+            - `1` (linear / bilinear)
+            - `"nearest"`
+            - `"bilinear"`
+
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
@@ -180,10 +185,11 @@ def resample_dataset(
         fill_values: Optional value(s) to use for regions outside source extent.
             Can be a single value or a dictionary mapping variable names or dtypes
             to specific fill values. If not provided, defaults are:
-                - float: NaN
-                - uint8: 255
-                - uint16: 65535
-                - other integers: -1
+
+            - float: NaN
+            - uint8: 255
+            - uint16: 65535
+            - other integers: -1
 
     Returns:
         A new dataset with spatial variables resampled to the target

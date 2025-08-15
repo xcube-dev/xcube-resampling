@@ -81,11 +81,13 @@ def rectify_dataset(
             data variables. Can be a single interpolation method for all variables or a
             dictionary mapping variable names or dtypes to interpolation method.
             Supported methods include:
-                - `0` (nearest neighbor)
-                - `1` (linear / bilinear)
-                - `"nearest"`
-                - `"triangular"`
-                - `"bilinear"`
+
+            - `0` (nearest neighbor)
+            - `1` (linear / bilinear)
+            - `"nearest"`
+            - `"triangular"`
+            - `"bilinear"`
+
             The default is `0` for integer arrays, else `1`.
         agg_methods: Optional aggregation methods for downsampling spatial variables.
             Can be a single method for all variables or a dictionary mapping variable
@@ -100,10 +102,12 @@ def rectify_dataset(
         fill_values: Optional fill value(s) for areas outside input coverage.
             Can be a single value or dictionary by variable or type. If not provided,
             defaults based on data type are used:
-                - float: NaN
-                - uint8: 255
-                - uint16: 65535
-                - other ints: -1
+
+            - float: NaN
+            - uint8: 255
+            - uint16: 65535
+            - other ints: -1
+
         tile_size: Optional tile size for inferring a regular grid, if `target_gm` is
             not provided.
 

@@ -44,7 +44,6 @@ dependencies = [
   "affine>=2.2",
   "dask>=2021.6",
   "dask-image>=0.6",
-  "deprecated>=1.2",
   "numba>=0.52",
   "numpy>=1.16",
   "pyproj>=3.0",
@@ -73,8 +72,9 @@ doc = [
   "mkdocs",
   "mkdocs-autorefs",
   "mkdocs-material",
+  "mkdocs-jupyter",
   "mkdocstrings",
-  "mkdocstrings-python"
+  "mkdocstrings-python",
 ]
 
 [tool.setuptools.dynamic]

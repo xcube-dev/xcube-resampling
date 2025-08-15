@@ -158,7 +158,7 @@ class GridMapping(abc.ABC):
         xy_dim_names: tuple[str, str] = None,
         tile_size: int | tuple[int, int] = None,
         is_j_axis_up: bool = None,
-    ):
+    ) -> "GridMapping":
         """Derive a new grid mapping from this one with some properties changed.
 
         Args:
