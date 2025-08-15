@@ -936,7 +936,9 @@ for resampling.  </p>
 algorithms.</p>
 <hr />
 <h2 id="gridmapping-the-grid-mapping-object"><code>GridMapping</code> – the grid mapping object</h2>
-<p>A <code>GridMapping</code> describes the spatial structure of a dataset. It stores metadata such
+<p>A <code>GridMapping</code> defines the spatial structure of a dataset. It follows the 
+<a href="https://cfconventions.org/Data/cf-conventions/cf-conventions-1.12/cf-conventions.html#grid-mappings-and-projections">CF conventions for grid mappings</a> 
+and provides a standardized way to describe geospatial grids. It stores metadata such
 as the coordinate reference system (CRS), spatial resolution, bounding box, spatial
 dimensions, coordinates, and tile size (for chunked datasets).</p>
 <p>Grids can be defined in two ways:</p>
@@ -988,7 +990,7 @@ coordinate reference system (CRS). Further details of the parameters can be foun
 <li><a href="../api/#xcube_resampling.gridmapping.GridMapping.transform">transform</a>:
   change the CRS of a grid mapping (regular → irregular with 2D coordinates).</li>
 </ul>
-<p>An examples is available in the <a href="../examples/coords/">Example Notebooks</a>.</p>
+<p>An example is available in the <a href="../examples/coords/">Example Notebooks</a>.</p>
 <hr />
 <h3 id="resampling-algorithms">Resampling Algorithms</h3>
 <p>The function <a href="../api/#xcube_resampling.spatial.resample_in_space"><code>resample_in_space</code></a>
