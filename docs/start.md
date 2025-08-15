@@ -57,3 +57,14 @@ target_gm = GridMapping.regular((3, 3), (50.05, 10.05), 0.2, "EPSG:4326")
 target_ds = resample_in_space(source_ds, target_gm=target_gm)
 ```
 
+```text
+<xarray.Dataset> Size: 128B
+Dimensions:      (lat: 3, lon: 3)
+Coordinates:
+    spatial_ref  int64 8B 0
+  * lon          (lon) float64 24B 50.15 50.35 50.55
+  * lat          (lat) float64 24B 10.55 10.35 10.15
+Data variables:
+    refl         (lat, lon) float64 72B 0.875 1.375 1.375 1.5 ... 1.25 1.5 1.0
+
+```

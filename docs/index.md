@@ -1,14 +1,20 @@
 # xcube-resampling
 
-**xcube-resampling** provides algorithms for representing a dataset in a different
-grid mapping. It supports:
+**xcube-resampling** provides efficient algorithms for transforming datasets into 
+different spatial grid mappings. It is designed for geospatial workflows that need 
+flexible resampling and reprojection.
 
-- Simple resampling via affine transformation  
-- Reprojection between coordinate reference systems (CRS)  
-- Rectification of non-regular grids to regular grids  
+### ✨ Features
+- **Affine resampling** – simple resampling using affine transformations  
+- **Reprojection** – convert datasets between different coordinate reference systems (CRS)  
+- **Rectification** – transform irregular grids into regular, well-structured grids  
 
-All algorithms work with chunked (lazily loaded) [xarray.Datasets](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html),
-as they are powered by [Dask](https://www.dask.org/).
+All methods work seamlessly with chunked (lazily loaded) [xarray.Datasets](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html) and are powered by [Dask](https://www.dask.org/) for scalable, out-of-core computation.
+
+### ⚡ Lightweight & Independent
+The package is independent of the core *xcube* framework and has minimal dependencies:
+`affine, dask, dask-image, numba, numpy, pyproj, xarray, zarr`.
+
 
 ## Overview
 

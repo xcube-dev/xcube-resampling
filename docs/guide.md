@@ -18,7 +18,9 @@ algorithms.
 
 ## `GridMapping` – the grid mapping object
 
-A `GridMapping` describes the spatial structure of a dataset. It stores metadata such
+A `GridMapping` defines the spatial structure of a dataset. It follows the 
+[CF conventions for grid mappings](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.12/cf-conventions.html#grid-mappings-and-projections) 
+and provides a standardized way to describe geospatial grids. It stores metadata such
 as the coordinate reference system (CRS), spatial resolution, bounding box, spatial
 dimensions, coordinates, and tile size (for chunked datasets).
 
@@ -84,7 +86,7 @@ You can create new grid mappings from existing ones using:
 - [transform](api.md/#xcube_resampling.gridmapping.GridMapping.transform):
   change the CRS of a grid mapping (regular → irregular with 2D coordinates).
 
-An examples is available in the [Example Notebooks](examples/coords.ipynb).
+An example is available in the [Example Notebooks](examples/coords.ipynb).
 
 ---
 
@@ -251,14 +253,12 @@ where *V1*, *V2*, *V3*, *V4* are the pixel values of the points in the source da
 
 1. If the **target pixel size is much smaller** than the source pixel size, and the
    source has low spatial resolution, results may be inaccurate. Curved source pixel
-   boundaries must be considered for many projections.  
-
+   boundaries must be considered for many projections.
 2. If *x, y* are decimal longitude and latitude, and the north or south poles are in
-   the scene, the algorithm may fail. Workarounds include:  
+   the scene, the algorithm may fail. Workarounds include:
+    * Transforming source coordinates into another suitable CRS first.  
+    * Transforming longitude values *x* into complex numbers and normalizing latitudes
+      *y* to the range [-1, +1]:  
 
-   - Transforming source coordinates into another suitable CRS first.  
-   - Transforming longitude values *x* into complex numbers and normalizing latitudes
-     *y* to the range [-1, +1]:  
-
-     *x' = cos(x) + i sin(x)*  
-     *y' = 2y / π*
+            x' = cos(x) + i sin(x)  
+            y' = 2y / π
