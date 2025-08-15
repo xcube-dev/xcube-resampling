@@ -57,6 +57,10 @@ target_gm = GridMapping.regular((3, 3), (50.05, 10.05), 0.2, "EPSG:4326")
 target_ds = resample_in_space(source_ds, target_gm=target_gm)
 ```
 
+
+The resulting dataset `target_ds` has a size of 3×3, as defined by the target 
+grid mapping:
+
 ```text
 <xarray.Dataset> Size: 128B
 Dimensions:      (lat: 3, lon: 3)
@@ -68,3 +72,6 @@ Data variables:
     refl         (lat, lon) float64 72B 0.875 1.375 1.375 1.5 ... 1.25 1.5 1.0
 
 ```
+
+For more examples, including visualization, please refer to the
+[Example Notebooks](examples/affine.ipynb).
