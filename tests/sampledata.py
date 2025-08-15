@@ -47,6 +47,7 @@ def create_2x2x2_dataset_with_irregular_coords():
     return xr.Dataset(
         dict(
             rad=xr.DataArray(rad, dims=("time", "y", "x")),
+            time_series=xr.DataArray(np.array([1, 2]), dims=("time")),
         ),
         coords=dict(
             lon=xr.DataArray(lon, dims=("y", "x")),
@@ -127,7 +128,7 @@ def create_2x5x5_dataset_regular_utm():
     return ds
 
 
-def create_complex_dataset_for_reproject():
+def create_large_dataset_for_reproject():
     nt, nx, ny = 10, 100, 100
     chunks = {"time": 2, "x": 25, "y": 25}
 

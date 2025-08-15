@@ -175,3 +175,19 @@ class ResampleInSpaceTest(unittest.TestCase):
                 dtype=target_ds.band_1.dtype,
             ),
         )
+
+    def test_resample_in_space_raise_logs(self):
+        source_ds = create_5x5_dataset_regular_utm()
+        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+            _ = resample_in_space(source_ds)
+        self.assertIn(
+            "If source grid mapping is regular `target_gm` must be given. "
+            "Source dataset is returned.",
+            cm.output[0],
+        )
+
+    def test_resample_in_space_return_input_dataset(self):
+        source_ds = create_5x5_dataset_regular_utm()
+        target_gm = GridMapping.from_dataset(source_ds)
+        target_ds = resample_in_space(source_ds, target_gm=target_gm)
+        xr.testing.assert_equal(target_ds, source_ds)

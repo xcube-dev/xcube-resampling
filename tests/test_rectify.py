@@ -31,6 +31,7 @@ from .sampledata import (
     create_2x2_dataset_with_irregular_coords,
     create_2x2x2_dataset_with_irregular_coords,
     create_2x2_dataset_with_irregular_coords_antimeridian,
+    create_4x4_dataset_with_irregular_coords,
 )
 
 nan = np.nan
@@ -54,6 +55,23 @@ class RectifyDatasetTest(unittest.TestCase):
                     [nan, 1.0, 2.0, nan],
                     [3.0, 3.0, 2.0, nan],
                     [nan, 4.0, nan, nan],
+                ],
+                dtype=target_ds.rad.dtype,
+            ),
+        )
+
+    def test_rectify_2x2_to_regular(self):
+        source_ds = create_2x2_dataset_with_irregular_coords()
+        target_ds = rectify_dataset(source_ds, interp_methods=0)
+
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [
+                    [nan, nan, nan, nan],
+                    [nan, nan, nan, nan],
+                    [nan, 2.0, nan, nan],
+                    [nan, nan, nan, nan],
                 ],
                 dtype=target_ds.rad.dtype,
             ),
@@ -438,6 +456,26 @@ class RectifyDatasetTest(unittest.TestCase):
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_array_equal(
             np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
+        )
+
+    def test_rectify_different_crs(self):
+        source_ds = create_4x4_dataset_with_irregular_coords()
+        target_gm = GridMapping.regular(
+            size=(3, 3), xy_min=(3600000, 3200000), xy_res=100000, crs="epsg:3035"
+        )
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
+        np.testing.assert_almost_equal(
+            target_ds.x.values, np.array([3650000.0, 3750000.0, 3850000.0])
+        )
+        np.testing.assert_almost_equal(
+            target_ds.y.values, np.array([3450000.0, 3350000.0, 3250000.0])
+        )
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [[10.0, 6.0, 3.0], [10.0, 7.0, 3.0], [11.0, 11.0, 8.0]],
+                dtype=target_ds.rad.dtype,
+            ),
         )
 
     def _assert_shape_and_dim(
