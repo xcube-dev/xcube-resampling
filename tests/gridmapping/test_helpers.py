@@ -22,8 +22,18 @@
 import unittest
 from fractions import Fraction
 
+import dask.array as da
+import numpy as np
+import xarray as xr
+
 # noinspection PyProtectedMember
-from xcube_resampling.gridmapping.helpers import _to_int_or_float, round_to_fraction
+from xcube_resampling.gridmapping.helpers import (
+    _to_int_or_float,
+    round_to_fraction,
+    _normalize_number_pair,
+    to_lon_360,
+    from_lon_360,
+)
 
 
 class RoundToFractionTest(unittest.TestCase):
@@ -189,3 +199,80 @@ class ToIntOrFloatTest(unittest.TestCase):
     def test_leave_as_smaller_float_small_value(self):
         result = _to_int_or_float(0.9999)
         self.assertEqual(0.9999, result)
+
+
+class TestNormalizeNumberPair(unittest.TestCase):
+
+    def test_single_number(self):
+        result = _normalize_number_pair(5)
+        self.assertEqual(result, (5, 5))
+        result = _normalize_number_pair(3.5)
+        self.assertEqual(result, (3.5, 3.5))
+
+    def test_pair_of_numbers(self):
+        result = _normalize_number_pair((2, 4))
+        self.assertEqual(result, (2, 4))
+        result = _normalize_number_pair((1.5, 2.5))
+        self.assertEqual(result, (1.5, 2.5))
+
+    def test_default_value(self):
+        default_pair = (10, 20)
+        result = _normalize_number_pair(None, default=default_pair)
+        self.assertEqual(result, default_pair)
+
+    def test_value_error_when_no_value_or_default(self):
+        with self.assertRaises(ValueError) as cm:
+            _normalize_number_pair(None, name="test_var")
+        self.assertIn(
+            "test_var must be a number or a sequence of two numbers", str(cm.exception)
+        )
+
+
+class TestToLon360(unittest.TestCase):
+
+    def test_numpy_array(self):
+        arr = np.array([-10, 0, 45, 190, -180])
+        expected = np.array([350, 0, 45, 190, 180])
+        result = (
+            to_lon_360(arr).compute()
+            if isinstance(to_lon_360(arr), da.Array)
+            else to_lon_360(arr)
+        )
+        np.testing.assert_array_equal(result, expected)
+
+    def test_dask_array(self):
+        arr = da.from_array(np.array([-10, 0, 45, 190, -180]), chunks=2)
+        expected = np.array([350, 0, 45, 190, 180])
+        result = to_lon_360(arr).compute()
+        np.testing.assert_array_equal(result, expected)
+
+    def test_xarray_dataarray(self):
+        arr = xr.DataArray([-10, 0, 45, 190, -180])
+        expected = np.array([350, 0, 45, 190, 180])
+        result = to_lon_360(arr).values
+        np.testing.assert_array_equal(result, expected)
+
+
+class TestFromLon360(unittest.TestCase):
+
+    def test_numpy_array(self):
+        arr = np.array([350, 0, 45, 190, 180])
+        expected = np.array([-10, 0, 45, -170, 180])
+        result = (
+            from_lon_360(arr).compute()
+            if isinstance(from_lon_360(arr), da.Array)
+            else from_lon_360(arr)
+        )
+        np.testing.assert_array_equal(result, expected)
+
+    def test_dask_array(self):
+        arr = da.from_array(np.array([350, 0, 45, 190, 180]), chunks=2)
+        expected = np.array([-10, 0, 45, -170, 180])
+        result = from_lon_360(arr).compute()
+        np.testing.assert_array_equal(result, expected)
+
+    def test_xarray_dataarray(self):
+        arr = xr.DataArray([350, 0, 45, 190, 180])
+        expected = np.array([-10, 0, 45, -170, 180])
+        result = from_lon_360(arr).values
+        np.testing.assert_array_equal(result, expected)

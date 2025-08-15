@@ -157,9 +157,7 @@ def rectify_dataset(
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    for var_name, data_array in source_ds.items():
-        if var_name in target_gm.xy_var_names:
-            continue
+    for var_name, data_array in source_ds.data_vars.items():
         if data_array.dims[-2:] == yx_dims:
             assert len(data_array.dims) in (
                 2,
@@ -188,6 +186,12 @@ def _transform_coords(
 ) -> xr.Dataset:
     source_xx = source_gm.x_coords.data
     source_yy = source_gm.y_coords.data
+    if isinstance(source_xx, np.ndarray):
+        is_numpy_array = True
+        source_xx = da.asarray(source_xx)
+        source_yy = da.asarray(source_yy)
+    else:
+        is_numpy_array = False
 
     transformer_forward = pyproj.Transformer.from_crs(
         source_gm.crs, target_gm.crs, always_xy=True
@@ -209,10 +213,13 @@ def _transform_coords(
     target_xx_yy = target_xx_yy[:, : source_gm.height, : source_gm.width]
     source_ds = source_ds.drop_vars(source_gm.xy_var_names)
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    if target_gm.crs.is_geographic:
-        yx_var_names = ("lon", "lat")
-    else:
-        yx_var_names = ("transformed_x", "transformed_y")
+    yx_var_names = (
+        ("lon", "lat")
+        if target_gm.crs.is_geographic
+        else ("transformed_x", "transformed_y")
+    )
+    if is_numpy_array:
+        target_xx_yy = target_xx_yy.compute()
     source_ds = source_ds.assign_coords(
         {
             "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),

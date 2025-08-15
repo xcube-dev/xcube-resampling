@@ -277,7 +277,7 @@ def _get_agg_method(
 
 
 def _get_recover_nan(
-    recover_nans: RecoverNans,
+    recover_nans: RecoverNans | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> bool:

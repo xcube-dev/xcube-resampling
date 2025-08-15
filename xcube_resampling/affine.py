@@ -350,11 +350,9 @@ def _upscale(
             # 1. replace NaN by zero
             filled_im = da.where(mask, 0.0, array)
             # 2. transform the zero-filled image
-            scaled_im = ndinterp.affine_transform(filled_im, matrix, **kwargs, cval=0.0)
+            scaled_im = ndinterp.affine_transform(filled_im, matrix, **kwargs)
             # 3. transform the inverted mask
-            scaled_norm = ndinterp.affine_transform(
-                1.0 - mask, matrix, **kwargs, cval=0.0
-            )
+            scaled_norm = ndinterp.affine_transform(1.0 - mask, matrix, **kwargs)
             # 4. put back NaN where there was zero,
             #    otherwise decode using scaled mask
             return da.where(

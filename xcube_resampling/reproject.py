@@ -112,6 +112,11 @@ def reproject_dataset(
 
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
+    if source_gm.is_j_axis_up:
+        v_var = source_gm.xy_var_names[1]
+        source_ds = source_ds.isel({v_var: slice(None, None, -1)})
+        source_gm = GridMapping.from_dataset(source_ds)
+
     source_ds = normalize_grid_mapping(source_ds, source_gm)
 
     source_ds = _select_variables(source_ds, variables)
@@ -393,12 +398,8 @@ def _get_scr_bboxes_indices(
         source_xy_bbox = transformer.transform_bounds(*xy_bbox)
         i_min = math.floor((source_xy_bbox[0] - origin[0]) / source_gm.x_res)
         i_max = math.ceil((source_xy_bbox[2] - origin[0]) / source_gm.x_res)
-        if source_gm.is_j_axis_up:
-            j_min = math.floor((source_xy_bbox[1] - origin[1]) / source_gm.y_res)
-            j_max = math.ceil((source_xy_bbox[3] - origin[1]) / source_gm.y_res)
-        else:
-            j_min = math.floor((origin[1] - source_xy_bbox[3]) / source_gm.y_res)
-            j_max = math.ceil((origin[1] - source_xy_bbox[1]) / source_gm.y_res)
+        j_min = math.floor((origin[1] - source_xy_bbox[3]) / source_gm.y_res)
+        j_max = math.ceil((origin[1] - source_xy_bbox[1]) / source_gm.y_res)
         scr_ij_bboxes[:, j, i] = [i_min, j_min, i_max, j_max]
 
     # Extend bounding box indices to match the largest bounding box.

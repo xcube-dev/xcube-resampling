@@ -85,7 +85,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             target_ds.refl.values,
             np.array(
                 [
-                    [4, 0, 1],
+                    [4, np.nan, np.nan],
                     [0, 2, 0],
                     [3, 0, 4],
                 ]
@@ -96,9 +96,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             (3, 3), (50.05, 10.05), self.res, self.source_gm.crs
         )
         target_ds = affine_transform_dataset(
-            self.source_ds,
-            target_gm,
-            interp_methods=1,
+            self.source_ds, target_gm, interp_methods=1
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -110,7 +108,31 @@ class AffineTransformDatasetTest(unittest.TestCase):
             target_ds.refl.values,
             np.array(
                 [
-                    [1.25, 1.5, 0.75],
+                    [1.25, 1.5, np.nan],
+                    [1.0, 1.25, 1.5],
+                    [1.75, 1.0, 1.25],
+                ]
+            ),
+        )
+
+        target_ds = affine_transform_dataset(
+            self.source_ds,
+            target_gm,
+            source_gm=self.source_gm,
+            interp_methods=1,
+            recover_nans=True,
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(self.source_ds.variables).union(["spatial_ref"]),
+            set(target_ds.variables),
+        )
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array(
+                [
+                    [1.25, 1.5, 0.6666667],
                     [1.0, 1.25, 1.5],
                     [1.75, 1.0, 1.25],
                 ]
@@ -196,7 +218,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             target_ds.refl.values,
             np.array(
                 [
-                    [4, 0, 1],
+                    [4, np.nan, np.nan],
                     [0, 2, 0],
                     [3, 0, 4],
                 ]
@@ -220,11 +242,11 @@ class AffineTransformDatasetTest(unittest.TestCase):
         self.assertEqual((3, 3), target_ds.refl.shape)
         np.testing.assert_almost_equal(
             target_ds.refl.values,
-            np.array([[1.25, 1.5, 0.75], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]]),
+            np.array([[1.25, 1.5, np.nan], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]]),
         )
 
     def test_different_geographic_crses(self):
-        expected = np.array([[1.25, 1.5, 0.75], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]])
+        expected = np.array([[1.25, 1.5, np.nan], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]])
 
         target_gm = GridMapping.regular((3, 3), (50.05, 10.05), self.res, CRS_WGS84)
         target_ds = affine_transform_dataset(
@@ -294,8 +316,8 @@ class AffineTransformDatasetTest(unittest.TestCase):
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [0.75, 1.25, 1.75, 1.25, np.nan, np.nan, np.nan, np.nan],
-                    [1.25, 0.75, 1.25, 1.75, np.nan, np.nan, np.nan, np.nan],
+                    [0.75, 1.0, 1.75, 1.25, np.nan, np.nan, np.nan, np.nan],
+                    [1.25, 1.0, 1.25, 1.75, np.nan, np.nan, np.nan, np.nan],
                     [1.75, 1.25, 0.75, 1.25, np.nan, np.nan, np.nan, np.nan],
                 ]
             ),
@@ -324,8 +346,8 @@ class AffineTransformDatasetTest(unittest.TestCase):
                 [
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-                    [np.nan, 0.75, 1.25, 1.75, 1.25, np.nan, np.nan, np.nan],
-                    [np.nan, 1.25, 0.75, 1.25, 1.75, np.nan, np.nan, np.nan],
+                    [np.nan, 0.75, 1.0, 1.75, 1.25, np.nan, np.nan, np.nan],
+                    [np.nan, 1.25, 1.0, 1.25, 1.75, np.nan, np.nan, np.nan],
                     [np.nan, 1.75, 1.25, 0.75, 1.25, np.nan, np.nan, np.nan],
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                 ]
@@ -417,8 +439,8 @@ class AffineTransformDatasetTest(unittest.TestCase):
                 [
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                     [0.0, 2.0, 0.0, 3.0, 0.0, 4.0, np.nan, np.nan],
-                    [3.0, 0.0, 4.0, 0.0, 1.0, 0.0, np.nan, np.nan],
-                    [0.0, 1.0, 0.0, 2.0, 0.0, 3.0, np.nan, np.nan],
+                    [np.nan, np.nan, 4.0, 0.0, 1.0, 0.0, np.nan, np.nan],
+                    [np.nan, np.nan, 0.0, 2.0, 0.0, 3.0, np.nan, np.nan],
                     [2.0, 0.0, 3.0, 0.0, 4.0, 0.0, np.nan, np.nan],
                     [0.0, 4.0, 0.0, 1.0, 0.0, 2.0, np.nan, np.nan],
                 ]
@@ -445,12 +467,31 @@ class AffineTransformDatasetTest(unittest.TestCase):
             target_ds.refl.values,
             np.array(
                 [
-                    [np.nan, np.nan, 2.0, 0.0, 3.0, 0.0, 4.0, 0.0],
-                    [np.nan, np.nan, 0.0, 4.0, 0.0, 1.0, 0.0, 2.0],
+                    [np.nan, np.nan, 2.0, 0.0, np.nan, np.nan, 4.0, 0.0],
+                    [np.nan, np.nan, 0.0, 4.0, np.nan, np.nan, 0.0, 2.0],
                     [np.nan, np.nan, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0],
                     [np.nan, np.nan, 0.0, 3.0, 0.0, 4.0, 0.0, 1.0],
                     [np.nan, np.nan, 4.0, 0.0, 1.0, 0.0, 2.0, 0.0],
                     [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                 ]
             ),
+        )
+
+    def test_affine_raise_value_error(self):
+        target_gm = GridMapping.regular(
+            (8, 6), (50.2, 10.1), self.res, self.source_gm.crs
+        )
+        with self.assertRaises(ValueError) as cm:
+            _ = affine_transform_dataset(
+                self.source_ds,
+                target_gm,
+                source_gm=self.source_gm,
+                interp_methods=3,
+            )
+        self.assertIn(
+            "interp_methods must be one of 0, 1, 'nearest', 'bilinear'. "
+            "Higher order is not supported for 3D arrays in affine transforms, "
+            "as it causes unintended blending across the non-spatial (e.g., time) "
+            "dimension.",
+            str(cm.exception),
         )

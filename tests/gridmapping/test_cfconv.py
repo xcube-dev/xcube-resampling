@@ -21,15 +21,21 @@
 
 import shutil
 import unittest
+import warnings
 
 import numpy as np
 import pyproj
 import xarray as xr
+import zarr
 
+# noinspection PyProtectedMember
 from xcube_resampling.gridmapping.cfconv import (
     GridCoords,
     GridMappingProxy,
     get_dataset_grid_mapping_proxies,
+    _find_potential_coord_vars,
+    _is_potential_coord_var,
+    add_spatial_ref,
 )
 
 CRS_WGS84 = pyproj.crs.CRS(4326)
@@ -169,6 +175,67 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertEqual("x", grid_mapping.coords.x.name)
         self.assertEqual("y", grid_mapping.coords.y.name)
 
+    def test_crs_in_attrs(self):
+        dataset = xr.Dataset(
+            coords=dict(
+                lon=xr.DataArray(np.linspace(10, 12, 11), dims="lon"),
+                lat=xr.DataArray(np.linspace(50, 52, 11), dims="lat"),
+            ),
+            attrs={
+                "crs_wkt": (
+                    'GEOGCRS["WGS 84",ENSEMBLE["World Geodetic System 1984 ensemble",'
+                    'MEMBER["World Geodetic System 1984 (Transit)"],MEMBER["World '
+                    'Geodetic System 1984 (G730)"],MEMBER["World Geodetic System 1984 '
+                    '(G873)"],MEMBER["World Geodetic System 1984 (G1150)"],MEMBER'
+                    '["World Geodetic System 1984 (G1674)"],MEMBER["World Geodetic '
+                    'System 1984 (G1762)"],MEMBER["World Geodetic System 1984 (G2139)"]'
+                    ',MEMBER["World Geodetic System 1984 (G2296)"],ELLIPSOID'
+                    '["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]],'
+                    'ENSEMBLEACCURACY[2.0]],PRIMEM["Greenwich",0,ANGLEUNIT'
+                    '["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS'
+                    '["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT'
+                    '["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)"'
+                    ',east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],'
+                    'USAGE[SCOPE["Horizontal component of 3D system."],AREA["World."]'
+                    ',BBOX[-90,-180,90,180]],ID["EPSG",4326]]'
+                ),
+                "semi_major_axis": 6378137.0,
+                "semi_minor_axis": 6356752.314245179,
+                "inverse_flattening": 298.257223563,
+                "reference_ellipsoid_name": "WGS 84",
+                "longitude_of_prime_meridian": 0.0,
+                "prime_meridian_name": "Greenwich",
+                "geographic_crs_name": "WGS 84",
+                "horizontal_datum_name": "World Geodetic System 1984 ensemble",
+                "grid_mapping_name": "latitude_longitude",
+            },
+        )
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
+        self.assertEqual(1, len(grid_mappings))
+        self.assertIn(None, grid_mappings)
+        grid_mapping = grid_mappings.get(None)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
+        self.assertEqual(CRS_WGS84, grid_mapping.crs)
+        self.assertEqual("latitude_longitude", grid_mapping.name)
+        self.assertIsInstance(grid_mapping.coords, GridCoords)
+        self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
+        self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
+        self.assertEqual("lon", grid_mapping.coords.x.name)
+        self.assertEqual("lat", grid_mapping.coords.y.name)
+
+    def test_emit_warning(self):
+        dataset = xr.Dataset(
+            coords=dict(
+                lon=xr.DataArray([10], dims="lon"),
+                lat=xr.DataArray([50], dims="lat"),
+            ),
+        )
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            _ = get_dataset_grid_mapping_proxies(dataset, emit_warnings=True)
+        self.assertEqual(len(w), 1)
+        self.assertIn("missing x- and/or y-coordinates", str(w[0].message))
+
     def test_rotated_pole_with_common_names(self):
         dataset = xr.Dataset(
             dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
@@ -216,6 +283,50 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
         self.assertEqual("u", grid_mapping.coords.x.name)
         self.assertEqual("v", grid_mapping.coords.y.name)
+
+    def test_bounds_detection(self):
+        dataset = xr.Dataset(
+            coords={
+                "lon": xr.DataArray(np.linspace(0, 10, 5), dims="lon"),
+                "lat": xr.DataArray(np.linspace(0, 5, 5), dims="lat"),
+                "lon_bnds": xr.DataArray(np.linspace(0, 10, 10), dims="bnds"),
+                "lat_bounds": xr.DataArray(np.linspace(0, 5, 10), dims="bnds"),
+                "alt": xr.DataArray(np.linspace(0, 100, 5), dims="alt"),
+            }
+        )
+        dataset["lat"].attrs["bounds"] = "lat_bounds"
+
+        potential_vars = _find_potential_coord_vars(dataset)
+
+        # lon_bnds and lat_bounds should be excluded, but lon/lat/alt included
+        self.assertIn("lon", potential_vars)
+        self.assertIn("lat", potential_vars)
+        self.assertIn("alt", potential_vars)
+        self.assertNotIn("lon_bnds", potential_vars)
+        self.assertNotIn("lat_bounds", potential_vars)
+
+    def test_coordinates_in_attribute(self):
+        dataset = xr.Dataset(
+            {
+                "x": xr.DataArray([0, 1]),
+                "y": xr.DataArray([0, 1]),
+            },
+            attrs={"coordinates": "x y"},
+        )
+
+        result = _find_potential_coord_vars(dataset)
+        self.assertIn("x", result)
+        self.assertIn("y", result)
+
+    def test_var_not_in_dataset(self):
+        dataset = xr.Dataset(
+            coords={
+                "lon": xr.DataArray(np.linspace(0, 10, 5), dims="lon"),
+                "lat": xr.DataArray(np.linspace(0, 5, 5), dims="lat"),
+            }
+        )
+        bounds_vars = set()
+        self.assertFalse(_is_potential_coord_var(dataset, bounds_vars, "missing_var"))
 
 
 class XarrayDecodeCfTest(unittest.TestCase):
@@ -286,3 +397,41 @@ class XarrayDecodeCfTest(unittest.TestCase):
         self.assertEqual(("y", "x"), lon.dims)
         self.assertEqual(("y", "x"), lat.dims)
         return noise, crs, lon, lat
+
+
+class TestAddSpatialRef(unittest.TestCase):
+
+    def setUp(self):
+        # Create an in-memory Zarr group
+        self.store = zarr.MemoryStore()
+        self.group = zarr.group(store=self.store, overwrite=True)
+        # Create a dummy dataset array
+        self.group.zeros("data", shape=(3, 3), chunks=(3, 3), dtype=np.float32)
+        # Add _ARRAY_DIMENSIONS attribute to simulate xarray
+        self.group["data"].attrs["_ARRAY_DIMENSIONS"] = ["y", "x"]
+
+    def test_add_spatial_ref_creates_variable(self):
+        crs = pyproj.CRS.from_epsg(4326)
+        add_spatial_ref(self.store, crs, crs_var_name="spatial_ref_test")
+
+        # The spatial_ref_test variable should exist
+        self.assertIn("spatial_ref_test", self.group)
+        spatial_ref = self.group["spatial_ref_test"]
+        self.assertEqual(spatial_ref.shape, ())
+        self.assertTrue(spatial_ref.attrs)  # CRS attributes added
+        self.assertIn("_ARRAY_DIMENSIONS", spatial_ref.attrs)
+        self.assertEqual(spatial_ref.attrs["_ARRAY_DIMENSIONS"], [])
+
+    def test_add_grid_mapping_attribute(self):
+        crs = pyproj.CRS.from_epsg(4326)
+        add_spatial_ref(
+            self.store,
+            crs,
+            crs_var_name="spatial_ref_test",
+            xy_dim_names=("x", "y"),
+        )
+
+        # Original array should have grid_mapping pointing to spatial_ref_test
+        self.assertEqual(
+            self.group["data"].attrs.get("grid_mapping"), "spatial_ref_test"
+        )
