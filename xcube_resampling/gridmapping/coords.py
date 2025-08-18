@@ -229,17 +229,6 @@ def new_grid_mapping_from_coords(
             y_x_diff = _abs_no_nan(da.diff(y, axis=1))
             y_y_diff = _abs_no_nan(da.diff(y, axis=0))
 
-            if not is_lon_360 and crs.is_geographic:
-                is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) or da.any(
-                    da.max(x_y_diff) > 180
-                )
-                if is_anti_meridian_crossed:
-                    x_coords = to_lon_360(x_coords)
-                    x = da.asarray(x_coords)
-                    y_x_diff = _abs_no_nan(da.diff(y, axis=1))
-                    y_y_diff = _abs_no_nan(da.diff(y, axis=0))
-                    is_lon_360 = True
-
             # Let diff arrays have same shape as original by
             # doubling last rows and columns.
             x_x_diff_c = da.concatenate([x_x_diff, x_x_diff[:, -1:]], axis=1)
