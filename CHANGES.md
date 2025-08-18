@@ -11,6 +11,7 @@
   `1`, `"nearest"`, `"triangular"`, and `"bilinear"`. This argument applies 
   consistently across all three resampling algorithms, simplifying usage and 
   improving API consistency. (#8)
-- Documentation added, which is available at https://xcube-dev.github.io/xcube-resampling/.
+- Documentation added, which is available at 
+  https://xcube-dev.github.io/xcube-resampling/. (#10) 
 
 
