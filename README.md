@@ -22,4 +22,4 @@ All methods work seamlessly with chunked (lazily loaded) [xarray.Datasets](https
 The package is independent of the core *xcube* framework and has minimal dependencies:
 `affine, dask, dask-image, numba, numpy, pyproj, xarray, zarr`.
 
-Find out more in the [xcube-resampling Documentation](xcube-dev.github.io/xcube-resampling/).
+Find out more in the [xcube-resampling Documentation](https://xcube-dev.github.io/xcube-resampling/).
