@@ -25,12 +25,13 @@ import numpy as np
 import xarray as xr
 
 from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
-from xcube_resampling.rectify import rectify_dataset
+from xcube_resampling.rectify import _create_empty_dataset, rectify_dataset
 
 from .sampledata import (
     create_2x2_dataset_with_irregular_coords,
     create_2x2_dataset_with_irregular_coords_antimeridian,
     create_2x2x2_dataset_with_irregular_coords,
+    create_2x4x4_dataset_with_irregular_coords,
     create_4x4_dataset_with_irregular_coords,
 )
 
@@ -544,4 +545,19 @@ class RectifyDatasetTest(unittest.TestCase):
                 [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
             ],
             dtype=dtype,
+        )
+
+    def test_create_empty_dataset_3d(self):
+        source_ds = create_2x4x4_dataset_with_irregular_coords()
+        source_ds = source_ds.chunk(dict(y=2, x=2))
+        source_gm = GridMapping.from_dataset(source_ds)
+        target_gm = GridMapping.regular(
+            size=(3, 3), xy_min=(0.0, 0.0), xy_res=0.1, crs="epsg:4326"
+        )
+        target_ds = _create_empty_dataset(source_ds, source_gm, target_gm)
+        self.assertCountEqual(["rad"], target_ds.data_vars)
+        self.assertCountEqual(("time", "lat", "lon"), target_ds["rad"].dims)
+        self.assertCountEqual((2, 3, 3), target_ds["rad"].shape)
+        np.testing.assert_array_equal(
+            np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
         )
