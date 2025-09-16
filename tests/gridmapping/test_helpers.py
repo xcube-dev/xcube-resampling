@@ -28,11 +28,11 @@ import xarray as xr
 
 # noinspection PyProtectedMember
 from xcube_resampling.gridmapping.helpers import (
-    _to_int_or_float,
-    round_to_fraction,
     _normalize_number_pair,
-    to_lon_360,
+    _to_int_or_float,
     from_lon_360,
+    round_to_fraction,
+    to_lon_360,
 )
 
 

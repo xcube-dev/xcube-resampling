@@ -29,15 +29,15 @@ import xarray as xr
 
 from .affine import resample_dataset
 from .constants import (
+    LOG,
     SCALE_LIMIT,
     UV_DELTA,
     AggMethods,
     FillValues,
     FloatInt,
-    InterpMethodStr,
     InterpMethods,
+    InterpMethodStr,
     RecoverNans,
-    LOG,
 )
 from .dask import compute_array_from_func
 from .gridmapping import GridMapping
@@ -47,9 +47,9 @@ from .utils import (
     _is_equal_crs,
     _prep_interp_methods_downscale,
     _select_variables,
-    normalize_grid_mapping,
-    clip_dataset_by_bbox,
     bbox_overlap,
+    clip_dataset_by_bbox,
+    normalize_grid_mapping,
 )
 
 
@@ -138,7 +138,7 @@ def rectify_dataset(
     if overlap < 1e-5:
         LOG.info(
             "Target grid mapping does not overlap with the source grid mapping. "
-            f"Target dataset filled with the respective fill value is returned."
+            "Target dataset filled with the respective fill value is returned."
         )
         return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
     if overlap < 0.8:
@@ -152,7 +152,7 @@ def rectify_dataset(
         if any(source_ds.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
             LOG.warning(
                 "Clipped dataset contains at least dimension with size < 2. "
-                f"Target dataset filled with the respective fill value is returned."
+                "Target dataset filled with the respective fill value is returned."
             )
             return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
         source_gm = GridMapping.from_dataset(source_ds)

@@ -29,8 +29,8 @@ from xcube_resampling.rectify import rectify_dataset
 
 from .sampledata import (
     create_2x2_dataset_with_irregular_coords,
-    create_2x2x2_dataset_with_irregular_coords,
     create_2x2_dataset_with_irregular_coords_antimeridian,
+    create_2x2x2_dataset_with_irregular_coords,
     create_4x4_dataset_with_irregular_coords,
 )
 

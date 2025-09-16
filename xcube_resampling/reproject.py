@@ -33,8 +33,8 @@ from .constants import (
     AggMethods,
     FillValues,
     FloatInt,
-    InterpMethodStr,
     InterpMethods,
+    InterpMethodStr,
     RecoverNans,
 )
 from .gridmapping import GridMapping

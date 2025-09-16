@@ -13,17 +13,17 @@ from xcube_resampling.constants import (
 
 # noinspection PyProtectedMember
 from xcube_resampling.utils import (
-    _prep_interp_methods_downscale,
-    get_spatial_coords,
-    clip_dataset_by_bbox,
-    _select_variables,
+    _get_agg_method,
+    _get_fill_value,
     _get_grid_mapping_name,
     _get_interp_method,
-    _get_agg_method,
     _get_recover_nan,
-    _get_fill_value,
-    reproject_bbox,
+    _prep_interp_methods_downscale,
+    _select_variables,
     bbox_overlap,
+    clip_dataset_by_bbox,
+    get_spatial_coords,
+    reproject_bbox,
 )
 
 
@@ -35,8 +35,8 @@ class TestUtils(unittest.TestCase):
         x_dim, y_dim = get_spatial_coords(ds)
         self.assertEqual((x_dim, y_dim), ("lon", "lat"))
 
-    def test_get_spatial_coords_lon_lat(self):
-        # Dataset with "lon" and "lat"
+    def test_get_spatial_coords_longitude_latitude(self):
+        # Dataset with "longitude" and "latitude"
         ds = xr.Dataset(coords={"longitude": [0, 1], "latitude": [0, 1]})
         x_dim, y_dim = get_spatial_coords(ds)
         self.assertEqual((x_dim, y_dim), ("longitude", "latitude"))

@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
+
 from xcube_resampling.gridmapping import assertions
 
 

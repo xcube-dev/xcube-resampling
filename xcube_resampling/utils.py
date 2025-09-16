@@ -37,12 +37,14 @@ from .constants import (
     AggMethods,
     FloatInt,
     InterpMethod,
-    InterpMethodStr,
     InterpMethodInt,
     InterpMethods,
+    InterpMethodStr,
     RecoverNans,
 )
 from .gridmapping import GridMapping
+
+# noinspection PyProtectedMember
 from .gridmapping.helpers import _normalize_crs
 
 
