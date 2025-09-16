@@ -78,7 +78,7 @@ doc = [
 ]
 
 [tool.setuptools.dynamic]
-version = {attr = "xcube_resampling.__version__"}
+version = {attr = "xcube_resampling.version.__version__"}
 readme = {file = "README.md", content-type = "text/markdown"}
 
 [tool.setuptools.packages.find]

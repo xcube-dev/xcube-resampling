@@ -1,3 +1,12 @@
+## Changes in 0.1.1
+
+- Improved `xcube_resampling.utils.clip_dataset_by_bbox` to support datasets with 
+  2D coordinates. This function is also used internally by 
+  `xcube_resampling.rectify.rectify_dataset`.  
+- Added `reproject_bbox`, a utility to reproject a bounding box from one CRS to another.  
+- Added `bbox_overlap`, a utility that computes the fraction of the source bounding box
+  overlapped by the target bounding box.
+
 ## Changes in 0.1.0
 
 - Added algorithm for **affine transformation**. (#4)

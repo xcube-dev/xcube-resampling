@@ -1,5 +1,6 @@
 import unittest
 
+import dask.array as da
 import numpy as np
 import xarray as xr
 
@@ -13,7 +14,7 @@ from xcube_resampling.constants import (
 # noinspection PyProtectedMember
 from xcube_resampling.utils import (
     _prep_interp_methods_downscale,
-    get_spatial_dims,
+    get_spatial_coords,
     clip_dataset_by_bbox,
     _select_variables,
     _get_grid_mapping_name,
@@ -21,51 +22,37 @@ from xcube_resampling.utils import (
     _get_agg_method,
     _get_recover_nan,
     _get_fill_value,
+    reproject_bbox,
+    bbox_overlap,
 )
 
 
 class TestUtils(unittest.TestCase):
 
-    def test_get_spatial_dims_lon_lat(self):
+    def test_get_spatial_coords_lon_lat(self):
         # Dataset with "lon" and "lat"
         ds = xr.Dataset(coords={"lon": [0, 1], "lat": [0, 1]})
-        x_dim, y_dim = get_spatial_dims(ds)
+        x_dim, y_dim = get_spatial_coords(ds)
         self.assertEqual((x_dim, y_dim), ("lon", "lat"))
 
-    def test_get_spatial_dims_x_y(self):
+    def test_get_spatial_coords_lon_lat(self):
+        # Dataset with "lon" and "lat"
+        ds = xr.Dataset(coords={"longitude": [0, 1], "latitude": [0, 1]})
+        x_dim, y_dim = get_spatial_coords(ds)
+        self.assertEqual((x_dim, y_dim), ("longitude", "latitude"))
+
+    def test_get_spatial_coords_x_y(self):
         # Dataset with "x" and "y"
         ds = xr.Dataset(coords={"x": [0, 1], "y": [0, 1]})
-        x_dim, y_dim = get_spatial_dims(ds)
+        x_dim, y_dim = get_spatial_coords(ds)
         self.assertEqual((x_dim, y_dim), ("x", "y"))
 
-    def test_get_spatial_dims_missing_dims(self):
+    def test_get_spatial_coords_missing_dims(self):
         # Dataset with no recognized spatial dimensions
         ds = xr.Dataset(coords={"time": [0, 1]})
         with self.assertRaises(KeyError) as context:
-            get_spatial_dims(ds)
-        self.assertIn("No standard spatial dimensions found", str(context.exception))
-
-    def test_clip_dataset_by_bbox_invalid_bbox(self):
-        ds = xr.Dataset()
-        with self.assertRaises(ValueError) as context:
-            clip_dataset_by_bbox(ds, bbox=[0, 0, 1])
-        self.assertIn("Expected bbox of length 4", str(context.exception))
-
-    def test_clip_dataset_by_bbox(self):
-        ds = xr.Dataset(
-            {"data": (("lat", "lon"), [[1, 2], [3, 4]])},
-            coords={"lon": [0, 1], "lat": [0, 1]},
-        )
-        clipped = clip_dataset_by_bbox(ds, bbox=[1, 1, 2, 2])
-        self.assertTrue(clipped.sizes["lat"] == 1)
-        self.assertTrue(clipped.sizes["lon"] == 1)
-
-        bbox = [10, 10, 20, 20]
-        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
-            _ = clip_dataset_by_bbox(ds, bbox=bbox)
-        self.assertIn(
-            "Clipped dataset contains at least one zero-sized dimension.", cm.output[0]
-        )
+            get_spatial_coords(ds)
+        self.assertIn("No standard spatial coordinates found", str(context.exception))
 
     def test_select_variables(self):
         ds = xr.Dataset(
@@ -289,3 +276,140 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(_get_fill_value(None, "var", uint16_var), FILLVALUE_UINT16)
         self.assertEqual(_get_fill_value(None, "var", int_var), FILLVALUE_INT)
         self.assertTrue(np.isnan(_get_fill_value(None, "var", float_var)))
+
+    def test_reproject_bbox(self):
+        bbox_wgs84 = [2, 50, 3, 51]
+        crs_wgs84 = "EPSG:4326"
+        crs_3035 = "EPSG:3035"
+        bbox_3035 = [3748675.9529771, 3011432.8944597, 3830472.1359979, 3129432.4914285]
+        self.assertEqual(bbox_wgs84, reproject_bbox(bbox_wgs84, crs_wgs84, crs_wgs84))
+        self.assertEqual(bbox_3035, reproject_bbox(bbox_3035, crs_3035, crs_3035))
+        np.testing.assert_almost_equal(
+            reproject_bbox(bbox_wgs84, crs_wgs84, crs_3035), bbox_3035
+        )
+        np.testing.assert_almost_equal(
+            reproject_bbox(
+                reproject_bbox(bbox_wgs84, crs_wgs84, crs_3035), crs_3035, crs_wgs84
+            ),
+            [
+                1.829619451017442,
+                49.93464594063249,
+                3.1462425554926226,
+                51.06428203128216,
+            ],
+        )
+
+    def test_bbox_overlap(self):
+        # identical boxes
+        bbox = (0, 0, 10, 10)
+        self.assertEqual(bbox_overlap(bbox, bbox), 1.0)
+
+        # partial overlap
+        source = (0, 0, 10, 10)
+        target = (5, 5, 15, 15)
+        # overlap area = 25, source area = 100
+        expected = 25 / 100
+        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+
+        # no overlap
+        source = (0, 0, 10, 10)
+        target = (20, 20, 30, 30)
+        self.assertAlmostEqual(bbox_overlap(source, target), 0.0)
+
+        # target fully inside source
+        source = (0, 0, 10, 10)
+        target = (2, 2, 8, 8)
+        # overlap area = 36, source area = 100
+        expected = 0.36
+        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+
+        # source fully inside target
+        source = (2, 2, 8, 8)
+        target = (0, 0, 10, 10)
+        # overlap area = source area = 36
+        expected = 36 / 36
+        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+
+
+class TestClipDatasetByBBox(unittest.TestCase):
+
+    def setUp(self):
+        # 1D coordinates dataset
+        x = np.linspace(1, 10, 10)
+        y = np.linspace(1, 20, 20)
+        data_1d = np.random.rand(len(y), len(x))
+        self.ds_1d = xr.Dataset({"var": (("y", "x"), data_1d)}, coords={"x": x, "y": y})
+
+        # 2D coordinates dataset
+        x2d, y2d = np.meshgrid(x, y)
+        data_2d = np.random.rand(*x2d.shape)
+        self.ds_2d = xr.Dataset(
+            {"var": (("y", "x"), data_2d)},
+            coords={"lon": (("y", "x"), x2d), "lat": (("y", "x"), y2d)},
+        )
+
+        # 2D coordinates dataset as dark array
+        x2d, y2d = np.meshgrid(x, y)
+        data_2d = np.random.rand(*x2d.shape)
+        self.ds_2d_chunked = xr.Dataset(
+            {"var": (("row", "column"), data_2d)},
+            coords={
+                "lon": (("row", "column"), da.from_array(x2d, chunks=(5, 5))),
+                "lat": (("row", "column"), da.from_array(y2d, chunks=(5, 5))),
+            },
+        )
+
+    def test_clip_1dcoord_inside_bbox(self):
+        bbox = [2, 5, 8, 15]  # xmin, ymin, xmax, ymax
+        clipped = clip_dataset_by_bbox(self.ds_1d, bbox, spatial_coords=("x", "y"))
+        self.assertTrue((clipped.x >= bbox[0]).all())
+        self.assertTrue((clipped.x <= bbox[2]).all())
+        self.assertTrue((clipped.y >= bbox[1]).all())
+        self.assertTrue((clipped.y <= bbox[3]).all())
+
+    def test_clip_2dcoord_inside_bbox(self):
+        bbox = [2, 5, 8, 15]
+        clipped = clip_dataset_by_bbox(self.ds_2d, bbox)
+        self.assertTrue((clipped["lon"].values >= bbox[0]).all())
+        self.assertTrue((clipped["lon"].values <= bbox[2]).all())
+        self.assertTrue((clipped["lat"].values >= bbox[1]).all())
+        self.assertTrue((clipped["lat"].values <= bbox[3]).all())
+
+    def test_clip_2dcoord_inside_bbox_chunked(self):
+        bbox = [2, 5, 8, 15]
+        clipped = clip_dataset_by_bbox(self.ds_2d_chunked, bbox)
+        self.assertTrue((clipped["lon"].values >= bbox[0]).all())
+        self.assertTrue((clipped["lon"].values <= bbox[2]).all())
+        self.assertTrue((clipped["lat"].values >= bbox[1]).all())
+        self.assertTrue((clipped["lat"].values <= bbox[3]).all())
+
+    def test_clip_dataset_by_bbox_invalid_bbox(self):
+        with self.assertRaises(ValueError) as context:
+            clip_dataset_by_bbox(self.ds_1d, bbox=[0, 0, 1])
+        self.assertIn("Expected bbox of length 4", str(context.exception))
+
+    def test_unsupported_coord_dims(self):
+        ds = self.ds_1d.copy()
+        ds["x"] = ds["x"].expand_dims("z")  # 2D+ coordinate
+        with self.assertRaises(ValueError):
+            clip_dataset_by_bbox(ds, [0, 0, 5, 5])
+
+    def test_bbox_outside_1d_dataset(self):
+        bbox = [100, 100, 110, 110]  # completely outside
+        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+            clipped = clip_dataset_by_bbox(self.ds_1d, bbox)
+        self.assertIn(
+            "Clipped dataset contains at least one zero-sized dimension.", cm.output[0]
+        )
+        # should result in zero-sized dimensions
+        self.assertTrue(any(size == 0 for size in clipped.sizes.values()))
+
+    def test_bbox_outside_2d_dataset(self):
+        bbox = [100, 100, 110, 110]  # completely outside
+        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+            clipped = clip_dataset_by_bbox(self.ds_2d, bbox)
+        self.assertIn(
+            "Clipped dataset contains at least one zero-sized dimension.", cm.output[0]
+        )
+        # should result in zero-sized dimensions
+        self.assertTrue(any(size == 0 for size in clipped.sizes.values()))
