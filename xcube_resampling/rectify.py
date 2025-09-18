@@ -28,6 +28,7 @@ import pyproj
 import xarray as xr
 
 from .affine import resample_dataset
+from .affine import resample_dataset
 from .constants import (
     LOG,
     SCALE_LIMIT,
@@ -143,10 +144,10 @@ def rectify_dataset(
         return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
     if overlap < 0.8:
         bbox = [
-            target_gm.xy_bbox[0] - source_gm.x_res,
-            target_gm.xy_bbox[1] - source_gm.y_res,
-            target_gm.xy_bbox[2] + source_gm.x_res,
-            target_gm.xy_bbox[3] + source_gm.x_res,
+            target_gm.xy_bbox[0] - 2 * source_gm.x_res,
+            target_gm.xy_bbox[1] - 2 * source_gm.y_res,
+            target_gm.xy_bbox[2] + 2 * source_gm.x_res,
+            target_gm.xy_bbox[3] + 2 * source_gm.x_res,
         ]
         source_ds = clip_dataset_by_bbox(source_ds, bbox)
         if any(source_ds.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
