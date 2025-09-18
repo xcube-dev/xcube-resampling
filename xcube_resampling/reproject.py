@@ -360,7 +360,7 @@ def _downscale_source_dataset(
         )
         source_ds = clip_dataset_by_bbox(source_ds, bbox_trans, source_gm.xy_dim_names)
         source_gm = GridMapping.from_dataset(source_ds)
-        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
+        w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
         downscale_target_gm = GridMapping.regular(
             size=downscaled_size,

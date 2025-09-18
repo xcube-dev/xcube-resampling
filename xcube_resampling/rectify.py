@@ -309,7 +309,7 @@ def _downscale_source_dataset(
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
-        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
+        w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
 
         source_ds = resample_dataset(
