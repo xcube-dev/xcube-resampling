@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#xcube_resampling.spatial.resample_in_space" class="md-skip">
+        <a href="#xcube_resampling.resample_in_space" class="md-skip">
           Skip to content
         </a>
       
@@ -507,7 +507,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.spatial.resample_in_space" class="md-nav__link">
+  <a href="#xcube_resampling.resample_in_space" class="md-nav__link">
     <span class="md-ellipsis">
       resample_in_space
     </span>
@@ -516,7 +516,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.affine.affine_transform_dataset" class="md-nav__link">
+  <a href="#xcube_resampling.affine_transform_dataset" class="md-nav__link">
     <span class="md-ellipsis">
       affine_transform_dataset
     </span>
@@ -525,7 +525,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.reproject.reproject_dataset" class="md-nav__link">
+  <a href="#xcube_resampling.reproject_dataset" class="md-nav__link">
     <span class="md-ellipsis">
       reproject_dataset
     </span>
@@ -534,11 +534,116 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.rectify.rectify_dataset" class="md-nav__link">
+  <a href="#xcube_resampling.rectify_dataset" class="md-nav__link">
     <span class="md-ellipsis">
       rectify_dataset
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.AffineTransformMatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      AffineTransformMatrix
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.AggMethods" class="md-nav__link">
+    <span class="md-ellipsis">
+      AggMethods
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.InterpMethods" class="md-nav__link">
+    <span class="md-ellipsis">
+      InterpMethods
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.RecoverNans" class="md-nav__link">
+    <span class="md-ellipsis">
+      RecoverNans
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.FillValues" class="md-nav__link">
+    <span class="md-ellipsis">
+      FillValues
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      utils
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.get_spatial_coords" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_spatial_coords
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.clip_dataset_by_bbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      clip_dataset_by_bbox
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.reproject_bbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      reproject_bbox
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.bbox_overlap" class="md-nav__link">
+    <span class="md-ellipsis">
+      bbox_overlap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.normalize_grid_mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      normalize_grid_mapping
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -999,7 +1104,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.spatial.resample_in_space" class="md-nav__link">
+  <a href="#xcube_resampling.resample_in_space" class="md-nav__link">
     <span class="md-ellipsis">
       resample_in_space
     </span>
@@ -1008,7 +1113,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.affine.affine_transform_dataset" class="md-nav__link">
+  <a href="#xcube_resampling.affine_transform_dataset" class="md-nav__link">
     <span class="md-ellipsis">
       affine_transform_dataset
     </span>
@@ -1017,7 +1122,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.reproject.reproject_dataset" class="md-nav__link">
+  <a href="#xcube_resampling.reproject_dataset" class="md-nav__link">
     <span class="md-ellipsis">
       reproject_dataset
     </span>
@@ -1026,11 +1131,116 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#xcube_resampling.rectify.rectify_dataset" class="md-nav__link">
+  <a href="#xcube_resampling.rectify_dataset" class="md-nav__link">
     <span class="md-ellipsis">
       rectify_dataset
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.AffineTransformMatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      AffineTransformMatrix
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.AggMethods" class="md-nav__link">
+    <span class="md-ellipsis">
+      AggMethods
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.InterpMethods" class="md-nav__link">
+    <span class="md-ellipsis">
+      InterpMethods
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.RecoverNans" class="md-nav__link">
+    <span class="md-ellipsis">
+      RecoverNans
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.constants.FillValues" class="md-nav__link">
+    <span class="md-ellipsis">
+      FillValues
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#xcube_resampling.utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      utils
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.get_spatial_coords" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_spatial_coords
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.clip_dataset_by_bbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      clip_dataset_by_bbox
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.reproject_bbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      reproject_bbox
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.bbox_overlap" class="md-nav__link">
+    <span class="md-ellipsis">
+      bbox_overlap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.normalize_grid_mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      normalize_grid_mapping
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1460,8 +1670,8 @@
 <div class="doc doc-object doc-function">
 
 
-<h2 id="xcube_resampling.spatial.resample_in_space" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<h2 id="xcube_resampling.resample_in_space" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1561,7 +1771,11 @@ resampled. If None, all data variables will be processed.</p>
                 <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.InterpMethods = InterpMethod | Mapping[np.dtype | Hashable, InterpMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.InterpMethods)" href="#xcube_resampling.constants.InterpMethods">InterpMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1588,7 +1802,11 @@ Supported methods include:</p>
                 <code>agg_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.AggMethods">AggMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.AggMethods = AggMethod | Mapping[np.dtype | str, AggMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.AggMethods)" href="#xcube_resampling.constants.AggMethods">AggMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1609,7 +1827,11 @@ Defaults to "center" for integer arrays, else "mean".</p>
                 <code>recover_nans</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.RecoverNans">RecoverNans</span></code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.RecoverNans = bool | Mapping[np.dtype | str, bool]
+
+  
+      module-attribute
+   (xcube_resampling.constants.RecoverNans)" href="#xcube_resampling.constants.RecoverNans">RecoverNans</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1628,7 +1850,11 @@ to booleans. Defaults to False.</p>
                 <code>fill_values</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.FillValues">FillValues</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.FillValues = FloatInt | Mapping[np.dtype | str, FloatInt]
+
+  
+      module-attribute
+   (xcube_resampling.constants.FillValues)" href="#xcube_resampling.constants.FillValues">FillValues</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1977,8 +2203,8 @@ mapping.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="xcube_resampling.affine.affine_transform_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">affine_transform_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<h2 id="xcube_resampling.affine_transform_dataset" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">affine_transform_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -2071,7 +2297,11 @@ from the dataset.</p>
                 <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.InterpMethods = InterpMethod | Mapping[np.dtype | Hashable, InterpMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.InterpMethods)" href="#xcube_resampling.constants.InterpMethods">InterpMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2097,7 +2327,11 @@ Supported methods include:</p>
                 <code>agg_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.AggMethods">AggMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.AggMethods = AggMethod | Mapping[np.dtype | str, AggMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.AggMethods)" href="#xcube_resampling.constants.AggMethods">AggMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2118,7 +2352,11 @@ Defaults to "center" for integer arrays, else "mean".</p>
                 <code>recover_nans</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.RecoverNans">RecoverNans</span></code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.RecoverNans = bool | Mapping[np.dtype | str, bool]
+
+  
+      module-attribute
+   (xcube_resampling.constants.RecoverNans)" href="#xcube_resampling.constants.RecoverNans">RecoverNans</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2137,7 +2375,11 @@ to booleans. Defaults to False.</p>
                 <code>fill_values</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.FillValues">FillValues</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.FillValues = FloatInt | Mapping[np.dtype | str, FloatInt]
+
+  
+      module-attribute
+   (xcube_resampling.constants.FillValues)" href="#xcube_resampling.constants.FillValues">FillValues</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2367,8 +2609,8 @@ Data variables with only one spatial dimension are ignored.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="xcube_resampling.reproject.reproject_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">reproject</span><span class="o">.</span><span class="n">reproject_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<h2 id="xcube_resampling.reproject_dataset" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">reproject_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -2464,7 +2706,11 @@ If None, all suitable variables are processed.</p>
                 <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.InterpMethods = InterpMethod | Mapping[np.dtype | Hashable, InterpMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.InterpMethods)" href="#xcube_resampling.constants.InterpMethods">InterpMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2491,7 +2737,11 @@ Supported methods include:</p>
                 <code>agg_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.AggMethods">AggMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.AggMethods = AggMethod | Mapping[np.dtype | str, AggMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.AggMethods)" href="#xcube_resampling.constants.AggMethods">AggMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2512,7 +2762,11 @@ Defaults to "center" for integer arrays, else "mean".</p>
                 <code>recover_nans</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.RecoverNans">RecoverNans</span></code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.RecoverNans = bool | Mapping[np.dtype | str, bool]
+
+  
+      module-attribute
+   (xcube_resampling.constants.RecoverNans)" href="#xcube_resampling.constants.RecoverNans">RecoverNans</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2531,7 +2785,11 @@ to booleans. Defaults to False.</p>
                 <code>fill_values</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.FillValues">FillValues</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.FillValues = FloatInt | Mapping[np.dtype | str, FloatInt]
+
+  
+      module-attribute
+   (xcube_resampling.constants.FillValues)" href="#xcube_resampling.constants.FillValues">FillValues</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2861,8 +3119,8 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 <div class="doc doc-object doc-function">
 
 
-<h2 id="xcube_resampling.rectify.rectify_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">rectify</span><span class="o">.</span><span class="n">rectify_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<h2 id="xcube_resampling.rectify_dataset" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">rectify_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -2958,7 +3216,11 @@ are processed.</p>
                 <code>interp_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.InterpMethods">InterpMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.InterpMethods = InterpMethod | Mapping[np.dtype | Hashable, InterpMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.InterpMethods)" href="#xcube_resampling.constants.InterpMethods">InterpMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2985,7 +3247,11 @@ Supported methods include:</p>
                 <code>agg_methods</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.AggMethods">AggMethods</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.AggMethods = AggMethod | Mapping[np.dtype | str, AggMethod]
+
+  
+      module-attribute
+   (xcube_resampling.constants.AggMethods)" href="#xcube_resampling.constants.AggMethods">AggMethods</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3006,7 +3272,11 @@ Defaults to "center" for integer arrays, else "mean".</p>
                 <code>recover_nans</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.RecoverNans">RecoverNans</span></code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.RecoverNans = bool | Mapping[np.dtype | str, bool]
+
+  
+      module-attribute
+   (xcube_resampling.constants.RecoverNans)" href="#xcube_resampling.constants.RecoverNans">RecoverNans</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3025,7 +3295,11 @@ to booleans. Defaults to False.</p>
                 <code>fill_values</code>
             </td>
             <td>
-                  <code><span title="xcube_resampling.constants.FillValues">FillValues</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.FillValues = FloatInt | Mapping[np.dtype | str, FloatInt]
+
+  
+      module-attribute
+   (xcube_resampling.constants.FillValues)" href="#xcube_resampling.constants.FillValues">FillValues</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3092,10 +3366,7 @@ coordinate variables are ignored in the output.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/rectify.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 54</span>
-<span class="normal"> 55</span>
-<span class="normal"> 56</span>
-<span class="normal"> 57</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 57</span>
 <span class="normal"> 58</span>
 <span class="normal"> 59</span>
 <span class="normal"> 60</span>
@@ -3217,7 +3488,33 @@ coordinate variables are ignored in the output.</p>
 <span class="normal">176</span>
 <span class="normal">177</span>
 <span class="normal">178</span>
-<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rectify_dataset</span><span class="p">(</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rectify_dataset</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">source_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3282,6 +3579,8 @@ coordinate variables are ignored in the output.</p>
 <span class="sd">            Variables not having 2D spatial dimensions are copied as-is. 1D spatial</span>
 <span class="sd">            coordinate variables are ignored in the output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">source_ds</span> <span class="o">=</span> <span class="n">_select_variables</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">source_gm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">source_gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">)</span>
     <span class="n">source_ds</span> <span class="o">=</span> <span class="n">normalize_grid_mapping</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">)</span>
@@ -3294,9 +3593,30 @@ coordinate variables are ignored in the output.</p>
         <span class="n">source_ds</span> <span class="o">=</span> <span class="n">_transform_coords</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">)</span>
         <span class="n">source_gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">)</span>
 
-    <span class="n">source_ds</span> <span class="o">=</span> <span class="n">_select_variables</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
-
-    <span class="c1"># ToDo: clip dataset</span>
+    <span class="c1"># if the bbox of the target grid mapping overlaps less than 80% with the</span>
+    <span class="c1"># bounding box of the source grid mapping, clip the source dataset.</span>
+    <span class="n">overlap</span> <span class="o">=</span> <span class="n">bbox_overlap</span><span class="p">(</span><span class="n">source_gm</span><span class="o">.</span><span class="n">xy_bbox</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_bbox</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">overlap</span> <span class="o">&lt;</span> <span class="mf">1e-5</span><span class="p">:</span>
+        <span class="n">LOG</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Target grid mapping does not overlap with the source grid mapping. &quot;</span>
+            <span class="s2">&quot;Target dataset filled with the respective fill value is returned.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_create_empty_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">fill_values</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">overlap</span> <span class="o">&lt;</span> <span class="mf">0.8</span><span class="p">:</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">x_res</span><span class="p">,</span>
+            <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">y_res</span><span class="p">,</span>
+            <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">x_res</span><span class="p">,</span>
+            <span class="n">target_gm</span><span class="o">.</span><span class="n">xy_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">x_res</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">source_ds</span> <span class="o">=</span> <span class="n">clip_dataset_by_bbox</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">bbox</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">source_ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">source_gm</span><span class="o">.</span><span class="n">xy_dim_names</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+            <span class="n">LOG</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Clipped dataset contains at least dimension with size &lt; 2. &quot;</span>
+                <span class="s2">&quot;Target dataset filled with the respective fill value is returned.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">_create_empty_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="n">fill_values</span><span class="p">)</span>
+        <span class="n">source_gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">)</span>
 
     <span class="c1"># If source has higher resolution than target, downscale first, then rectify</span>
     <span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span> <span class="o">=</span> <span class="n">_downscale_source_dataset</span><span class="p">(</span>
@@ -3345,6 +3665,1051 @@ coordinate variables are ignored in the output.</p>
     <span class="k">return</span> <span class="n">target_ds</span>
 </code></pre></div></td></tr></table></div>
             </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="xcube_resampling.constants.AffineTransformMatrix" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">AffineTransformMatrix</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h2>
+
+
+    <div class="doc doc-contents first">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="xcube_resampling.constants.AggMethods" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">AggMethods</span> <span class="o">=</span> <span class="n">AggMethod</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">AggMethod</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h2>
+
+
+    <div class="doc doc-contents first">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="xcube_resampling.constants.InterpMethods" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">InterpMethods</span> <span class="o">=</span> <span class="n">InterpMethod</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">|</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">InterpMethod</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h2>
+
+
+    <div class="doc doc-contents first">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="xcube_resampling.constants.RecoverNans" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">RecoverNans</span> <span class="o">=</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h2>
+
+
+    <div class="doc doc-contents first">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="xcube_resampling.constants.FillValues" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">FillValues</span> <span class="o">=</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h2>
+
+
+    <div class="doc doc-contents first">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="xcube_resampling.utils" class="doc doc-heading">
+            <code>xcube_resampling.utils</code>
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.utils.get_spatial_coords" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Identify the names of horizontal spatial coordinate in an xarray dataset.</p>
+<p>This function checks for standard coordinate name pairs used for horizontal
+spatial referencing: either, ("longitude", "latitude"), ("lon", "lat") or
+("x", "y"). It returns the detected pair as a tuple in the order (x_coord, y_coord).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>ds</code>
+            </td>
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The xarray.Dataset to inspect.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>(<span title="str">str</span>, <span title="str">str</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A tuple (x_coord, y_coord) containing the names of the horizontal spatial</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>(<span title="str">str</span>, <span title="str">str</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>dimensions, e.g., ("longitude", "latitude"), ("lon", "lat") or ("x", "y").</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="KeyError">KeyError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If no recognized spatial dimension pair is found in the dataset.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_spatial_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Identify the names of horizontal spatial coordinate in an xarray dataset.</span>
+
+<span class="sd">    This function checks for standard coordinate name pairs used for horizontal</span>
+<span class="sd">    spatial referencing: either, (&quot;longitude&quot;, &quot;latitude&quot;), (&quot;lon&quot;, &quot;lat&quot;) or</span>
+<span class="sd">    (&quot;x&quot;, &quot;y&quot;). It returns the detected pair as a tuple in the order (x_coord, y_coord).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ds: The xarray.Dataset to inspect.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple (x_coord, y_coord) containing the names of the horizontal spatial</span>
+<span class="sd">        dimensions, e.g., (&quot;longitude&quot;, &quot;latitude&quot;), (&quot;lon&quot;, &quot;lat&quot;) or (&quot;x&quot;, &quot;y&quot;).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If no recognized spatial dimension pair is found in the dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;transformed_x&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;transformed_y&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;transformed_x&quot;</span><span class="p">,</span> <span class="s2">&quot;transformed_y&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;latitude&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;longitude&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;latitude&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;lat&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;lon&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;y&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;x&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;No standard spatial coordinates found in dataset. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Expected pairs (&#39;lon&#39;, &#39;lat&#39;) or (&#39;x&#39;, &#39;y&#39;), but found: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.utils.clip_dataset_by_bbox" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">clip_dataset_by_bbox</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">spatial_coords</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Clip a xarray Dataset to a specified bounding box.</p>
+<p>This function extracts a spatial subset of the dataset based on the given
+bounding box. It handles both increasing and decreasing orientation of the
+y-axis automatically to ensure correct spatial clipping.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>ds</code>
+            </td>
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The input xarray.Dataset to be clipped.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>bbox</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="xcube_resampling.constants.FloatInt">FloatInt</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A sequence of four numbers representing the bounding box in the form
+(min_x, min_y, max_x, max_y).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>spatial_coords</code>
+            </td>
+            <td>
+                  <code><span title="tuple">tuple</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional tuple of two spatial coordinate names (x_dim, y_dim),
+e.g., ('lon', 'lat'). If None, the coordinates are inferred automatically.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A spatial subset of the input dataset clipped to the bounding box.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>bbox</code> does not contain exactly four elements.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="KeyError">KeyError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If spatial coordinate names cannot be determined from the dataset.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="notes" open>
+  <summary>Notes</summary>
+  <p>If the bounding box does not overlap with the dataset extent, the returned
+dataset may contain one or more zero-sized dimensions.</p>
+</details>
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clip_dataset_by_bbox</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
+    <span class="n">spatial_coords</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clip a xarray Dataset to a specified bounding box.</span>
+
+<span class="sd">    This function extracts a spatial subset of the dataset based on the given</span>
+<span class="sd">    bounding box. It handles both increasing and decreasing orientation of the</span>
+<span class="sd">    y-axis automatically to ensure correct spatial clipping.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ds: The input xarray.Dataset to be clipped.</span>
+<span class="sd">        bbox: A sequence of four numbers representing the bounding box in the form</span>
+<span class="sd">            (min_x, min_y, max_x, max_y).</span>
+<span class="sd">        spatial_coords: Optional tuple of two spatial coordinate names (x_dim, y_dim),</span>
+<span class="sd">            e.g., (&#39;lon&#39;, &#39;lat&#39;). If None, the coordinates are inferred automatically.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A spatial subset of the input dataset clipped to the bounding box.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If `bbox` does not contain exactly four elements.</span>
+<span class="sd">        KeyError: If spatial coordinate names cannot be determined from the dataset.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        If the bounding box does not overlap with the dataset extent, the returned</span>
+<span class="sd">        dataset may contain one or more zero-sized dimensions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected bbox of length 4, got: </span><span class="si">{</span><span class="n">bbox</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">spatial_coords</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">spatial_coords</span> <span class="o">=</span> <span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="n">spatial_coords</span>
+
+    <span class="k">if</span> <span class="n">ds</span><span class="p">[</span><span class="n">x_coord</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">ds</span><span class="p">[</span><span class="n">y_coord</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">_clip_2dcoord_dataset_by_bbox</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">ds</span><span class="p">[</span><span class="n">x_coord</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ds</span><span class="p">[</span><span class="n">y_coord</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">_clip_1dcoord_dataset_by_bbox</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unsupported coordinate dimensions: x_coord.ndim=</span><span class="si">{</span><span class="n">ds</span><span class="p">[</span><span class="n">x_coord</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;y_coord.ndim=</span><span class="si">{</span><span class="n">ds</span><span class="p">[</span><span class="n">y_coord</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">. Expected both 1D or both 2D.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="n">LOG</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Clipped dataset contains at least one zero-sized dimension. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Check if the bounding box </span><span class="si">{</span><span class="n">bbox</span><span class="si">}</span><span class="s2"> overlaps with the dataset extent.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.utils.reproject_bbox" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">reproject_bbox</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">,</span> <span class="n">source_crs</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Reprojects a bounding box from a source CRS to a target CRS, with optional
+buffering.</p>
+<p>The function transforms a bounding box defined in the source coordinate reference
+system (CRS) to the target CRS using <code>pyproj</code>. If the source and target CRS are
+the same, no transformation is performed. An optional buffer (as a fraction of
+width/height) can be applied to expand the resulting bounding box.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_bbox</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="xcube_resampling.constants.FloatInt">FloatInt</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The bounding box to reproject, in the form
+(min_x, min_y, max_x, max_y).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_crs</code>
+            </td>
+            <td>
+                  <code><span title="pyproj.CRS">CRS</span> | <span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The source CRS, as a <code>pyproj.CRS</code> or string.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>target_crs</code>
+            </td>
+            <td>
+                  <code><span title="pyproj.CRS">CRS</span> | <span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The target CRS, as a <code>pyproj.CRS</code> or string.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="xcube_resampling.constants.FloatInt">FloatInt</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A tuple representing the reprojected (and optionally buffered) bounding box:</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="xcube_resampling.constants.FloatInt">FloatInt</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>(min_x, min_y, max_x, max_y).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_bbox</span><span class="p">(</span>
+    <span class="n">source_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
+    <span class="n">source_crs</span><span class="p">:</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">target_crs</span><span class="p">:</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reprojects a bounding box from a source CRS to a target CRS, with optional</span>
+<span class="sd">    buffering.</span>
+
+<span class="sd">    The function transforms a bounding box defined in the source coordinate reference</span>
+<span class="sd">    system (CRS) to the target CRS using `pyproj`. If the source and target CRS are</span>
+<span class="sd">    the same, no transformation is performed. An optional buffer (as a fraction of</span>
+<span class="sd">    width/height) can be applied to expand the resulting bounding box.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source_bbox: The bounding box to reproject, in the form</span>
+<span class="sd">            (min_x, min_y, max_x, max_y).</span>
+<span class="sd">        source_crs: The source CRS, as a `pyproj.CRS` or string.</span>
+<span class="sd">        target_crs: The target CRS, as a `pyproj.CRS` or string.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple representing the reprojected (and optionally buffered) bounding box:</span>
+<span class="sd">        (min_x, min_y, max_x, max_y).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">source_crs</span> <span class="o">=</span> <span class="n">_normalize_crs</span><span class="p">(</span><span class="n">source_crs</span><span class="p">)</span>
+    <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_normalize_crs</span><span class="p">(</span><span class="n">target_crs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source_crs</span> <span class="o">!=</span> <span class="n">target_crs</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="n">source_crs</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">target_bbox</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">transform_bounds</span><span class="p">(</span><span class="o">*</span><span class="n">source_bbox</span><span class="p">,</span> <span class="n">densify_pts</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">target_bbox</span> <span class="o">=</span> <span class="n">source_bbox</span>
+
+    <span class="k">return</span> <span class="n">target_bbox</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.utils.bbox_overlap" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">bbox_overlap</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">,</span> <span class="n">target_bbox</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Calculate the fraction of the source bounding box that overlaps with the target
+bounding box.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_bbox</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="xcube_resampling.constants.FloatInt">FloatInt</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>(min_x, min_y, max_x, max_y)</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>target_bbox</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="xcube_resampling.constants.FloatInt">FloatInt</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>(min_x, min_y, max_x, max_y)</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>float in [0, 1]</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bbox_overlap</span><span class="p">(</span>
+    <span class="n">source_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the fraction of the source bounding box that overlaps with the target</span>
+<span class="sd">    bounding box.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source_bbox: (min_x, min_y, max_x, max_y)</span>
+<span class="sd">        target_bbox: (min_x, min_y, max_x, max_y)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float in [0, 1]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inter_min_x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">inter_min_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">inter_max_x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">inter_max_y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">inter_w</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inter_max_x</span> <span class="o">-</span> <span class="n">inter_min_x</span><span class="p">)</span>
+    <span class="n">inter_h</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inter_max_y</span> <span class="o">-</span> <span class="n">inter_min_y</span><span class="p">)</span>
+    <span class="n">inter_area</span> <span class="o">=</span> <span class="n">inter_w</span> <span class="o">*</span> <span class="n">inter_h</span>
+    <span class="n">area_source</span> <span class="o">=</span> <span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">source_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">source_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">inter_area</span> <span class="o">/</span> <span class="n">area_source</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.utils.normalize_grid_mapping" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">gm</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Normalize the grid mapping of a dataset to use a standard "spatial_ref" coordinate.</p>
+<p>This function standardizes geospatial metadata by replacing any existing grid
+mapping variable with a unified "spatial_ref" coordinate. It updates the
+"grid_mapping" attribute of all data variables to reference "spatial_ref",
+removes the original grid mapping variable (if present), and adds a new
+"spatial_ref" coordinate with CF-compliant CRS attributes.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>ds</code>
+            </td>
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The input xarray.Dataset with geospatial grid mapping metadata.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>gm</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.gridmapping.GridMapping" href="#xcube_resampling.gridmapping.GridMapping">GridMapping</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The GridMapping object associated with the dataset.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="xarray.Dataset">Dataset</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A new dataset with a standardized "spatial_ref" coordinate for grid mapping.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize the grid mapping of a dataset to use a standard &quot;spatial_ref&quot; coordinate.</span>
+
+<span class="sd">    This function standardizes geospatial metadata by replacing any existing grid</span>
+<span class="sd">    mapping variable with a unified &quot;spatial_ref&quot; coordinate. It updates the</span>
+<span class="sd">    &quot;grid_mapping&quot; attribute of all data variables to reference &quot;spatial_ref&quot;,</span>
+<span class="sd">    removes the original grid mapping variable (if present), and adds a new</span>
+<span class="sd">    &quot;spatial_ref&quot; coordinate with CF-compliant CRS attributes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ds: The input xarray.Dataset with geospatial grid mapping metadata.</span>
+<span class="sd">        gm: The GridMapping object associated with the dataset.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A new dataset with a standardized &quot;spatial_ref&quot; coordinate for grid mapping.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gm_name</span> <span class="o">=</span> <span class="n">_get_grid_mapping_name</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gm_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">gm_name</span><span class="p">)</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">spatial_ref</span><span class="o">=</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">gm</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">to_cf</span><span class="p">()))</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+        <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;grid_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;spatial_ref&quot;</span>
+
+    <span class="k">return</span> <span class="n">ds</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
     </div>
 
 </div>
@@ -6315,7 +7680,11 @@ of this image geometry.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="xcube_resampling.constants.AffineTransformMatrix">AffineTransformMatrix</span></code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.AffineTransformMatrix = tuple[tuple[FloatInt, FloatInt, FloatInt], tuple[FloatInt, FloatInt, FloatInt]]
+
+  
+      module-attribute
+   (xcube_resampling.constants.AffineTransformMatrix)" href="#xcube_resampling.constants.AffineTransformMatrix">AffineTransformMatrix</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6429,7 +7798,11 @@ coordinates of <em>other</em>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="xcube_resampling.constants.AffineTransformMatrix">AffineTransformMatrix</span></code>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.constants.AffineTransformMatrix = tuple[tuple[FloatInt, FloatInt, FloatInt], tuple[FloatInt, FloatInt, FloatInt]]
+
+  
+      module-attribute
+   (xcube_resampling.constants.AffineTransformMatrix)" href="#xcube_resampling.constants.AffineTransformMatrix">AffineTransformMatrix</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -8411,10 +9784,10 @@ coordinates with each other. Must be in the units of the
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>
