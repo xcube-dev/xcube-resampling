@@ -208,6 +208,15 @@ def create_4x4_dataset_with_irregular_coords():
     )
 
 
+def create_2x4x4_dataset_with_irregular_coords():
+    ds = create_4x4_dataset_with_irregular_coords()
+    array_3d = np.repeat(ds.rad.values[np.newaxis, :, :], 2, axis=0)
+    time = pd.date_range("2025-08-01", periods=2)
+    ds_3d = xr.Dataset(coords=dict(time=time, lat=ds.lat, lon=ds.lon))
+    ds_3d["rad"] = (("time", "lat", "lon"), array_3d)
+    return ds_3d
+
+
 def create_s2plus_dataset():
     x = xr.DataArray(
         [310005.0, 310015.0, 310025.0, 310035.0, 310045.0],

@@ -28,15 +28,16 @@ import pyproj
 import xarray as xr
 
 from .affine import resample_dataset
+from .affine import resample_dataset
 from .constants import (
+    LOG,
     SCALE_LIMIT,
     UV_DELTA,
     AggMethods,
     FillValues,
     FloatInt,
-    InterpMethod,
-    InterpMethodStr,
     InterpMethods,
+    InterpMethodStr,
     RecoverNans,
 )
 from .dask import compute_array_from_func
@@ -47,6 +48,8 @@ from .utils import (
     _is_equal_crs,
     _prep_interp_methods_downscale,
     _select_variables,
+    bbox_overlap,
+    clip_dataset_by_bbox,
     normalize_grid_mapping,
 )
 
@@ -116,6 +119,8 @@ def rectify_dataset(
             Variables not having 2D spatial dimensions are copied as-is. 1D spatial
             coordinate variables are ignored in the output.
     """
+    source_ds = _select_variables(source_ds, variables)
+
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -128,9 +133,30 @@ def rectify_dataset(
         source_ds = _transform_coords(source_ds, source_gm, target_gm)
         source_gm = GridMapping.from_dataset(source_ds)
 
-    source_ds = _select_variables(source_ds, variables)
-
-    # ToDo: clip dataset
+    # if the bbox of the target grid mapping overlaps less than 80% with the
+    # bounding box of the source grid mapping, clip the source dataset.
+    overlap = bbox_overlap(source_gm.xy_bbox, target_gm.xy_bbox)
+    if overlap < 1e-5:
+        LOG.info(
+            "Target grid mapping does not overlap with the source grid mapping. "
+            "Target dataset filled with the respective fill value is returned."
+        )
+        return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+    if overlap < 0.8:
+        bbox = [
+            target_gm.xy_bbox[0] - 2 * source_gm.x_res,
+            target_gm.xy_bbox[1] - 2 * source_gm.y_res,
+            target_gm.xy_bbox[2] + 2 * source_gm.x_res,
+            target_gm.xy_bbox[3] + 2 * source_gm.x_res,
+        ]
+        source_ds = clip_dataset_by_bbox(source_ds, bbox)
+        if any(source_ds.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
+            LOG.warning(
+                "Clipped dataset contains at least dimension with size < 2. "
+                "Target dataset filled with the respective fill value is returned."
+            )
+            return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+        source_gm = GridMapping.from_dataset(source_ds)
 
     # If source has higher resolution than target, downscale first, then rectify
     source_ds, source_gm = _downscale_source_dataset(
@@ -176,6 +202,47 @@ def rectify_dataset(
         elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
             target_ds[var_name] = data_array
 
+    return target_ds
+
+
+def _create_empty_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    fill_values: FillValues | None = None,
+) -> xr.Dataset:
+    x_name, y_name = source_gm.xy_var_names
+    coords = source_ds.coords.to_dataset()
+    coords = coords.drop_vars((x_name, y_name))
+    x_name, y_name = target_gm.xy_var_names
+    coords[x_name] = target_gm.x_coords
+    coords[y_name] = target_gm.y_coords
+    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
+    target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
+    for key, data in source_ds.data_vars.items():
+        shape = list(source_ds[key].shape)
+        shape[-1] = target_gm.width
+        shape[-2] = target_gm.height
+        dims = list(source_ds[key].dims)
+        dims[-1] = target_gm.xy_var_names[0]
+        dims[-2] = target_gm.xy_var_names[1]
+        if source_ds[key].ndim == 3:
+            chunks = (
+                source_ds[key].chunks[0][0],
+                target_gm.height,
+                target_gm.width,
+            )
+        else:
+            chunks = (target_gm.height, target_gm.width)
+        target_ds[key] = xr.DataArray(
+            da.full(
+                shape,
+                fill_value=_get_fill_value(fill_values, key, data),
+                chunks=chunks,
+            ),
+            dims=dims,
+            attrs=source_ds[key].attrs,
+        )
     return target_ds
 
 
@@ -242,7 +309,7 @@ def _downscale_source_dataset(
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
-        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
+        w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
 
         source_ds = resample_dataset(

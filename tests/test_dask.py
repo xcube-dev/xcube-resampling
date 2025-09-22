@@ -21,6 +21,7 @@
 
 
 import unittest
+
 from xcube_resampling import dask as xr_dask
 
 

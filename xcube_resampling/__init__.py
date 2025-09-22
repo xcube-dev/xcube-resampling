@@ -19,6 +19,16 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from .version import version
+from .affine import affine_transform_dataset
+from .rectify import rectify_dataset
+from .reproject import reproject_dataset
+from .spatial import resample_in_space
+from .version import __version__
 
-__version__ = version
+__all__ = [
+    "__version__",
+    "resample_in_space",
+    "affine_transform_dataset",
+    "rectify_dataset",
+    "reproject_dataset",
+]

@@ -22,6 +22,7 @@
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 
 import numpy as np
+import pyproj
 import xarray as xr
 
 from .constants import (
@@ -36,39 +37,46 @@ from .constants import (
     AggMethods,
     FloatInt,
     InterpMethod,
-    InterpMethodStr,
     InterpMethodInt,
     InterpMethods,
+    InterpMethodStr,
     RecoverNans,
 )
 from .gridmapping import GridMapping
 
+# noinspection PyProtectedMember
+from .gridmapping.helpers import _normalize_crs
 
-def get_spatial_dims(ds: xr.Dataset) -> (str, str):
+
+def get_spatial_coords(ds: xr.Dataset) -> (str, str):
     """
-    Identify the names of horizontal spatial dimensions in an xarray dataset.
+    Identify the names of horizontal spatial coordinate in an xarray dataset.
 
-    This function checks for standard dimension name pairs used for horizontal
-    spatial referencing: either ("lon", "lat") or ("x", "y"). It returns the
-    detected pair as a tuple in the order (x_dim, y_dim).
+    This function checks for standard coordinate name pairs used for horizontal
+    spatial referencing: either, ("longitude", "latitude"), ("lon", "lat") or
+    ("x", "y"). It returns the detected pair as a tuple in the order (x_coord, y_coord).
 
     Args:
         ds: The xarray.Dataset to inspect.
 
     Returns:
-        A tuple (x_dim, y_dim) containing the names of the horizontal spatial
-        dimensions, e.g., ("lon", "lat") or ("x", "y").
+        A tuple (x_coord, y_coord) containing the names of the horizontal spatial
+        dimensions, e.g., ("longitude", "latitude"), ("lon", "lat") or ("x", "y").
 
     Raises:
         KeyError: If no recognized spatial dimension pair is found in the dataset.
     """
-    if "lat" in ds and "lon" in ds:
+    if "transformed_x" in ds and "transformed_y" in ds:
+        x_coord, y_coord = "transformed_x", "transformed_y"
+    elif "latitude" in ds and "longitude" in ds:
+        x_coord, y_coord = "longitude", "latitude"
+    elif "lat" in ds and "lon" in ds:
         x_coord, y_coord = "lon", "lat"
     elif "y" in ds and "x" in ds:
         x_coord, y_coord = "x", "y"
     else:
         raise KeyError(
-            f"No standard spatial dimensions found in dataset. "
+            f"No standard spatial coordinates found in dataset. "
             f"Expected pairs ('lon', 'lat') or ('x', 'y'), but found: {list(ds.dims)}."
         )
     return x_coord, y_coord
@@ -77,7 +85,7 @@ def get_spatial_dims(ds: xr.Dataset) -> (str, str):
 def clip_dataset_by_bbox(
     ds: xr.Dataset,
     bbox: Sequence[FloatInt],
-    spatial_dims: tuple[str, str] | None = None,
+    spatial_coords: tuple[str, str] | None = None,
 ) -> xr.Dataset:
     """
     Clip a xarray Dataset to a specified bounding box.
@@ -89,16 +97,16 @@ def clip_dataset_by_bbox(
     Args:
         ds: The input xarray.Dataset to be clipped.
         bbox: A sequence of four numbers representing the bounding box in the form
-              (min_x, min_y, max_x, max_y).
-        spatial_dims: Optional tuple of two spatial dimension names (x_dim, y_dim),
-              e.g., ('lon', 'lat'). If None, the dimensions are inferred automatically.
+            (min_x, min_y, max_x, max_y).
+        spatial_coords: Optional tuple of two spatial coordinate names (x_dim, y_dim),
+            e.g., ('lon', 'lat'). If None, the coordinates are inferred automatically.
 
     Returns:
         A spatial subset of the input dataset clipped to the bounding box.
 
     Raises:
         ValueError: If `bbox` does not contain exactly four elements.
-        KeyError: If spatial dimension names cannot be determined from the dataset.
+        KeyError: If spatial coordinate names cannot be determined from the dataset.
 
     Notes:
         If the bounding box does not overlap with the dataset extent, the returned
@@ -107,14 +115,19 @@ def clip_dataset_by_bbox(
     if len(bbox) != 4:
         raise ValueError(f"Expected bbox of length 4, got: {bbox}")
 
-    if spatial_dims is None:
-        spatial_dims = get_spatial_dims(ds)
-    x_dim, y_dim = spatial_dims
+    if spatial_coords is None:
+        spatial_coords = get_spatial_coords(ds)
+    x_coord, y_coord = spatial_coords
 
-    if ds[y_dim][-1] - ds[y_dim][0] < 0:
-        ds = ds.sel({x_dim: slice(bbox[0], bbox[2]), y_dim: slice(bbox[3], bbox[1])})
+    if ds[x_coord].ndim == 2 and ds[y_coord].ndim == 2:
+        ds = _clip_2dcoord_dataset_by_bbox(ds, bbox, x_coord, y_coord)
+    elif ds[x_coord].ndim == 1 and ds[y_coord].ndim == 1:
+        ds = _clip_1dcoord_dataset_by_bbox(ds, bbox, x_coord, y_coord)
     else:
-        ds = ds.sel({x_dim: slice(bbox[0], bbox[2]), y_dim: slice(bbox[1], bbox[3])})
+        raise ValueError(
+            f"Unsupported coordinate dimensions: x_coord.ndim={ds[x_coord].ndim}, "
+            f"y_coord.ndim={ds[y_coord].ndim}. Expected both 1D or both 2D."
+        )
 
     if any(size == 0 for size in ds.sizes.values()):
         LOG.warning(
@@ -122,6 +135,127 @@ def clip_dataset_by_bbox(
             f"Check if the bounding box {bbox} overlaps with the dataset extent."
         )
     return ds
+
+
+def _clip_2dcoord_dataset_by_bbox(
+    ds: xr.Dataset,
+    bbox: Sequence[FloatInt],
+    x_coord: str,
+    y_coord: str,
+) -> xr.Dataset:
+    mask = (
+        (ds[x_coord] >= bbox[0])
+        & (ds[x_coord] <= bbox[2])
+        & (ds[y_coord] >= bbox[1])
+        & (ds[y_coord] <= bbox[3])
+    )
+    # Explicitly load the mask into memory here to compute row/column indices using
+    # NumPy. This avoids duplicating computations if we stay in Dask for the following
+    # operations:
+    #   rows = np.any(mask, axis=1)
+    #   cols = np.any(mask, axis=0)
+    # Note: This will load the entire mask and break chunking, so it is a conscious
+    # choice.
+    mask = mask.values
+
+    # Find bounding rectangle in index space
+    rows = np.any(mask, axis=1)
+    cols = np.any(mask, axis=0)
+    idxs = np.where(rows)[0]
+    if idxs.size == 0:
+        row_min, row_max = 0, -1
+    else:
+        row_min, row_max = idxs[[0, -1]]
+    idxs = np.where(cols)[0]
+    if idxs.size == 0:
+        col_min, col_max = 0, -1
+    else:
+        col_min, col_max = idxs[[0, -1]]
+
+    y_dim, x_dim = ds[x_coord].dims
+    return ds.isel(
+        {
+            y_dim: slice(row_min, row_max + 1),
+            x_dim: slice(col_min, col_max + 1),
+        }
+    )
+
+
+def _clip_1dcoord_dataset_by_bbox(
+    ds: xr.Dataset,
+    bbox: Sequence[FloatInt],
+    x_coord: str,
+    y_coord: str,
+) -> xr.Dataset:
+    if ds[y_coord][-1] - ds[y_coord][0] < 0:
+        return ds.sel(
+            {x_coord: slice(bbox[0], bbox[2]), y_coord: slice(bbox[3], bbox[1])}
+        )
+    else:
+        return ds.sel(
+            {x_coord: slice(bbox[0], bbox[2]), y_coord: slice(bbox[1], bbox[3])}
+        )
+
+
+def reproject_bbox(
+    source_bbox: Sequence[FloatInt],
+    source_crs: pyproj.CRS | str,
+    target_crs: pyproj.CRS | str,
+) -> Sequence[FloatInt]:
+    """Reprojects a bounding box from a source CRS to a target CRS, with optional
+    buffering.
+
+    The function transforms a bounding box defined in the source coordinate reference
+    system (CRS) to the target CRS using `pyproj`. If the source and target CRS are
+    the same, no transformation is performed. An optional buffer (as a fraction of
+    width/height) can be applied to expand the resulting bounding box.
+
+    Args:
+        source_bbox: The bounding box to reproject, in the form
+            (min_x, min_y, max_x, max_y).
+        source_crs: The source CRS, as a `pyproj.CRS` or string.
+        target_crs: The target CRS, as a `pyproj.CRS` or string.
+
+    Returns:
+        A tuple representing the reprojected (and optionally buffered) bounding box:
+        (min_x, min_y, max_x, max_y).
+    """
+    source_crs = _normalize_crs(source_crs)
+    target_crs = _normalize_crs(target_crs)
+    if source_crs != target_crs:
+        t = pyproj.Transformer.from_crs(source_crs, target_crs, always_xy=True)
+        target_bbox = t.transform_bounds(*source_bbox, densify_pts=21)
+    else:
+        target_bbox = source_bbox
+
+    return target_bbox
+
+
+def bbox_overlap(
+    source_bbox: Sequence[FloatInt], target_bbox: Sequence[FloatInt]
+) -> float:
+    """
+    Calculate the fraction of the source bounding box that overlaps with the target
+    bounding box.
+
+    Args:
+        source_bbox: (min_x, min_y, max_x, max_y)
+        target_bbox: (min_x, min_y, max_x, max_y)
+
+    Returns:
+        float in [0, 1]
+    """
+    inter_min_x = max(source_bbox[0], target_bbox[0])
+    inter_min_y = max(source_bbox[1], target_bbox[1])
+    inter_max_x = min(source_bbox[2], target_bbox[2])
+    inter_max_y = min(source_bbox[3], target_bbox[3])
+
+    inter_w = max(0, inter_max_x - inter_min_x)
+    inter_h = max(0, inter_max_y - inter_min_y)
+    inter_area = inter_w * inter_h
+    area_source = (source_bbox[2] - source_bbox[0]) * (source_bbox[3] - source_bbox[1])
+
+    return inter_area / area_source
 
 
 def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:

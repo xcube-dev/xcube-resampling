@@ -23,15 +23,14 @@ import unittest
 
 import numpy as np
 import pyproj
-import pandas as pd
 import xarray as xr
 
 from xcube_resampling.affine import affine_transform_dataset
 from xcube_resampling.gridmapping import CRS_CRS84, CRS_WGS84, GridMapping
 
 from .sampledata import (
-    create_8x6_dataset_with_regular_coords,
     create_2x8x6_dataset_with_regular_coords,
+    create_8x6_dataset_with_regular_coords,
 )
 
 

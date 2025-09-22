@@ -24,10 +24,10 @@
 or have special implementations compared to their numpy equivalents.
 """
 
-import numba as nb
-import numpy as np
 import warnings
 
+import numba as nb
+import numpy as np
 
 _ALL = slice(None)
 

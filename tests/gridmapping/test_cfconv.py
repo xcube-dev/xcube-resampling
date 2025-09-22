@@ -32,10 +32,10 @@ import zarr
 from xcube_resampling.gridmapping.cfconv import (
     GridCoords,
     GridMappingProxy,
-    get_dataset_grid_mapping_proxies,
     _find_potential_coord_vars,
     _is_potential_coord_var,
     add_spatial_ref,
+    get_dataset_grid_mapping_proxies,
 )
 
 CRS_WGS84 = pyproj.crs.CRS(4326)

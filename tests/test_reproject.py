@@ -10,8 +10,8 @@ from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
 from xcube_resampling.reproject import reproject_dataset
 
 from .sampledata import (
-    create_5x5_dataset_regular_utm,
     create_2x5x5_dataset_regular_utm,
+    create_5x5_dataset_regular_utm,
     create_large_dataset_for_reproject,
 )
 
