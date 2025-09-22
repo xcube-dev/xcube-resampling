@@ -5,3 +5,4 @@
 ::: xcube_resampling.rectify_dataset
 ::: xcube_resampling.utils
 ::: xcube_resampling.gridmapping.GridMapping
+::: xcube_resampling.constants

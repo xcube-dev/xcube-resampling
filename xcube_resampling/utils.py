@@ -149,7 +149,14 @@ def _clip_2dcoord_dataset_by_bbox(
         & (ds[y_coord] >= bbox[1])
         & (ds[y_coord] <= bbox[3])
     )
-    mask = mask.load()
+    # Explicitly load the mask into memory here to compute row/column indices using
+    # NumPy. This avoids duplicating computations if we stay in Dask for the following
+    # operations:
+    #   rows = np.any(mask, axis=1)
+    #   cols = np.any(mask, axis=0)
+    # Note: This will load the entire mask and break chunking, so it is a conscious
+    # choice.
+    mask = mask.values
 
     # Find bounding rectangle in index space
     rows = np.any(mask, axis=1)
@@ -224,7 +231,9 @@ def reproject_bbox(
     return target_bbox
 
 
-def bbox_overlap(source_bbox, target_bbox):
+def bbox_overlap(
+    source_bbox: Sequence[FloatInt], target_bbox: Sequence[FloatInt]
+) -> float:
     """
     Calculate the fraction of the source bounding box that overlaps with the target
     bounding box.
