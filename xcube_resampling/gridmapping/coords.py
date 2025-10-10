@@ -298,6 +298,8 @@ def new_grid_mapping_from_coords(
         x_res_05, y_res_05 = x_res / 2, y_res / 2
         x_min = _to_int_or_float(x_coords[..., 0].min() - x_res_05)
         x_max = _to_int_or_float(x_coords[..., -1].max() + x_res_05)
+        if x_max < x_min:
+            x_min, x_max = x_max, x_min
         if is_j_axis_up:
             y_min = _to_int_or_float(float(y_coords[0, ...].min()) - y_res_05)
             y_max = _to_int_or_float(float(y_coords[-1, ...].max()) + y_res_05)
