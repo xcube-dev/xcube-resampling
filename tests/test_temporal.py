@@ -23,13 +23,13 @@ import unittest
 
 import numpy as np
 
-from tests.sampledata import create_7x8x6_dataset_with_regular_coords
+from tests.sampledata import create_nx8x6_dataset_with_regular_coords
 from xcube_resampling.temporal import resample_in_time
 
 
 class ResampleInTimeTest(unittest.TestCase):
     def test_resample_in_time_min_max(self):
-        input_cube = create_7x8x6_dataset_with_regular_coords()
+        input_cube = create_nx8x6_dataset_with_regular_coords(8)
         resampled_cube = resample_in_time(input_cube, "2D", ["min", "max"])
         self.assertIn("time", resampled_cube)
         self.assertIn("refl_min", resampled_cube)
@@ -58,7 +58,7 @@ class ResampleInTimeTest(unittest.TestCase):
         )
 
     def test_resample_in_time_p90(self):
-        input_cube = create_7x8x6_dataset_with_regular_coords()
+        input_cube = create_nx8x6_dataset_with_regular_coords(8)
         resampled_cube = resample_in_time(input_cube, "3D", "percentile_90")
         self.assertIn("time", resampled_cube)
         self.assertIn("refl_p90", resampled_cube)
@@ -79,7 +79,7 @@ class ResampleInTimeTest(unittest.TestCase):
         )
 
     def test_resample_in_time_f_all(self):
-        input_cube = create_7x8x6_dataset_with_regular_coords()
+        input_cube = create_nx8x6_dataset_with_regular_coords(8)
         resampled_cube = resample_in_time(input_cube, "all", ["min", "max"])
         self.assertIn("time", resampled_cube)
         self.assertIn("refl_min", resampled_cube)
@@ -102,4 +102,31 @@ class ResampleInTimeTest(unittest.TestCase):
         np.testing.assert_allclose(
             resampled_cube.refl_max.values[..., 0, 1],
             np.array([4.0]),
+        )
+
+    def test_resample_in_time_nearest_interpolation(self):
+        input_cube = create_nx8x6_dataset_with_regular_coords(4)
+        resampled_cube = resample_in_time(input_cube, "6H",
+                                          ["interpolate"],
+                                          interp_kind="nearest")
+        self.assertIn("time", resampled_cube)
+        self.assertIn("refl_interpolate", resampled_cube)
+        self.assertEqual((13,), resampled_cube.time.shape)
+        np.testing.assert_allclose(
+            resampled_cube.refl_interpolate.values[..., 0, 1],
+            np.array([-1, -1, -1 , 0, 0, 0, 0, 1, 1, 1, 1, 2, 2]),
+        )
+
+    def test_resample_in_time_linear_interpolation(self):
+        input_cube = create_nx8x6_dataset_with_regular_coords(4)
+        resampled_cube = resample_in_time(input_cube, "6H",
+                                          ["interpolate"],
+                                          interp_kind="linear")
+        self.assertIn("time", resampled_cube)
+        self.assertIn("refl_interpolate", resampled_cube)
+        self.assertEqual((13,), resampled_cube.time.shape)
+        np.testing.assert_allclose(
+            resampled_cube.refl_interpolate.values[..., 0, 1],
+            np.array([-1. , -0.75, -0.5, -0.25,  0,  0.25,  0.5,  0.75,  1,
+                      1.25,  1.5,  1.75,  2]),
         )
