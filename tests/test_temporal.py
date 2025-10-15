@@ -159,6 +159,22 @@ class ResampleInTimeTest(unittest.TestCase):
                       1.25,  1.5,  1.75,  2]),
         )
 
+    def test_resample_in_time_list_interpolation(self):
+        input_cube = create_nx8x6_dataset_with_regular_coords(4)
+        resampled_cube = resample_in_time(input_cube, "6H",
+                                          interp_methods=["linear", "nearest"])
+        self.assertIn("time", resampled_cube)
+        self.assertIn("refl_linear", resampled_cube)
+        self.assertIn("refl_nearest", resampled_cube)
+        self.assertIn("ndvi_linear", resampled_cube)
+        self.assertIn("ndvi_nearest", resampled_cube)
+        self.assertEqual((13,), resampled_cube.time.shape)
+        np.testing.assert_allclose(
+            resampled_cube.refl_linear.values[..., 0, 1],
+            np.array([-1. , -0.75, -0.5, -0.25,  0,  0.25,  0.5,  0.75,  1,
+                      1.25,  1.5,  1.75,  2]),
+        )
+
     def test_resample_in_time_variable_selection(self):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         resampled_cube = resample_in_time(input_cube, "6H",
@@ -302,3 +318,10 @@ class ResampleInTimeTest(unittest.TestCase):
     def test_regular_time_series_upsample_returns_interp(self):
         result = _analyze_resampling_operation(self.ds_regular, "12H")
         self.assertEqual(result, "interp")
+
+    def test_resample_in_time_invalid_method(self):
+        input_cube = create_nx8x6_dataset_with_regular_coords(4)
+        with self.assertRaises(ValueError):
+            resample_in_time(input_cube, "6H",
+                                          interp_methods=["nonlinear",
+                                                          "nearest"])
