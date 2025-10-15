@@ -22,7 +22,7 @@
 
 import logging
 from collections.abc import Callable, Hashable, Mapping
-from typing import Literal, TypeAlias, Sequence
+from typing import Literal, TypeAlias, Sequence, Annotated
 
 import numpy as np
 
@@ -71,6 +71,7 @@ SpatialAggMethod: TypeAlias = Literal[
 ]
 """A literal type representing supported aggregation methods."""
 
+PercentileString: TypeAlias = Annotated[str, "format: percentile_<int>"]
 TemporalAggMethod = Literal[
     "all",
     "any",
@@ -85,12 +86,11 @@ TemporalAggMethod = Literal[
     "min",
     "mean",
     "median",
-    "percentile_<p>",
     "prod",
     "std",
     "sum",
     "var"
-]
+] | PercentileString
 
 SpatialAggMethods: TypeAlias = SpatialAggMethod | Mapping[np.dtype | str, SpatialAggMethod]
 """An aggregation method or a mapping from dtype to aggregation method."""
@@ -108,7 +108,7 @@ SpatialInterpMethod = SpatialInterpMethodInt | SpatialInterpMethodStr
 SpatialInterpMethods: TypeAlias = SpatialInterpMethod | Mapping[np.dtype | Hashable, SpatialInterpMethod]
 """An interpolation method or a mapping from dtype to interpolation method."""
 
-TemporalInterpMethods: TypeAlias = Literal[
+TemporalInterpMethodStr = Literal[
     "linear",
     "nearest",
     "zero",
@@ -117,6 +117,10 @@ TemporalInterpMethods: TypeAlias = Literal[
     "cubic",
     "polynomial"
 ]
+
+TemporalInterpMethods: TypeAlias = TemporalInterpMethodStr | Sequence[
+    TemporalInterpMethodStr] | Mapping[np.dtype | Hashable,
+    TemporalInterpMethodStr]
 
 RecoverNans: TypeAlias = bool | Mapping[np.dtype | str, bool]
 """Whether to attempt recovery of NaN values, globally or per dtype."""
