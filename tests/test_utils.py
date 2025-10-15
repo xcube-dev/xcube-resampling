@@ -330,6 +330,33 @@ class TestUtils(unittest.TestCase):
         expected = 36 / 36
         self.assertAlmostEqual(bbox_overlap(source, target), expected)
 
+        # antimeridian - identical wrapped boxes (e.g. 170°E → -170°W)
+        source = (170, -10, -170, 10)
+        target = (170, -10, -170, 10)
+        self.assertEqual(bbox_overlap(source, target), 1.0)
+
+        # antimeridian - source crosses, target fully inside one side
+        source = (170, 0, -170, 10)
+        target = (175, 0, 178, 10)
+        expected = 30 / 200
+        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+
+        # antimeridian - partial overlap across both segments
+        source = (170, 0, -170, 10)
+        target = (160, 0, 175, 10)
+        expected = 50 / 200
+        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+
+        # antimeridian - non-wrapped target covering entire world
+        source = (170, 0, -170, 10)
+        target = (-180, -90, 180, 90)
+        self.assertEqual(bbox_overlap(source, target), 1.0)
+
+        # antimeridian - touching at boundary only (no real overlap)
+        source = (170, 0, -170, 10)
+        target = (-170, 0, -160, 10)
+        self.assertAlmostEqual(bbox_overlap(source, target), 0.0)
+
 
 class TestClipDatasetByBBox(unittest.TestCase):
 

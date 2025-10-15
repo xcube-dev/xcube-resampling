@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
+from collections.abc import Sequence
 import copy
 import math
 import threading
@@ -61,22 +62,20 @@ class GridMapping(abc.ABC):
     a transformation from image pixel coordinates to spatial Earth coordinates
     defined in a well-known coordinate reference system (CRS).
 
-    This class cannot be instantiated directly. Use one of its factory methods
+    This class cannot be instantiated directly. Use one of its class methods
     to create instances:
 
-    * :meth:`regular`
-    * :meth:`from_dataset`
-    * :meth:`from_coords`
+    * `regular`
+    * `regular_from_bbox`
+    * `from_dataset`
+    * `from_coords`
 
     Some instance methods can be used to derive new instances:
 
-    * :meth:`derive`
-    * :meth:`scale`
-    * :meth:`transform`
-    * :meth:`to_regular`
-
-    This class is thread-safe.
-
+    * `derive`
+    * `scale`
+    * `transform`
+    * `to_regular`
     """
 
     def __init__(
@@ -735,6 +734,36 @@ class GridMapping(abc.ABC):
             crs=crs,
             tile_size=tile_size,
             is_j_axis_up=is_j_axis_up,
+        )
+
+    @classmethod
+    def regular_from_bbox(
+        cls,
+        bbox: Sequence[FloatInt],
+        xy_res: float | tuple[float, float],
+        crs: str | pyproj.crs.CRS,
+        tile_size: int | tuple[int, int] = None,
+        is_j_axis_up: bool = False,
+    ) -> "GridMapping":
+        """Creates a regular grid mapping for a given coordinate reference system based
+        on the given bounding box and spatial resolution.
+
+        Args:
+            bbox: Bounding box coordinates in the format [west, south, east, north].
+                The values must be in the given CRS.
+            xy_res: Resolution in x- and y-directions.
+            crs: Coordinate reference system (e.g., "EPSG:4326").
+            tile_size: Chunk size for the grid; if a single int is given,
+                square chunk size is assumed. Defaults to 1024.
+            is_j_axis_up: Whether positive j-axis points up. Defaults to False.
+
+        Returns:
+            A regular grid mapping object.
+        """
+        from .regular import new_regular_grid_mapping_from_bbox
+
+        return new_regular_grid_mapping_from_bbox(
+            bbox, xy_res, crs, tile_size=tile_size, is_j_axis_up=is_j_axis_up
         )
 
     def to_regular(

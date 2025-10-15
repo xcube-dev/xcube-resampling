@@ -19,7 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from collections.abc import Sequence
+
 import dask.array as da
+import numpy as np
 import pyproj
 import xarray as xr
 
@@ -33,6 +36,7 @@ from .helpers import (
     _normalize_number_pair,
     _to_int_or_float,
 )
+from xcube_resampling.constants import FloatInt
 
 
 class RegularGridMapping(GridMapping):
@@ -161,6 +165,41 @@ def to_regular_grid_mapping(
         xy_min=(x_min, y_min),
         xy_res=xy_res,
         crs=grid_mapping.crs,
+        tile_size=tile_size,
+        is_j_axis_up=is_j_axis_up,
+    )
+
+
+def new_regular_grid_mapping_from_bbox(
+    bbox: Sequence[FloatInt],
+    xy_res: FloatInt | tuple[FloatInt, FloatInt],
+    crs: str | pyproj.CRS,
+    tile_size: int | tuple[int, int] = 1024,
+    is_j_axis_up: bool = False,
+) -> GridMapping:
+    """Creates a regular grid mapping for a given coordinate reference system based on
+    the given bounding box and spatial resolution.
+
+    Args:
+        bbox: Bounding box coordinates in the format [west, south, east, north].
+            The values must be in the given CRS.
+        spatial_res: Spatial resolution of the grid.
+        crs: Coordinate reference system (e.g., "EPSG:4326").
+        tile_size: Chunk size for the grid; if a single int is given,
+            square chunk size is assumed. Defaults to 1024.
+
+    Returns:
+        A regular grid mapping object.
+    """
+    if xy_res is not tuple:
+        xy_res = (xy_res, xy_res)
+    x_size = int(np.ceil((bbox[2] - bbox[0]) / xy_res[1]))
+    y_size = int(np.ceil(abs(bbox[3] - bbox[1]) / xy_res[0]))
+    return new_regular_grid_mapping(
+        size=(x_size, y_size),
+        xy_min=(bbox[0], bbox[1]),
+        xy_res=xy_res,
+        crs=crs,
         tile_size=tile_size,
         is_j_axis_up=is_j_axis_up,
     )

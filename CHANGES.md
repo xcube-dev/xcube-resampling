@@ -1,3 +1,12 @@
+## Changes in 0.2.0 (under development)
+
+- Enhanced the function `bbox_overlap` so that it can handle bounding boxed crossing
+  the antimeridian
+- Added new class method `GridMapping.regular_from_bbox`, which allows creating a
+  regular grid mapping directly from a bounding box, spatial resolution, and CRS.
+- Bug fix: fixed grid mapping creation for irregular grids with decreasing longitude
+  along axis 1.
+
 ## Changes in 0.1.1
 
 - Improved `xcube_resampling.utils.clip_dataset_by_bbox` to support datasets with 
