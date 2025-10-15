@@ -30,11 +30,11 @@ from dask_image import ndinterp
 from .constants import (
     AffineTransformMatrix,
     AggFunction,
-    AggMethods,
+    SpatialAggMethods,
     FillValues,
     FloatInt,
-    InterpMethodInt,
-    InterpMethods,
+    SpatialInterpMethodInt,
+    SpatialInterpMethods,
     RecoverNans,
 )
 from .gridmapping import GridMapping
@@ -54,8 +54,8 @@ def affine_transform_dataset(
     target_gm: GridMapping,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
@@ -143,8 +143,8 @@ def resample_dataset(
     yx_dims: tuple[str, str],
     target_size: tuple[int, int],
     target_tile_size: tuple[int, int],
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
@@ -245,7 +245,7 @@ def _resample_array(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: InterpMethodInt,
+    interp_method: SpatialInterpMethodInt,
     agg_method: AggFunction,
     recover_nan: bool,
     fill_value: FloatInt,
@@ -280,7 +280,7 @@ def _downscale(
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
     agg_method: AggFunction,
-    interp_method: InterpMethodInt,
+    interp_method: SpatialInterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -318,7 +318,7 @@ def _upscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: InterpMethodInt,
+    interp_method: SpatialInterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:

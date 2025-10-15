@@ -33,11 +33,11 @@ from .constants import (
     LOG,
     SCALE_LIMIT,
     UV_DELTA,
-    AggMethods,
+    SpatialAggMethods,
     FillValues,
     FloatInt,
-    InterpMethods,
-    InterpMethodStr,
+    SpatialInterpMethods,
+    SpatialInterpMethodStr,
     RecoverNans,
 )
 from .dask import compute_array_from_func
@@ -59,8 +59,8 @@ def rectify_dataset(
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
@@ -302,8 +302,8 @@ def _downscale_source_dataset(
     source_ds: xr.Dataset,
     source_gm: GridMapping,
     target_gm: GridMapping,
-    interp_methods: InterpMethods | None,
-    agg_methods: AggMethods | None,
+    interp_methods: SpatialInterpMethods | None,
+    agg_methods: SpatialAggMethods | None,
     recover_nans: RecoverNans,
 ) -> (xr.Dataset, GridMapping):
     x_scale = source_gm.x_res / target_gm.x_res
@@ -332,7 +332,7 @@ def _rectify_data_array(
     var_name: Hashable,
     target_gm: GridMapping,
     target_source_ij: da.Array,
-    interp_methods: InterpMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
     fill_values: FillValues | None = None,
 ) -> xr.DataArray:
     data_array_expanded = False
@@ -647,7 +647,7 @@ def _compute_var_image(
     src_var: xr.DataArray,
     dst_src_ij_images: da.Array,
     fill_value: FloatInt,
-    interp_method: InterpMethodStr,
+    interp_method: SpatialInterpMethodStr,
 ) -> da.Array:
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
@@ -673,7 +673,7 @@ def _compute_var_image_block(
     dst_src_ij_images: np.ndarray,
     src_var_image: xr.DataArray,
     fill_value: FloatInt,
-    interp_method: InterpMethodStr,
+    interp_method: SpatialInterpMethodStr,
     chunksize: tuple[int],
 ) -> np.ndarray:
     """Extract source pixels from np.ndarray source
@@ -710,7 +710,7 @@ def _compute_var_image_sequential(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    interp_method: InterpMethodStr,
+    interp_method: SpatialInterpMethodStr,
 ):
     """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
@@ -734,7 +734,7 @@ def _compute_var_image_for_dest_line(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
     src_bbox: tuple[int, int, int, int],
-    interp_method: InterpMethodStr,
+    interp_method: SpatialInterpMethodStr,
 ):
     """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.

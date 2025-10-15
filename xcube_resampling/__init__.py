@@ -23,6 +23,7 @@ from .affine import affine_transform_dataset
 from .rectify import rectify_dataset
 from .reproject import reproject_dataset
 from .spatial import resample_in_space
+from .temporal import resample_in_time
 from .version import __version__
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "affine_transform_dataset",
     "rectify_dataset",
     "reproject_dataset",
+    "resample_in_time"
 ]
