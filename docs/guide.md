@@ -1,17 +1,19 @@
 # User Guide for xcube-resampling
 
-**xcube-resampling** provides algorithms for representing a dataset in a different grid
-mapping. It supports:
+**xcube-resampling** provides algorithms for up- and downsampling
+a gridded dataset in both spatial grids and temporal scales.
+It supports:
 
-- Simple resampling via affine transformation  
-- Reprojection between coordinate reference systems (CRS)  
-- Rectification of non-regular grids to regular grids  
+- **[Spatial]** Simple resampling via affine transformation  
+- **[Spatial]** Reprojection between coordinate reference systems (CRS)  
+- **[Spatial]** Rectification of non-regular grids to regular grids  
+- **[Temporal]** Up- and Downsampling in the time dimension to the frequency and method requested.
 
-All resampling methods are built around the [`GridMapping`](api.md/#xcube_resampling.gridmapping.GridMapping)
+All spatial resampling methods are built around the [`GridMapping`](api.md/#xcube_resampling.gridmapping.GridMapping)
 class, which represents a spatial grid mapping and contains all necessary information
 for resampling.  
 
-We first introduce the `GridMapping` class before explaining the three resampling
+We first introduce the `GridMapping` class before explaining the three spatial resampling
 algorithms.
 
 ---
@@ -90,7 +92,7 @@ An example is available in the [Example Notebooks](examples/coords.ipynb).
 
 ---
 
-### Resampling Algorithms
+### Spatial Resampling Algorithms
 
 The function [`resample_in_space`](api.md/#xcube_resampling.spatial.resample_in_space)
 integrates all three resampling algorithms and automatically selects the most
@@ -249,7 +251,7 @@ the target grid mapping according to:
 
 where *V1*, *V2*, *V3*, *V4* are the pixel values of the points in the source dataset.
 
-### Remarks
+#### Remarks
 
 1. If the **target pixel size is much smaller** than the source pixel size, and the
    source has low spatial resolution, results may be inaccurate. Curved source pixel
@@ -262,3 +264,6 @@ where *V1*, *V2*, *V3*, *V4* are the pixel values of the points in the source da
 
             x' = cos(x) + i sin(x)  
             y' = 2y / π
+
+### Temporal Resampling
+
