@@ -117,16 +117,16 @@ def resample_in_time(
     if variables:
         source_ds = _select_variables(source_ds, variables)
 
-    guessed_operation = _analyze_resampling_operation(source_ds, frequency,
+    guessed_operation = _analyze_resampling_operation(source_ds,
+                                                      frequency,
                                                       interp_methods,
-                                                      agg_methods)
-
-    agg_methods_ = _prepare_methods(agg_methods, "mean")
-    interp_methods_ = _prepare_methods(interp_methods, "linear")
+                                                      agg_methods
+                                                      )
 
     resampled_cubes = []
 
     if guessed_operation == "agg":
+        agg_methods_ = _prepare_methods(agg_methods, "mean")
         for var, methods in agg_methods_.items():
             resampled_cubes.extend(
                 _apply_resampling(source_ds, var, methods, "agg", frequency,
@@ -134,6 +134,7 @@ def resample_in_time(
             )
 
     elif guessed_operation == "interp":
+        interp_methods_ = _prepare_methods(interp_methods, "linear")
         for var, methods in interp_methods_.items():
             resampled_cubes.extend(
                 _apply_resampling(
