@@ -4,7 +4,7 @@
   the antimeridian
 - Added new class method `GridMapping.regular_from_bbox`, which allows creating a
   regular grid mapping directly from a bounding box, spatial resolution, and CRS.
-- Added new method `utils.resolution_meters_to_degrees` which converts spatial
+- Added new function `utils.resolution_meters_to_degrees` which converts spatial
   resolution from meters to degrees in latitude and longitude at a given geographic
   latitude.
     - 1 degree of latitude ≈ 111,320 meters (constant approximation).

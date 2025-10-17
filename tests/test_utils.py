@@ -353,6 +353,11 @@ class TestUtils(unittest.TestCase):
         target = (-180, -90, 180, 90)
         self.assertEqual(1.0, bbox_overlap(source, target))
 
+        # antimeridian - wrapped target covering entire world
+        source = (170, 0, -170, 10)
+        target = (170, -90, 169.99, 90)
+        self.assertEqual(1.0, bbox_overlap(source, target))
+
         # antimeridian - touching at boundary only (no real overlap)
         source = (170, 0, -170, 10)
         target = (-170, 0, -160, 10)

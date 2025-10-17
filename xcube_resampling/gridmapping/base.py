@@ -62,7 +62,7 @@ class GridMapping(abc.ABC):
     a transformation from image pixel coordinates to spatial Earth coordinates
     defined in a well-known coordinate reference system (CRS).
 
-    This class cannot be instantiated directly. Use one of its class methods
+    This class cannot be instantiated directly. Use one of its factory methods
     to create instances:
 
     * `regular`
