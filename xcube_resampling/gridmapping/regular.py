@@ -191,7 +191,7 @@ def new_regular_grid_mapping_from_bbox(
     Returns:
         A regular grid mapping object.
     """
-    if xy_res is not tuple:
+    if not isinstance(xy_res, tuple):
         xy_res = (xy_res, xy_res)
     x_size = int(np.ceil((bbox[2] - bbox[0]) / xy_res[1]))
     y_size = int(np.ceil(abs(bbox[3] - bbox[1]) / xy_res[0]))

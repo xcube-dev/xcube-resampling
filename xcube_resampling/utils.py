@@ -268,12 +268,40 @@ def bbox_overlap(
     return inter_area / area_source
 
 
-def _split_bbox_antimeridian(bbox: Sequence[FloatInt]):
+def _split_bbox_antimeridian(bbox: Sequence[FloatInt]) -> Sequence[Sequence[FloatInt]]:
     min_x, min_y, max_x, max_y = bbox
 
     if max_x < min_x:
         return [(min_x, min_y, 180, max_y), (-180, min_y, max_x, max_y)]
     return [bbox]
+
+
+def resolution_meters_to_degrees(
+    resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
+) -> tuple[FloatInt, FloatInt]:
+    """Convert spatial resolution from meters to degrees in latitude and longitude
+    at a given geographic latitude.
+
+    Args:
+        resolution: Spatial resolution in meters. Can be a single number
+            (applied equally to both axes) or a tuple ``(x_res, y_res)``.
+        latitude: Latitude in degrees at which to compute the longitude scaling.
+
+    Returns:
+        A tuple `(lat_res_deg, lon_res_deg)` giving the approximate spatial
+        resolution in degrees for the latitude and longitude directions.
+
+    Notes:
+        - 1 degree of latitude ≈ 111,320 meters (constant approximation).
+        - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
+
+    """
+    if not isinstance(resolution, tuple):
+        resolution = (resolution, resolution)
+    return (
+        resolution[0] / 111320,
+        resolution[1] / (111320 * np.cos(np.deg2rad(latitude))),
+    )
 
 
 def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:

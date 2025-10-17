@@ -22,6 +22,7 @@ from xcube_resampling.utils import (
     _select_variables,
     bbox_overlap,
     clip_dataset_by_bbox,
+    resolution_meters_to_degrees,
     get_spatial_coords,
     reproject_bbox,
 )
@@ -302,60 +303,76 @@ class TestUtils(unittest.TestCase):
     def test_bbox_overlap(self):
         # identical boxes
         bbox = (0, 0, 10, 10)
-        self.assertEqual(bbox_overlap(bbox, bbox), 1.0)
+        self.assertEqual(1.0, bbox_overlap(bbox, bbox))
 
         # partial overlap
         source = (0, 0, 10, 10)
         target = (5, 5, 15, 15)
         # overlap area = 25, source area = 100
         expected = 25 / 100
-        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+        self.assertAlmostEqual(expected, bbox_overlap(source, target))
 
         # no overlap
         source = (0, 0, 10, 10)
         target = (20, 20, 30, 30)
-        self.assertAlmostEqual(bbox_overlap(source, target), 0.0)
+        self.assertAlmostEqual(0.0, bbox_overlap(source, target))
 
         # target fully inside source
         source = (0, 0, 10, 10)
         target = (2, 2, 8, 8)
         # overlap area = 36, source area = 100
         expected = 0.36
-        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+        self.assertAlmostEqual(expected, bbox_overlap(source, target))
 
         # source fully inside target
         source = (2, 2, 8, 8)
         target = (0, 0, 10, 10)
         # overlap area = source area = 36
         expected = 36 / 36
-        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+        self.assertAlmostEqual(expected, bbox_overlap(source, target))
 
         # antimeridian - identical wrapped boxes (e.g. 170°E → -170°W)
         source = (170, -10, -170, 10)
         target = (170, -10, -170, 10)
-        self.assertEqual(bbox_overlap(source, target), 1.0)
+        self.assertEqual(1.0, bbox_overlap(source, target))
 
         # antimeridian - source crosses, target fully inside one side
         source = (170, 0, -170, 10)
         target = (175, 0, 178, 10)
         expected = 30 / 200
-        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+        self.assertAlmostEqual(expected, bbox_overlap(source, target))
 
         # antimeridian - partial overlap across both segments
         source = (170, 0, -170, 10)
         target = (160, 0, 175, 10)
         expected = 50 / 200
-        self.assertAlmostEqual(bbox_overlap(source, target), expected)
+        self.assertAlmostEqual(expected, bbox_overlap(source, target))
 
         # antimeridian - non-wrapped target covering entire world
         source = (170, 0, -170, 10)
         target = (-180, -90, 180, 90)
-        self.assertEqual(bbox_overlap(source, target), 1.0)
+        self.assertEqual(1.0, bbox_overlap(source, target))
 
         # antimeridian - touching at boundary only (no real overlap)
         source = (170, 0, -170, 10)
         target = (-170, 0, -160, 10)
-        self.assertAlmostEqual(bbox_overlap(source, target), 0.0)
+        self.assertAlmostEqual(0.0, bbox_overlap(source, target))
+
+    def test_resolution_meters_to_degrees(self):
+        # 111320 m ≈ 1 degree at equator
+        lat_deg, lon_deg = resolution_meters_to_degrees(111320, 0)
+        self.assertAlmostEqual(1.0, lat_deg, places=6)
+        self.assertAlmostEqual(1.0, lon_deg, places=6)
+
+        # 222640 m ≈ 2 degrees latitude
+        lat_deg, lon_deg = resolution_meters_to_degrees((222640, 111320), 0)
+        self.assertAlmostEqual(2.0, lat_deg, places=6)
+        self.assertAlmostEqual(1.0, lon_deg, places=6)
+
+        # At 60 degrees latitude, longitude degrees shrink by cos(60°) = 0.5
+        lat_deg, lon_deg = resolution_meters_to_degrees(111320, 60)
+        self.assertAlmostEqual(1.0, lat_deg, places=6)
+        self.assertAlmostEqual(1.0 / 0.5, lon_deg, places=6)  # 2 degrees
 
 
 class TestClipDatasetByBBox(unittest.TestCase):
