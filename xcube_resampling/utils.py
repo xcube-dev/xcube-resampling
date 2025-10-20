@@ -236,7 +236,7 @@ def bbox_overlap(
 ) -> float:
     """
     Calculate the fraction of the source bounding box that overlaps with the target
-    bounding box.
+    bounding box relative to the area of the source bounding box.
 
     Args:
         source_bbox: (min_x, min_y, max_x, max_y)
@@ -245,17 +245,63 @@ def bbox_overlap(
     Returns:
         float in [0, 1]
     """
-    inter_min_x = max(source_bbox[0], target_bbox[0])
-    inter_min_y = max(source_bbox[1], target_bbox[1])
-    inter_max_x = min(source_bbox[2], target_bbox[2])
-    inter_max_y = min(source_bbox[3], target_bbox[3])
+    source_bboxes = _split_bbox_antimeridian(source_bbox)
+    target_bboxes = _split_bbox_antimeridian(target_bbox)
 
-    inter_w = max(0, inter_max_x - inter_min_x)
-    inter_h = max(0, inter_max_y - inter_min_y)
-    inter_area = inter_w * inter_h
-    area_source = (source_bbox[2] - source_bbox[0]) * (source_bbox[3] - source_bbox[1])
+    inter_area = 0.0
+    for source_bbox in source_bboxes:
+        for target_bbox in target_bboxes:
+            inter_min_x = max(source_bbox[0], target_bbox[0])
+            inter_min_y = max(source_bbox[1], target_bbox[1])
+            inter_max_x = min(source_bbox[2], target_bbox[2])
+            inter_max_y = min(source_bbox[3], target_bbox[3])
+
+            inter_w = max(0, inter_max_x - inter_min_x)
+            inter_h = max(0, inter_max_y - inter_min_y)
+            inter_area += inter_w * inter_h
+    area_source = 0.0
+    for source_bbox in source_bboxes:
+        area_source += (source_bbox[2] - source_bbox[0]) * (
+            source_bbox[3] - source_bbox[1]
+        )
 
     return inter_area / area_source
+
+
+def _split_bbox_antimeridian(bbox: Sequence[FloatInt]) -> Sequence[Sequence[FloatInt]]:
+    min_x, min_y, max_x, max_y = bbox
+
+    if max_x < min_x:
+        return [(min_x, min_y, 180, max_y), (-180, min_y, max_x, max_y)]
+    return [bbox]
+
+
+def resolution_meters_to_degrees(
+    resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
+) -> tuple[FloatInt, FloatInt]:
+    """Convert spatial resolution from meters to degrees in latitude and longitude
+    at a given geographic latitude.
+
+    Args:
+        resolution: Spatial resolution in meters. Can be a single number
+            (applied equally to both axes) or a tuple ``(x_res, y_res)``.
+        latitude: Latitude in degrees at which to compute the longitude scaling.
+
+    Returns:
+        A tuple `(lat_res_deg, lon_res_deg)` giving the approximate spatial
+        resolution in degrees for the latitude and longitude directions.
+
+    Notes:
+        - 1 degree of latitude ≈ 111,320 meters (constant approximation).
+        - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
+
+    """
+    if not isinstance(resolution, tuple):
+        resolution = (resolution, resolution)
+    return (
+        resolution[0] / (111320 * np.cos(np.deg2rad(latitude))),
+        resolution[1] / 111320,
+    )
 
 
 def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:

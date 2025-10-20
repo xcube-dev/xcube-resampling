@@ -335,3 +335,13 @@ class RegularGridMappingTest(unittest.TestCase):
         self.assertEqual(gm_test.crs, CRS_WGS84)
         self.assertEqual(gm_test.xy_res, (0.01, 0.01))
         self.assertTrue(gm_test.is_j_axis_up)
+
+    def test_create_regular_from_bbox(self):
+        gm_test = GridMapping.regular_from_bbox(
+            [10, 40, 20, 50], 0.1, "EPSG:4326", tile_size=10
+        )
+        self.assertEqual(gm_test.size, (100, 100))
+        self.assertEqual(gm_test.tile_size, (10, 10))
+        self.assertEqual(gm_test.crs, CRS_WGS84)
+        self.assertEqual(gm_test.xy_res, (0.1, 0.1))
+        self.assertFalse(gm_test.is_j_axis_up)
