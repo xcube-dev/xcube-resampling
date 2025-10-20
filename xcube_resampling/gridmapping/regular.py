@@ -193,8 +193,8 @@ def new_regular_grid_mapping_from_bbox(
     """
     if not isinstance(xy_res, tuple):
         xy_res = (xy_res, xy_res)
-    x_size = int(np.ceil((bbox[2] - bbox[0]) / xy_res[1]))
-    y_size = int(np.ceil(abs(bbox[3] - bbox[1]) / xy_res[0]))
+    x_size = int(np.ceil((bbox[2] - bbox[0]) / xy_res[0]))
+    y_size = int(np.ceil(abs(bbox[3] - bbox[1]) / xy_res[1]))
     return new_regular_grid_mapping(
         size=(x_size, y_size),
         xy_min=(bbox[0], bbox[1]),

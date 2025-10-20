@@ -370,12 +370,12 @@ class TestUtils(unittest.TestCase):
         self.assertAlmostEqual(1.0, lon_deg, places=6)
 
         # 222640 m ≈ 2 degrees latitude
-        lat_deg, lon_deg = resolution_meters_to_degrees((222640, 111320), 0)
+        (lon_deg, lat_deg) = resolution_meters_to_degrees((111320, 222640), 0)
         self.assertAlmostEqual(2.0, lat_deg, places=6)
         self.assertAlmostEqual(1.0, lon_deg, places=6)
 
         # At 60 degrees latitude, longitude degrees shrink by cos(60°) = 0.5
-        lat_deg, lon_deg = resolution_meters_to_degrees(111320, 60)
+        (lon_deg, lat_deg) = resolution_meters_to_degrees(111320, 60)
         self.assertAlmostEqual(1.0, lat_deg, places=6)
         self.assertAlmostEqual(1.0 / 0.5, lon_deg, places=6)  # 2 degrees
 

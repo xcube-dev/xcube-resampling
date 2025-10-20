@@ -299,8 +299,8 @@ def resolution_meters_to_degrees(
     if not isinstance(resolution, tuple):
         resolution = (resolution, resolution)
     return (
-        resolution[0] / 111320,
-        resolution[1] / (111320 * np.cos(np.deg2rad(latitude))),
+        resolution[0] / (111320 * np.cos(np.deg2rad(latitude))),
+        resolution[1] / 111320,
     )
 
 
