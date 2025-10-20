@@ -1,6 +1,6 @@
-## Changes in 0.2.0 (under development)
+## Changes in 0.2.0
 
-- Enhanced the function `bbox_overlap` so that it can handle bounding boxed crossing
+- Enhanced the function `bbox_overlap` so that it can handle bounding boxes crossing
   the antimeridian
 - Added new class method `GridMapping.regular_from_bbox`, which allows creating a
   regular grid mapping directly from a bounding box, spatial resolution, and CRS.
