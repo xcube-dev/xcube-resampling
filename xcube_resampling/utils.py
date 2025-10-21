@@ -33,13 +33,13 @@ from .constants import (
     FILLVALUE_UINT16,
     INTERP_METHOD_MAPPING,
     LOG,
-    AggMethod,
-    AggMethods,
+    SpatialAggMethod,
+    SpatialAggMethods,
     FloatInt,
-    InterpMethod,
-    InterpMethodInt,
-    InterpMethods,
-    InterpMethodStr,
+    SpatialInterpMethod,
+    SpatialInterpMethodInt,
+    SpatialInterpMethods,
+    SpatialInterpMethodStr,
     RecoverNans,
 )
 from .gridmapping import GridMapping
@@ -369,12 +369,12 @@ def _is_equal_crs(source_gm: GridMapping, target_gm: GridMapping) -> bool:
     return geographic or source_gm.crs.equals(target_gm.crs)
 
 
-def _get_interp_method(
-    interp_methods: InterpMethods | None,
+def _get_spatial_interp_method(
+    interp_methods: SpatialInterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
-) -> InterpMethod:
-    def assign_defaults(data_type: np.dtype) -> InterpMethod:
+) -> SpatialInterpMethod:
+    def assign_defaults(data_type: np.dtype) -> SpatialInterpMethod:
         return 0 if np.issubdtype(data_type, np.integer) else 1
 
     if isinstance(interp_methods, Mapping):
@@ -394,31 +394,31 @@ def _get_interp_method(
     return interp_method
 
 
-def _get_interp_method_int(
-    interp_methods: InterpMethods | None,
+def _get_spatial_interp_method_int(
+    interp_methods: SpatialInterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
-) -> InterpMethodInt:
-    interp_method = _get_interp_method(interp_methods, key, var)
+) -> SpatialInterpMethodInt:
+    interp_method = _get_spatial_interp_method(interp_methods, key, var)
     if isinstance(interp_method, str):
         interp_method = INTERP_METHOD_MAPPING[interp_method]
     return interp_method
 
 
-def _get_interp_method_str(
-    interp_methods: InterpMethods | None,
+def _get_spatial_interp_method_str(
+    interp_methods: SpatialInterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
-) -> InterpMethodStr:
-    interp_method = _get_interp_method(interp_methods, key, var)
+) -> SpatialInterpMethodStr:
+    interp_method = _get_spatial_interp_method(interp_methods, key, var)
     if isinstance(interp_method, int):
         interp_method = INTERP_METHOD_MAPPING[interp_method]
     return interp_method
 
 
-def _prep_interp_methods_downscale(
-    interp_methods: InterpMethods | None,
-) -> InterpMethods | None:
+def _prep_spatial_interp_methods_downscale(
+    interp_methods: SpatialInterpMethods | None,
+) -> SpatialInterpMethods | None:
     if interp_methods == "triangular":
         return "bilinear"
     elif (
@@ -431,12 +431,12 @@ def _prep_interp_methods_downscale(
     return interp_methods
 
 
-def _get_agg_method(
-    agg_methods: AggMethods | None,
+def _get_spatial_agg_method(
+    agg_methods: SpatialAggMethods | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> Callable:
-    def assign_defaults(data_type: np.dtype) -> AggMethod:
+    def assign_defaults(data_type: np.dtype) -> SpatialAggMethod:
         return "center" if np.issubdtype(data_type, np.integer) else "mean"
 
     if isinstance(agg_methods, Mapping):

@@ -30,18 +30,18 @@ import xarray as xr
 from .affine import affine_transform_dataset
 from .constants import (
     SCALE_LIMIT,
-    AggMethods,
+    SpatialAggMethods,
     FillValues,
     FloatInt,
-    InterpMethods,
-    InterpMethodStr,
+    SpatialInterpMethods,
+    SpatialInterpMethodStr,
     RecoverNans,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_interp_method_str,
-    _prep_interp_methods_downscale,
+    _get_spatial_interp_method_str,
+    _prep_spatial_interp_methods_downscale,
     _select_variables,
     clip_dataset_by_bbox,
     normalize_grid_mapping,
@@ -51,10 +51,11 @@ from .utils import (
 def reproject_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
+    *,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
@@ -197,7 +198,7 @@ def _reproject_data_array(
     y_coords: da.Array,
     scr_ij_bboxes: np.ndarray,
     pad_width: tuple[tuple[int]],
-    interp_methods: InterpMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
     fill_values: FillValues | None = None,
 ) -> xr.DataArray:
     data_array_expanded = False
@@ -215,7 +216,7 @@ def _reproject_data_array(
     # reorganize data array slice to align with the
     # chunks of source_xx and source_yy
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_interp_method_str(interp_methods, var_name, data_array)
+    interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
     scr_data = _reorganize_data_array_slice(
         array,
         x_coords,
@@ -273,7 +274,7 @@ def _reproject_block(
     y_coord: np.ndarray,
     scr_x_res: int | float,
     scr_y_res: int | float,
-    interp_method: InterpMethodStr,
+    interp_method: SpatialInterpMethodStr,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / scr_x_res
     iy = (source_yy - y_coord[0]) / -scr_y_res
@@ -340,8 +341,8 @@ def _downscale_source_dataset(
     source_gm: GridMapping,
     target_gm: GridMapping,
     transformer: pyproj.Transformer,
-    interp_methods: InterpMethods | None,
-    agg_methods: AggMethods | None,
+    interp_methods: SpatialInterpMethods | None,
+    agg_methods: SpatialAggMethods | None,
     recover_nans: RecoverNans,
 ) -> (xr.Dataset, GridMapping):
     bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
@@ -373,7 +374,7 @@ def _downscale_source_dataset(
             source_ds,
             downscale_target_gm,
             source_gm=source_gm,
-            interp_methods=_prep_interp_methods_downscale(interp_methods),
+            interp_methods=_prep_spatial_interp_methods_downscale(interp_methods),
             agg_methods=agg_methods,
             recover_nans=recover_nans,
         )

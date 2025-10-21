@@ -1,17 +1,19 @@
 # User Guide for xcube-resampling
 
-**xcube-resampling** provides algorithms for representing a dataset in a different grid
-mapping. It supports:
+**xcube-resampling** provides algorithms for up- and downsampling
+a gridded dataset in both spatial grids and temporal scales.
+It supports:
 
-- Simple resampling via affine transformation  
-- Reprojection between coordinate reference systems (CRS)  
-- Rectification of non-regular grids to regular grids  
+- **[Spatial]** Simple resampling via affine transformation  
+- **[Spatial]** Reprojection between coordinate reference systems (CRS)  
+- **[Spatial]** Rectification of non-regular grids to regular grids  
+- **[Temporal]** Up- and Downsampling in the time dimension to the frequency and method requested.
 
-All resampling methods are built around the [`GridMapping`](api.md/#xcube_resampling.gridmapping.GridMapping)
+All spatial resampling methods are built around the [`GridMapping`](api.md/#xcube_resampling.gridmapping.GridMapping)
 class, which represents a spatial grid mapping and contains all necessary information
 for resampling.  
 
-We first introduce the `GridMapping` class before explaining the three resampling
+We first introduce the `GridMapping` class before explaining the three spatial resampling
 algorithms.
 
 ---
@@ -90,17 +92,17 @@ An example is available in the [Example Notebooks](examples/coords.ipynb).
 
 ---
 
-### Resampling Algorithms
+### Spatial Resampling Algorithms
 
-The function [`resample_in_space`](api.md/#xcube_resampling.spatial.resample_in_space)
+The function [`resample_in_space`](api.md/#xcube_resampling.resample_in_space)
 integrates all three resampling algorithms and automatically selects the most
 appropriate one:
 
 | Algorithm             | Function                                                                                                                      | Selection Criteria                                                                                   |
 |-----------------------|-------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| **Affine Transformation** | [`affine_transform_dataset`](api.md/#xcube_resampling.affine.affine_transform_dataset) | Source and target grids are both regular and share the same CRS.                                    |
-| **Reprojection**      | [`reproject_dataset`](api.md/#xcube_resampling.reproject.reproject_dataset)         | Source and target grids are both regular but have different CRS.                                  |
-| **Rectification**     | [`rectify_dataset`](api.md/#xcube_resampling.rectify.rectify_dataset)               | 	Source grid is irregular with 2D coordinates.                                            |
+| **Affine Transformation** | [`affine_transform_dataset`](api.md/#xcube_resampling.affine_transform_dataset) | Source and target grids are both regular and share the same CRS.                                    |
+| **Reprojection**      | [`reproject_dataset`](api.md/#xcube_resampling.reproject_dataset)         | Source and target grids are both regular but have different CRS.                                  |
+| **Rectification**     | [`rectify_dataset`](api.md/#xcube_resampling.rectify_dataset)               | 	Source grid is irregular with 2D coordinates.                                            |
 
 With `resample_in_space`, users do **not** need to worry about selecting the right
 algorithm—the function determines and applies it automatically.
@@ -121,7 +123,7 @@ algorithm—the function determines and applies it automatically.
 
 An **affine transformation** can be applied when both the source and target grid
 mappings are **regular** and share the same CRS. The function
-[`affine_transform_dataset`](api.md/#xcube_resampling.affine.affine_transform_dataset) 
+[`affine_transform_dataset`](api.md/#xcube_resampling.affine_transform_dataset)
 requires the input dataset and the target grid mapping.  
 
 For any data array in the dataset with **two spatial dimensions as the last two axes**,
@@ -146,7 +148,7 @@ Simple examples of affine transformations are shown in the
 
 **Reprojection** can be applied when both source and target grid mappings are
 **regular** but use **different CRSs**. The function
-[`reproject_dataset`](api.md/#xcube_resampling.reproject.reproject_dataset)
+[`reproject_dataset`](api.md/#xcube_resampling.reproject_dataset)
 requires the input dataset and the target grid mapping.  
 
 The procedure is as follows:
@@ -169,7 +171,7 @@ A large-scale example is shown in the
 #### 3. Rectification
 
 **Rectification** is used when the source dataset has an **irregular grid**. The
-function [`rectify_dataset`](api.md/#xcube_resampling.rectify.rectify_dataset) 
+function [`rectify_dataset`](api.md/#xcube_resampling.rectify_dataset)
 requires only the input dataset.  
 
 If no target grid mapping is provided, the source grid mapping is **converted to a
@@ -249,7 +251,7 @@ the target grid mapping according to:
 
 where *V1*, *V2*, *V3*, *V4* are the pixel values of the points in the source dataset.
 
-### Remarks
+#### Remarks
 
 1. If the **target pixel size is much smaller** than the source pixel size, and the
    source has low spatial resolution, results may be inaccurate. Curved source pixel
@@ -262,3 +264,62 @@ where *V1*, *V2*, *V3*, *V4* are the pixel values of the points in the source da
 
             x' = cos(x) + i sin(x)  
             y' = 2y / π
+
+---
+
+### Temporal Resampling
+
+The function [`resample_in_time`](api.md/#xcube_resampling.resample_in_time)
+allows resampling of a dataset along its **time axis**. Under the hood, it applies
+[`xarray.DataArray.resample`](https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html)
+to each data variable that includes a time dimension. A valid time coordinate must
+be present in the dataset.
+
+#### Frequency and Mode Selection
+
+The argument `frequency` specifies the **target temporal frequency**, following the
+same conventions as the `freq` argument in [`xarray.groupers.TimeResampler`](https://docs.xarray.dev/en/stable/generated/xarray.groupers.TimeResampler.html).
+
+The function automatically compares the target frequency with the dataset’s native
+temporal resolution and determines whether to perform:
+
+- **Aggregation** (downsampling), or
+- **Interpolation** (upsampling)
+
+unless specific `interp_methods` or `agg_methods` are provided by the user.
+
+If the dataset shows **high temporal irregularity** — defined as a **coefficient of
+variation (CV = std/mean)** greater than 5% — the user
+must explicitly specify either `interp_methods` or `agg_methods`, since the function
+cannot reliably infer the appropriate mode.
+
+#### Interpolation
+
+When interpolation is required,
+[`xarray.core.resample.DataArrayResample.interpolate`](https://docs.xarray.dev/en/v2024.05.0/generated/xarray.core.resample.DataArray.Resample.interpolate.html)
+is used internally.
+
+Available interpolation methods defined in
+[`TemporalInterpMethod`](api.md/#xcube_resampling.constants.TemporalInterpMethod) and
+ correspond to the `kind` argument in
+[`xarray.core.resample.DataArrayResample.interpolate`](https://docs.xarray.dev/en/v2024.05.0/generated/xarray.core.resample.DataArrayResample.interpolate.html).
+
+**Defaults:**
+
+- `nearest` for integer data
+- `linear` for all other data types
+
+
+#### Aggregation
+
+When aggregation is applied, the available aggregation methods are defined in
+[`TemporalAggMethod`](api.md/#xcube_resampling.constants.TemporalAggMethod).
+
+Refer to the
+[`xarray.core.resample.DataArrayResample`](https://docs.xarray.dev/en/v2024.05.0/generated/xarray.core.resample.DataArray.Resample.html)
+documentation for detailed descriptions of supported aggregation operations.
+
+**Defaults:**
+
+- `nearest` for integer data
+- `mean` for all other data types

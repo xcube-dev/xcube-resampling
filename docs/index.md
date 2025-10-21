@@ -1,13 +1,18 @@
 # xcube-resampling
 
 **xcube-resampling** provides efficient algorithms for transforming datasets into 
-different spatial grid mappings. It is designed for geospatial workflows that need 
-flexible resampling and reprojection.
+different spatial grids and temporal scales. It is designed for geospatial workflows that need 
+flexible resampling and reprojection. This library provides up and downsampling for both 
+spatial and temporal domains.
 
 ### ✨ Features
-- **Affine resampling** – simple resampling using affine transformations  
-- **Reprojection** – convert datasets between different coordinate reference systems (CRS)  
-- **Rectification** – transform irregular grids into regular, well-structured grids  
+- #### Spatial Resampling
+    - **Affine resampling** – simple resampling using affine transformations  
+    - **Reprojection** – convert datasets between different coordinate reference systems (CRS)  
+    - **Rectification** – transform irregular grids into regular, well-structured grids  
+
+- #### Temporal Resampling
+    - **Time-based resampling** – upsample or downsample data along the time dimension
 
 All methods work seamlessly with chunked (lazily loaded) [xarray.Datasets](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html) and are powered by [Dask](https://www.dask.org/) for scalable, out-of-core computation.
 
@@ -18,7 +23,7 @@ The package is independent of the core *xcube* framework and has minimal depende
 
 ## Overview
 
-The resampling methods are built around the
+The spatial resampling methods are built around the
 [`GridMapping`](api.md/#xcube_resampling.gridmapping.GridMapping)
 class, which represents a spatial grid mapping and contains all necessary information
 for resampling.  
@@ -27,14 +32,17 @@ A `GridMapping` is required for affine transformation and reprojection, and opti
 for rectification. If omitted for rectification, a simple rectification will be
 performed while staying in the same CRS.
 
+The temporal resampling method is built around the [`Resampler`](https://docs.xarray.dev/en/stable/generated/xarray.groupers.Resampler.html#xarray.groupers.Resampler)
+class, which provides methods to up or downsample a temporal dataset
+into the requested frequency.
 ---
 
-### `resample_in_space` — the gateway to xcube-resampling
+### `resample_in_space` — the gateway to Spatial Resampling of Gridded datasets
 
-The **central function** in this package is
-[`resample_in_space`](api.md/#xcube_resampling.spatial.resample_in_space),
-which integrates all three algorithms and **automatically selects** the appropriate one
-based on the criteria below.
+The **central function** for spatial up and down resampling is
+[`resample_in_space`](api.md/#xcube_resampling.resample_in_space), which integrates all
+three algorithms and **automatically selects** the appropriate one based on the
+criteria below.
 
 | Algorithm             | Function                                                                               | Selection Criteria                                                                                   |
 |-----------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
@@ -45,6 +53,12 @@ based on the criteria below.
 With `resample_in_space`, users do **not** need to worry about selecting the right
 algorithm—the function determines and applies it automatically.
 
+### `resample_in_time` — the gateway to Temporal Resampling of Gridded datasets
+
+The **central function** for resampling in the temporal domain is
+[`resample_in_time`](api.md/#xcube_resampling.resample_in_time) which handles both up
+and downsampling of a dataset in the `time` dimension.
+
 👉 For usage examples and details, see the [User Guide](guide.md).
 
 
@@ -53,3 +67,4 @@ algorithm—the function determines and applies it automatically.
 `xcube-resampling` is open source made available under the terms and conditions of the 
 [MIT license](https://opensource.org/license/mit).
 
+`

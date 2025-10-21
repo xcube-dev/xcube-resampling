@@ -26,9 +26,9 @@ import xarray as xr
 from .affine import affine_transform_dataset
 from .constants import (
     LOG,
-    AggMethods,
+    SpatialAggMethods,
     FillValues,
-    InterpMethods,
+    SpatialInterpMethods,
     RecoverNans,
 )
 from .gridmapping import GridMapping
@@ -39,11 +39,12 @@ from .utils import _can_apply_affine_transform
 
 def resample_in_space(
     source_ds: xr.Dataset,
+    *,
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,

@@ -30,19 +30,19 @@ from dask_image import ndinterp
 from .constants import (
     AffineTransformMatrix,
     AggFunction,
-    AggMethods,
+    SpatialAggMethods,
     FillValues,
     FloatInt,
-    InterpMethodInt,
-    InterpMethods,
+    SpatialInterpMethodInt,
+    SpatialInterpMethods,
     RecoverNans,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _can_apply_affine_transform,
-    _get_agg_method,
+    _get_spatial_agg_method,
     _get_fill_value,
-    _get_interp_method_int,
+    _get_spatial_interp_method_int,
     _get_recover_nan,
     _select_variables,
     normalize_grid_mapping,
@@ -52,10 +52,11 @@ from .utils import (
 def affine_transform_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
+    *,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
@@ -143,8 +144,8 @@ def resample_dataset(
     yx_dims: tuple[str, str],
     target_size: tuple[int, int],
     target_tile_size: tuple[int, int],
-    interp_methods: InterpMethods | None = None,
-    agg_methods: AggMethods | None = None,
+    interp_methods: SpatialInterpMethods | None = None,
+    agg_methods: SpatialAggMethods | None = None,
     recover_nans: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
@@ -219,8 +220,8 @@ def resample_dataset(
                 affine_matrix,
                 output_shape,
                 output_chunks,
-                _get_interp_method_int(interp_methods, var_name, data_array),
-                _get_agg_method(agg_methods, var_name, data_array),
+                _get_spatial_interp_method_int(interp_methods, var_name, data_array),
+                _get_spatial_agg_method(agg_methods, var_name, data_array),
                 _get_recover_nan(recover_nans, var_name, data_array),
                 _get_fill_value(fill_values, var_name, data_array),
             )
@@ -245,7 +246,7 @@ def _resample_array(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: InterpMethodInt,
+    interp_method: SpatialInterpMethodInt,
     agg_method: AggFunction,
     recover_nan: bool,
     fill_value: FloatInt,
@@ -280,7 +281,7 @@ def _downscale(
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
     agg_method: AggFunction,
-    interp_method: InterpMethodInt,
+    interp_method: SpatialInterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -318,7 +319,7 @@ def _upscale(
     affine_matrix: AffineTransformMatrix,
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
-    interp_method: InterpMethodInt,
+    interp_method: SpatialInterpMethodInt,
     recover_nan: bool,
     fill_value: FloatInt,
 ) -> da.Array:
