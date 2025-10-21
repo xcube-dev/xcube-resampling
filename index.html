@@ -312,6 +312,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="✨ Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spatial-resampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Spatial Resampling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-resampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Temporal Resampling
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -334,9 +358,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#resample_in_space-the-gateway-to-xcube-resampling" class="md-nav__link">
+  <a href="#resample_in_space-the-gateway-to-spatial-resampling-of-gridded-datasets" class="md-nav__link">
     <span class="md-ellipsis">
-      resample_in_space — the gateway to xcube-resampling
+      resample_in_space — the gateway to Spatial Resampling of Gridded datasets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resample_in_time-the-gateway-to-temporal-resampling-of-gridded-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      resample_in_time — the gateway to Temporal Resampling of Gridded datasets
     </span>
   </a>
   
@@ -622,6 +655,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="✨ Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spatial-resampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Spatial Resampling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-resampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Temporal Resampling
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -644,9 +701,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#resample_in_space-the-gateway-to-xcube-resampling" class="md-nav__link">
+  <a href="#resample_in_space-the-gateway-to-spatial-resampling-of-gridded-datasets" class="md-nav__link">
     <span class="md-ellipsis">
-      resample_in_space — the gateway to xcube-resampling
+      resample_in_space — the gateway to Spatial Resampling of Gridded datasets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resample_in_time-the-gateway-to-temporal-resampling-of-gridded-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      resample_in_time — the gateway to Temporal Resampling of Gridded datasets
     </span>
   </a>
   
@@ -687,32 +753,47 @@
 
 <h1 id="xcube-resampling">xcube-resampling</h1>
 <p><strong>xcube-resampling</strong> provides efficient algorithms for transforming datasets into 
-different spatial grid mappings. It is designed for geospatial workflows that need 
-flexible resampling and reprojection.</p>
+different spatial grids and temporal scales. It is designed for geospatial workflows that need 
+flexible resampling and reprojection. This library provides up and downsampling for both 
+spatial and temporal domains.</p>
 <h3 id="features">✨ Features</h3>
+<ul>
+<li>
+<h4 id="spatial-resampling">Spatial Resampling</h4>
 <ul>
 <li><strong>Affine resampling</strong> – simple resampling using affine transformations  </li>
 <li><strong>Reprojection</strong> – convert datasets between different coordinate reference systems (CRS)  </li>
 <li><strong>Rectification</strong> – transform irregular grids into regular, well-structured grids  </li>
+</ul>
+</li>
+<li>
+<h4 id="temporal-resampling">Temporal Resampling</h4>
+<ul>
+<li><strong>Time-based resampling</strong> – upsample or downsample data along the time dimension</li>
+</ul>
+</li>
 </ul>
 <p>All methods work seamlessly with chunked (lazily loaded) <a href="https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html">xarray.Datasets</a> and are powered by <a href="https://www.dask.org/">Dask</a> for scalable, out-of-core computation.</p>
 <h3 id="lightweight-independent">⚡ Lightweight &amp; Independent</h3>
 <p>The package is independent of the core <em>xcube</em> framework and has minimal dependencies:
 <code>affine, dask, dask-image, numba, numpy, pyproj, xarray, zarr</code>.</p>
 <h2 id="overview">Overview</h2>
-<p>The resampling methods are built around the
+<p>The spatial resampling methods are built around the
 <a href="api/#xcube_resampling.gridmapping.GridMapping"><code>GridMapping</code></a>
 class, which represents a spatial grid mapping and contains all necessary information
 for resampling.  </p>
 <p>A <code>GridMapping</code> is required for affine transformation and reprojection, and optional
 for rectification. If omitted for rectification, a simple rectification will be
 performed while staying in the same CRS.</p>
+<p>The temporal resampling method is built around the <a href="https://docs.xarray.dev/en/stable/generated/xarray.groupers.Resampler.html#xarray.groupers.Resampler"><code>Resampler</code></a>
+class, which provides methods to up or downsample a temporal dataset
+into the requested frequency.</p>
 <hr />
-<h3 id="resample_in_space-the-gateway-to-xcube-resampling"><code>resample_in_space</code> — the gateway to xcube-resampling</h3>
-<p>The <strong>central function</strong> in this package is
-<a href="api/#xcube_resampling.spatial.resample_in_space"><code>resample_in_space</code></a>,
-which integrates all three algorithms and <strong>automatically selects</strong> the appropriate one
-based on the criteria below.</p>
+<h3 id="resample_in_space-the-gateway-to-spatial-resampling-of-gridded-datasets"><code>resample_in_space</code> — the gateway to Spatial Resampling of Gridded datasets</h3>
+<p>The <strong>central function</strong> for spatial up and down resampling is
+<a href="api/#xcube_resampling.resample_in_space"><code>resample_in_space</code></a>, which integrates all
+three algorithms and <strong>automatically selects</strong> the appropriate one based on the
+criteria below.</p>
 <table>
 <thead>
 <tr>
@@ -741,10 +822,15 @@ based on the criteria below.</p>
 </table>
 <p>With <code>resample_in_space</code>, users do <strong>not</strong> need to worry about selecting the right
 algorithm—the function determines and applies it automatically.</p>
+<h3 id="resample_in_time-the-gateway-to-temporal-resampling-of-gridded-datasets"><code>resample_in_time</code> — the gateway to Temporal Resampling of Gridded datasets</h3>
+<p>The <strong>central function</strong> for resampling in the temporal domain is
+<a href="api/#xcube_resampling.resample_in_time"><code>resample_in_time</code></a> which handles both up
+and downsampling of a dataset in the <code>time</code> dimension.</p>
 <p>👉 For usage examples and details, see the <a href="guide/">User Guide</a>.</p>
 <h2 id="license">License</h2>
 <p><code>xcube-resampling</code> is open source made available under the terms and conditions of the 
 <a href="https://opensource.org/license/mit">MIT license</a>.</p>
+<p>`</p>
 
 
 

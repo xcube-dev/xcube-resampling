@@ -413,13 +413,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resampling-algorithms" class="md-nav__link">
+  <a href="#spatial-resampling-algorithms" class="md-nav__link">
     <span class="md-ellipsis">
-      Resampling Algorithms
+      Spatial Resampling Algorithms
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resampling Algorithms">
+    <nav class="md-nav" aria-label="Spatial Resampling Algorithms">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -500,17 +500,59 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-        
           <li class="md-nav__item">
   <a href="#remarks" class="md-nav__link">
     <span class="md-ellipsis">
       Remarks
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-resampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Temporal Resampling
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Temporal Resampling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frequency-and-mode-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frequency and Mode Selection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpolation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Aggregation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -796,13 +838,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resampling-algorithms" class="md-nav__link">
+  <a href="#spatial-resampling-algorithms" class="md-nav__link">
     <span class="md-ellipsis">
-      Resampling Algorithms
+      Spatial Resampling Algorithms
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resampling Algorithms">
+    <nav class="md-nav" aria-label="Spatial Resampling Algorithms">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -883,17 +925,59 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-        
           <li class="md-nav__item">
   <a href="#remarks" class="md-nav__link">
     <span class="md-ellipsis">
       Remarks
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-resampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Temporal Resampling
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Temporal Resampling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frequency-and-mode-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frequency and Mode Selection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpolation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Aggregation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -922,17 +1006,19 @@
 
 
 <h1 id="user-guide-for-xcube-resampling">User Guide for xcube-resampling</h1>
-<p><strong>xcube-resampling</strong> provides algorithms for representing a dataset in a different grid
-mapping. It supports:</p>
+<p><strong>xcube-resampling</strong> provides algorithms for up- and downsampling
+a gridded dataset in both spatial grids and temporal scales.
+It supports:</p>
 <ul>
-<li>Simple resampling via affine transformation  </li>
-<li>Reprojection between coordinate reference systems (CRS)  </li>
-<li>Rectification of non-regular grids to regular grids  </li>
+<li><strong>[Spatial]</strong> Simple resampling via affine transformation  </li>
+<li><strong>[Spatial]</strong> Reprojection between coordinate reference systems (CRS)  </li>
+<li><strong>[Spatial]</strong> Rectification of non-regular grids to regular grids  </li>
+<li><strong>[Temporal]</strong> Up- and Downsampling in the time dimension to the frequency and method requested.</li>
 </ul>
-<p>All resampling methods are built around the <a href="../api/#xcube_resampling.gridmapping.GridMapping"><code>GridMapping</code></a>
+<p>All spatial resampling methods are built around the <a href="../api/#xcube_resampling.gridmapping.GridMapping"><code>GridMapping</code></a>
 class, which represents a spatial grid mapping and contains all necessary information
 for resampling.  </p>
-<p>We first introduce the <code>GridMapping</code> class before explaining the three resampling
+<p>We first introduce the <code>GridMapping</code> class before explaining the three spatial resampling
 algorithms.</p>
 <hr />
 <h2 id="gridmapping-the-grid-mapping-object"><code>GridMapping</code> – the grid mapping object</h2>
@@ -992,8 +1078,8 @@ coordinate reference system (CRS). Further details of the parameters can be foun
 </ul>
 <p>An example is available in the <a href="../examples/coords/">Example Notebooks</a>.</p>
 <hr />
-<h3 id="resampling-algorithms">Resampling Algorithms</h3>
-<p>The function <a href="../api/#xcube_resampling.spatial.resample_in_space"><code>resample_in_space</code></a>
+<h3 id="spatial-resampling-algorithms">Spatial Resampling Algorithms</h3>
+<p>The function <a href="../api/#xcube_resampling.resample_in_space"><code>resample_in_space</code></a>
 integrates all three resampling algorithms and automatically selects the most
 appropriate one:</p>
 <table>
@@ -1007,17 +1093,17 @@ appropriate one:</p>
 <tbody>
 <tr>
 <td><strong>Affine Transformation</strong></td>
-<td><a href="../api/#xcube_resampling.affine.affine_transform_dataset"><code>affine_transform_dataset</code></a></td>
+<td><a href="../api/#xcube_resampling.affine_transform_dataset"><code>affine_transform_dataset</code></a></td>
 <td>Source and target grids are both regular and share the same CRS.</td>
 </tr>
 <tr>
 <td><strong>Reprojection</strong></td>
-<td><a href="../api/#xcube_resampling.reproject.reproject_dataset"><code>reproject_dataset</code></a></td>
+<td><a href="../api/#xcube_resampling.reproject_dataset"><code>reproject_dataset</code></a></td>
 <td>Source and target grids are both regular but have different CRS.</td>
 </tr>
 <tr>
 <td><strong>Rectification</strong></td>
-<td><a href="../api/#xcube_resampling.rectify.rectify_dataset"><code>rectify_dataset</code></a></td>
+<td><a href="../api/#xcube_resampling.rectify_dataset"><code>rectify_dataset</code></a></td>
 <td>Source grid is irregular with 2D coordinates.</td>
 </tr>
 </tbody>
@@ -1070,7 +1156,7 @@ algorithm—the function determines and applies it automatically.</p>
 <h4 id="1-affine-transformation">1. Affine Transformation</h4>
 <p>An <strong>affine transformation</strong> can be applied when both the source and target grid
 mappings are <strong>regular</strong> and share the same CRS. The function
-<a href="../api/#xcube_resampling.affine.affine_transform_dataset"><code>affine_transform_dataset</code></a> 
+<a href="../api/#xcube_resampling.affine_transform_dataset"><code>affine_transform_dataset</code></a>
 requires the input dataset and the target grid mapping.  </p>
 <p>For any data array in the dataset with <strong>two spatial dimensions as the last two axes</strong>,
 an affine transformation is performed using
@@ -1092,7 +1178,7 @@ non-spatial dimensions (e.g., time) in 3D arrays.  </p>
 <h4 id="2-reprojection">2. Reprojection</h4>
 <p><strong>Reprojection</strong> can be applied when both source and target grid mappings are
 <strong>regular</strong> but use <strong>different CRSs</strong>. The function
-<a href="../api/#xcube_resampling.reproject.reproject_dataset"><code>reproject_dataset</code></a>
+<a href="../api/#xcube_resampling.reproject_dataset"><code>reproject_dataset</code></a>
 requires the input dataset and the target grid mapping.  </p>
 <p>The procedure is as follows:</p>
 <ol>
@@ -1110,7 +1196,7 @@ requires the input dataset and the target grid mapping.  </p>
 <hr />
 <h4 id="3-rectification">3. Rectification</h4>
 <p><strong>Rectification</strong> is used when the source dataset has an <strong>irregular grid</strong>. The
-function <a href="../api/#xcube_resampling.rectify.rectify_dataset"><code>rectify_dataset</code></a> 
+function <a href="../api/#xcube_resampling.rectify_dataset"><code>rectify_dataset</code></a>
 requires only the input dataset.  </p>
 <p>If no target grid mapping is provided, the source grid mapping is <strong>converted to a
 regular grid</strong>, and interpolation is performed so that the new dataset is defined on
@@ -1171,7 +1257,7 @@ the target grid mapping according to:</p>
 <li><em>V = V4 + (1 - u) (V3 − V4) + (1 - v) (V2 − V4), if u+v &gt;= 1</em>  </li>
 </ul>
 <p>where <em>V1</em>, <em>V2</em>, <em>V3</em>, <em>V4</em> are the pixel values of the points in the source dataset.</p>
-<h3 id="remarks">Remarks</h3>
+<h4 id="remarks">Remarks</h4>
 <ol>
 <li>If the <strong>target pixel size is much smaller</strong> than the source pixel size, and the
    source has low spatial resolution, results may be inaccurate. Curved source pixel
@@ -1187,6 +1273,51 @@ y' = 2y / π
 </ul>
 </li>
 </ol>
+<hr />
+<h3 id="temporal-resampling">Temporal Resampling</h3>
+<p>The function <a href="../api/#xcube_resampling.resample_in_time"><code>resample_in_time</code></a>
+allows resampling of a dataset along its <strong>time axis</strong>. Under the hood, it applies
+<a href="https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html"><code>xarray.DataArray.resample</code></a>
+to each data variable that includes a time dimension. A valid time coordinate must
+be present in the dataset.</p>
+<h4 id="frequency-and-mode-selection">Frequency and Mode Selection</h4>
+<p>The argument <code>frequency</code> specifies the <strong>target temporal frequency</strong>, following the
+same conventions as the <code>freq</code> argument in <a href="https://docs.xarray.dev/en/stable/generated/xarray.groupers.TimeResampler.html"><code>xarray.groupers.TimeResampler</code></a>.</p>
+<p>The function automatically compares the target frequency with the dataset’s native
+temporal resolution and determines whether to perform:</p>
+<ul>
+<li><strong>Aggregation</strong> (downsampling), or</li>
+<li><strong>Interpolation</strong> (upsampling)</li>
+</ul>
+<p>unless specific <code>interp_methods</code> or <code>agg_methods</code> are provided by the user.</p>
+<p>If the dataset shows <strong>high temporal irregularity</strong> — defined as a <strong>coefficient of
+variation (CV = std/mean)</strong> greater than 5% — the user
+must explicitly specify either <code>interp_methods</code> or <code>agg_methods</code>, since the function
+cannot reliably infer the appropriate mode.</p>
+<h4 id="interpolation">Interpolation</h4>
+<p>When interpolation is required,
+<a href="https://docs.xarray.dev/en/v2024.05.0/generated/xarray.core.resample.DataArray.Resample.interpolate.html"><code>xarray.core.resample.DataArrayResample.interpolate</code></a>
+is used internally.</p>
+<p>Available interpolation methods defined in
+<a href="../api/#xcube_resampling.constants.TemporalInterpMethod"><code>TemporalInterpMethod</code></a> and
+ correspond to the <code>kind</code> argument in
+<a href="https://docs.xarray.dev/en/v2024.05.0/generated/xarray.core.resample.DataArrayResample.interpolate.html"><code>xarray.core.resample.DataArrayResample.interpolate</code></a>.</p>
+<p><strong>Defaults:</strong></p>
+<ul>
+<li><code>nearest</code> for integer data</li>
+<li><code>linear</code> for all other data types</li>
+</ul>
+<h4 id="aggregation">Aggregation</h4>
+<p>When aggregation is applied, the available aggregation methods are defined in
+<a href="../api/#xcube_resampling.constants.TemporalAggMethod"><code>TemporalAggMethod</code></a>.</p>
+<p>Refer to the
+<a href="https://docs.xarray.dev/en/v2024.05.0/generated/xarray.core.resample.DataArray.Resample.html"><code>xarray.core.resample.DataArrayResample</code></a>
+documentation for detailed descriptions of supported aggregation operations.</p>
+<p><strong>Defaults:</strong></p>
+<ul>
+<li><code>nearest</code> for integer data</li>
+<li><code>mean</code> for all other data types</li>
+</ul>
 
 
 
