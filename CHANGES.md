@@ -11,6 +11,8 @@
     - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
 - Bug fix: fixed grid mapping creation for irregular grids with decreasing longitude
   along axis 1.
+- Added `xcube_resampling.resample_in_time` which allows to resample a dataset along
+  the time axis. It supports up- and down-sampling.
 
 ## Changes in 0.1.1
 
