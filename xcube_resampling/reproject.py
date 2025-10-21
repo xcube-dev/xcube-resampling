@@ -56,7 +56,7 @@ def reproject_dataset(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    recover_nans: RecoverNans = False,
+    prevent_nan_propagations: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     """
@@ -92,10 +92,10 @@ def reproject_dataset(
                 "center", "count", "first", "last", "max", "mean", "median",
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
-        recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when interpolation method is not nearest).
-            Can be a single boolean or a dictionary mapping variable names or dtypes
-            to booleans. Defaults to False.
+        prevent_nan_propagations: Optional boolean or mapping to prevent NaN
+            propagation during upsampling (only applies when interpolation method
+            is not nearest). Can be a single boolean or a dictionary mapping
+            variable names or dtypes to booleans. Defaults to False.
         fill_values: Optional fill value(s) to assign outside source coverage.
             Can be a single value or dictionary by variable or type. If not set,
             defaults are:
@@ -134,7 +134,7 @@ def reproject_dataset(
         transformer,
         interp_methods,
         agg_methods,
-        recover_nans,
+        prevent_nan_propagations,
     )
 
     # For each bounding box in the target grid mapping:
@@ -343,7 +343,7 @@ def _downscale_source_dataset(
     transformer: pyproj.Transformer,
     interp_methods: SpatialInterpMethods | None,
     agg_methods: SpatialAggMethods | None,
-    recover_nans: RecoverNans,
+    prevent_nan_propagations: RecoverNans,
 ) -> (xr.Dataset, GridMapping):
     bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
     xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
@@ -376,7 +376,7 @@ def _downscale_source_dataset(
             source_gm=source_gm,
             interp_methods=_prep_spatial_interp_methods_downscale(interp_methods),
             agg_methods=agg_methods,
-            recover_nans=recover_nans,
+            prevent_nan_propagations=prevent_nan_propagations,
         )
         source_gm = GridMapping.from_dataset(source_ds)
 

@@ -17,7 +17,7 @@ from xcube_resampling.utils import (
     _get_fill_value,
     _get_grid_mapping_name,
     _get_spatial_interp_method,
-    _get_recover_nan,
+    _get_prevent_nan_propagation,
     _prep_spatial_interp_methods_downscale,
     _select_variables,
     bbox_overlap,
@@ -213,41 +213,45 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(result, AGG_METHODS["center"])  # default value
         self.assertIn("Defaults are assigned", cm.output[0])
 
-    def test_get_recover_nan(self):
+    def test_get_prevent_nan_propagation(self):
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
         float_var = xr.DataArray(
             np.array([1.0, 2.0, 3.0], dtype=np.float32), dims=["x"]
         )
 
         # bool directly
-        result = _get_recover_nan(True, "var", int_var)
+        result = _get_prevent_nan_propagation(True, "var", int_var)
         self.assertTrue(result)
 
-        result = _get_recover_nan(False, "var", float_var)
+        result = _get_prevent_nan_propagation(False, "var", float_var)
         self.assertFalse(result)
 
         # key mapping
-        recover_nans = {"var": True}
+        prevent_nan_propagations = {"var": True}
         # noinspection PyTypeChecker
-        result = _get_recover_nan(recover_nans, "var", int_var)
+        result = _get_prevent_nan_propagation(prevent_nan_propagations, "var", int_var)
         self.assertTrue(result)
 
         # dtype mapping
-        recover_nans = {np.dtype("float32"): True}
+        prevent_nan_propagations = {np.dtype("float32"): True}
         # noinspection PyTypeChecker
-        result = _get_recover_nan(recover_nans, "other", float_var)
+        result = _get_prevent_nan_propagation(
+            prevent_nan_propagations, "other", float_var
+        )
         self.assertTrue(result)
 
         # missing key/dtype → default False with log warning
-        recover_nans = {"something": True}
+        prevent_nan_propagations = {"something": True}
         with self.assertLogs("xcube.resampling", level="WARNING") as cm:
             # noinspection PyTypeChecker
-            result = _get_recover_nan(recover_nans, "var", int_var)
+            result = _get_prevent_nan_propagation(
+                prevent_nan_propagations, "var", int_var
+            )
         self.assertFalse(result)
         self.assertIn("Defaults are assigned", cm.output[0])
 
-        # recover_nans is None → fallback default False
-        result = _get_recover_nan(None, "var", float_var)
+        # prevent_nan_propagations is None → fallback default False
+        result = _get_prevent_nan_propagation(None, "var", float_var)
         self.assertFalse(result)
 
     def test_get_fill_value(self):

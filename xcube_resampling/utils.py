@@ -456,26 +456,28 @@ def _get_spatial_agg_method(
     return AGG_METHODS[agg_method]
 
 
-def _get_recover_nan(
-    recover_nans: RecoverNans | None,
+def _get_prevent_nan_propagation(
+    prevent_nan_propagations: RecoverNans | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> bool:
-    if isinstance(recover_nans, Mapping):
-        recover_nan = recover_nans.get(str(key), recover_nans.get(var.dtype))
-        if recover_nan is None:
+    if isinstance(prevent_nan_propagations, Mapping):
+        prevent_nan_propagation = prevent_nan_propagations.get(
+            str(key), prevent_nan_propagations.get(var.dtype)
+        )
+        if prevent_nan_propagation is None:
             LOG.warning(
                 f"The method to recover nan could not be derived from the mapping "
-                f"`recover_nans`  for data variable {key!r} with data type "
+                f"`prevent_nan_propagations`  for data variable {key!r} with data type "
                 f"{var.dtype!r}. Defaults are assigned."
             )
-            recover_nan = False
-    elif isinstance(recover_nans, bool):
-        recover_nan = recover_nans
+            prevent_nan_propagation = False
+    elif isinstance(prevent_nan_propagations, bool):
+        prevent_nan_propagation = prevent_nan_propagations
     else:
-        recover_nan = False
+        prevent_nan_propagation = False
 
-    return recover_nan
+    return prevent_nan_propagation
 
 
 def _get_fill_value(

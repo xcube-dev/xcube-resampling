@@ -43,7 +43,7 @@ from .utils import (
     _get_spatial_agg_method,
     _get_fill_value,
     _get_spatial_interp_method_int,
-    _get_recover_nan,
+    _get_prevent_nan_propagation,
     _select_variables,
     normalize_grid_mapping,
 )
@@ -57,7 +57,7 @@ def affine_transform_dataset(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    recover_nans: RecoverNans = False,
+    prevent_nan_propagations: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     """
@@ -88,10 +88,10 @@ def affine_transform_dataset(
                 "center", "count", "first", "last", "max", "mean", "median",
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
-        recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when interpolation method is not nearest).
-            Can be a single boolean or a dictionary mapping variable names or dtypes
-            to booleans. Defaults to False.
+        prevent_nan_propagations: Optional boolean or mapping to prevent NaN
+            propagation during upsampling (only applies when interpolation method
+            is not nearest). Can be a single boolean or a dictionary mapping
+            variable names or dtypes to booleans. Defaults to False.
         fill_values: Optional fill value(s) for areas outside the input bounds.
             Can be a single value or a dictionary mapping variable names or dtypes
             to fill values. If not provided, defaults are:
@@ -125,7 +125,7 @@ def affine_transform_dataset(
         target_gm.tile_size,
         interp_methods,
         agg_methods,
-        recover_nans,
+        prevent_nan_propagations,
         fill_values,
     )
 
@@ -146,7 +146,7 @@ def resample_dataset(
     target_tile_size: tuple[int, int],
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    recover_nans: RecoverNans = False,
+    prevent_nan_propagations: RecoverNans = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     """
@@ -179,10 +179,10 @@ def resample_dataset(
                 "center", "count", "first", "last", "max", "mean", "median",
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
-        recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when interpolation method is not nearest).
-            Can be a single boolean or a dictionary mapping variable names or dtypes
-            to booleans. Defaults to False.
+        prevent_nan_propagations: Optional boolean or mapping to prevent NaN
+            propagation during upsampling (only applies when interpolation method
+            is not nearest). Can be a single boolean or a dictionary mapping
+            variable names or dtypes to booleans. Defaults to False.
         fill_values: Optional value(s) to use for regions outside source extent.
             Can be a single value or a dictionary mapping variable names or dtypes
             to specific fill values. If not provided, defaults are:
@@ -222,7 +222,9 @@ def resample_dataset(
                 output_chunks,
                 _get_spatial_interp_method_int(interp_methods, var_name, data_array),
                 _get_spatial_agg_method(agg_methods, var_name, data_array),
-                _get_recover_nan(recover_nans, var_name, data_array),
+                _get_prevent_nan_propagation(
+                    prevent_nan_propagations, var_name, data_array
+                ),
                 _get_fill_value(fill_values, var_name, data_array),
             )
             if is_numpy_array:
@@ -248,7 +250,7 @@ def _resample_array(
     output_chunks: Sequence[int],
     interp_method: SpatialInterpMethodInt,
     agg_method: AggFunction,
-    recover_nan: bool,
+    prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
     if (affine_matrix[0][0] > 1 or affine_matrix[1][0] > 1) and interp_method != 0:
@@ -259,7 +261,7 @@ def _resample_array(
             output_chunks,
             agg_method,
             interp_method,
-            recover_nan,
+            prevent_nan_propagation,
             fill_value,
         )
     else:
@@ -269,7 +271,7 @@ def _resample_array(
             output_shape,
             output_chunks,
             interp_method,
-            recover_nan,
+            prevent_nan_propagation,
             fill_value,
         )
     return array
@@ -282,7 +284,7 @@ def _downscale(
     output_chunks: Sequence[int],
     agg_method: AggFunction,
     interp_method: SpatialInterpMethodInt,
-    recover_nan: bool,
+    prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
     ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
@@ -303,7 +305,7 @@ def _downscale(
         output_shape,
         output_chunks,
         interp_method,
-        recover_nan,
+        prevent_nan_propagation,
         fill_value,
     )
     axes = {array.ndim - 2: j_divisor, array.ndim - 1: i_divisor}
@@ -320,7 +322,7 @@ def _upscale(
     output_shape: Sequence[int],
     output_chunks: Sequence[int],
     interp_method: SpatialInterpMethodInt,
-    recover_nan: bool,
+    prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
     ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
@@ -342,9 +344,8 @@ def _upscale(
         mode="constant",
         cval=fill_value,
     )
-    if recover_nan and interp_method > 0:
-        # We can "recover" values that are neighbours to NaN values
-        # that would otherwise become NaN too.
+    if prevent_nan_propagation and interp_method > 0:
+        # Prevent NaNs from spreading to nearby pixels during interpolation
         mask = da.isnan(array)
         # First check if there are NaN values ar all
         if da.any(mask):
