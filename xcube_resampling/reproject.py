@@ -40,8 +40,8 @@ from .constants import (
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_interp_method_str,
-    _prep_interp_methods_downscale,
+    _get_spatial_interp_method_str,
+    _prep_spatial_interp_methods_downscale,
     _select_variables,
     clip_dataset_by_bbox,
     normalize_grid_mapping,
@@ -51,6 +51,7 @@ from .utils import (
 def reproject_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
+    *,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
@@ -215,7 +216,7 @@ def _reproject_data_array(
     # reorganize data array slice to align with the
     # chunks of source_xx and source_yy
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_interp_method_str(interp_methods, var_name, data_array)
+    interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
     scr_data = _reorganize_data_array_slice(
         array,
         x_coords,
@@ -373,7 +374,7 @@ def _downscale_source_dataset(
             source_ds,
             downscale_target_gm,
             source_gm=source_gm,
-            interp_methods=_prep_interp_methods_downscale(interp_methods),
+            interp_methods=_prep_spatial_interp_methods_downscale(interp_methods),
             agg_methods=agg_methods,
             recover_nans=recover_nans,
         )

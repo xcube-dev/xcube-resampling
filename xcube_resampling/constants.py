@@ -41,13 +41,14 @@ __all__ = [
     "TemporalAggMethod",
     "TemporalAggMethods",
     "TemporalInterpMethods",
-    "TemporalInterpMethodStr",
+    "TemporalInterpMethod",
     "RecoverNans",
     "FillValues",
     "FILLVALUE_UINT8",
     "FILLVALUE_UINT16",
     "FILLVALUE_INT",
     "FILLVALUE_FLOAT",
+    "LOG",
 ]
 
 FloatInt = int | float
@@ -73,58 +74,78 @@ SpatialAggMethod: TypeAlias = Literal[
     "sum",
     "var",
 ]
-"""A literal type representing supported aggregation methods."""
+"""A literal type representing supported spatial aggregation methods."""
 
-PercentileString: TypeAlias = Annotated[str, "format: percentile_<int>"]
-TemporalAggMethod = Literal[
-    "all",
-    "any",
-    "argmax",
-    "argmin",
-    "count",
-    "cumprod",
-    "cumsum",
-    "first",
-    "last",
-    "max",
-    "min",
-    "mean",
-    "median",
-    "prod",
-    "std",
-    "sum",
-    "var"
-] | PercentileString
-
-SpatialAggMethods: TypeAlias = SpatialAggMethod | Mapping[np.dtype | str, SpatialAggMethod]
-"""An aggregation method or a mapping from dtype to aggregation method."""
-
-TemporalAggMethods: TypeAlias = TemporalAggMethod | Sequence[
-    TemporalAggMethod] | Mapping[str, TemporalAggMethod | Sequence[TemporalAggMethod]]
+SpatialAggMethods: TypeAlias = (
+    SpatialAggMethod | Mapping[np.dtype | str, SpatialAggMethod]
+)
+"""An spatial aggregation method or a mapping from variable name or dtype to 
+spatial aggregation method.
+"""
 
 SpatialInterpMethodInt = Literal[0, 1]
-"""Interpolation method, as integer code."""
+"""Spatial interpolation method, as integer code."""
 SpatialInterpMethodStr = Literal["nearest", "triangular", "bilinear"]
-"""Interpolation method, as string literal."""
+"""Spatial interpolation method, as string literal."""
 SpatialInterpMethod = SpatialInterpMethodInt | SpatialInterpMethodStr
-"""Interpolation method, as integer code or string literal."""
+"""Spatial interpolation method, as integer code or string literal."""
+SpatialInterpMethods: TypeAlias = (
+    SpatialInterpMethod | Mapping[np.dtype | Hashable, SpatialInterpMethod]
+)
+"""A spatial interpolation method or a mapping from variable name or dtype to 
+interpolation method.
+"""
 
-SpatialInterpMethods: TypeAlias = SpatialInterpMethod | Mapping[np.dtype | Hashable, SpatialInterpMethod]
-"""An interpolation method or a mapping from dtype to interpolation method."""
+PercentileString: TypeAlias = Annotated[str, "format: percentile_<int>"]
+TemporalAggMethod = (
+    Literal[
+        "all",
+        "any",
+        "backfill",
+        "bfill",
+        "count",
+        "cumprod",
+        "cumsum",
+        "ffill",
+        "first",
+        "last",
+        "max",
+        "min",
+        "mean",
+        "median",
+        "nearest",
+        "pad",
+        "prod",
+        "std",
+        "sum",
+        "var",
+    ]
+    | PercentileString
+)
+"""A literal type representing supported temporal aggregation methods."""
+TemporalAggMethods: TypeAlias = (
+    TemporalAggMethod
+    | Sequence[TemporalAggMethod]
+    | Mapping[np.dtype | str, TemporalAggMethod | Sequence[TemporalAggMethod]]
+)
+"""An temporal aggregation method, a list of temporal aggregation methods, or a 
+mapping from variable name or dtype to temporal aggregation method(s).
+"""
 
-TemporalInterpMethodStr = Literal[
-    "linear",
-    "nearest",
-    "zero",
-    "slinear",
-    "quadratic",
-    "cubic",
-    "polynomial"
+TemporalInterpMethod = Literal[
+    "linear", "nearest", "zero", "slinear", "quadratic", "cubic", "polynomial"
 ]
-
-TemporalInterpMethods: TypeAlias = TemporalInterpMethodStr | Sequence[
-    TemporalInterpMethodStr] | Mapping[np.dtype | Hashable,
-    TemporalInterpMethodStr]
+"""Temporal interpolation method, as string literal."""
+TemporalInterpMethods: TypeAlias = (
+    TemporalInterpMethod
+    | Sequence[TemporalInterpMethod]
+    | Mapping[
+        np.dtype | Hashable, TemporalInterpMethod | Sequence[TemporalInterpMethod]
+    ]
+)
+"""A temporal interpolation method, a list of temporal interpolation methods, or a 
+mapping from variable name or dtype to interpolation method(s).
+"""
 
 RecoverNans: TypeAlias = bool | Mapping[np.dtype | str, bool]
 """Whether to attempt recovery of NaN values, globally or per dtype."""

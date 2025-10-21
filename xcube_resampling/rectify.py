@@ -44,9 +44,9 @@ from .dask import compute_array_from_func
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
-    _get_interp_method_str,
+    _get_spatial_interp_method_str,
     _is_equal_crs,
-    _prep_interp_methods_downscale,
+    _prep_spatial_interp_methods_downscale,
     _select_variables,
     bbox_overlap,
     clip_dataset_by_bbox,
@@ -56,6 +56,7 @@ from .utils import (
 
 def rectify_dataset(
     source_ds: xr.Dataset,
+    *,
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
@@ -318,7 +319,7 @@ def _downscale_source_dataset(
             (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
             downscaled_size,
             source_gm.tile_size,
-            _prep_interp_methods_downscale(interp_methods),
+            _prep_spatial_interp_methods_downscale(interp_methods),
             agg_methods,
             recover_nans,
         )
@@ -347,7 +348,7 @@ def _rectify_data_array(
         is_numpy_array = False
 
     fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_interp_method_str(interp_methods, var_name, data_array)
+    interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
 
     # calculate rectification of each chunk along the 1st (non-spatial) dimension.
     slices_rectified = []

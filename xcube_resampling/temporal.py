@@ -19,13 +19,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Any, Iterable, Literal
+from collections.abc import Hashable
+from typing import Iterable, Literal, Sequence, Mapping
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .constants import TemporalInterpMethods, TemporalAggMethods, LOG
+from .constants import (
+    TemporalInterpMethods,
+    TemporalAggMethods,
+    TemporalAggMethod,
+    TemporalInterpMethod,
+    LOG,
+)
 from .utils import _select_variables
 
 
@@ -36,111 +43,94 @@ def resample_in_time(
     variables: str | Iterable[str] | None = None,
     interp_methods: TemporalInterpMethods | None = None,
     agg_methods: TemporalAggMethods | None = None,
-    offset=None,
-    tolerance: float | Iterable[float] | str | None =None,
-    metadata: dict[str, Any] = None,
+    offset: float | None = None,
+    tolerance: float | None = None,
 ) -> xr.Dataset:
-    """Resample a dataset in the time dimension.
+    """
+    Resample a dataset along the time dimension.
 
-    *Important note:* As of xarray 0.14 and dask 2.8, the
-    methods ``'median'`` and ``'percentile_<p>'` cannot be
-    used if the variables in *cube* comprise chunked dask arrays.
-    In this case, use the ``compute()`` or ``load()`` method
-    to convert dask arrays into numpy arrays.
+    This function allows both **upsampling** (interpolation) and **downsampling**
+    (aggregation) of temporal data variables. It wraps xarray's
+    [`resample`](https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html)
+    functionality and automatically determines whether to apply interpolation or
+    aggregation based on the input frequency and dataset time resolution.
 
     Args:
-        source_ds: The input xarray.Dataset. It should contain the `time`
-            dimension.
-        frequency: Temporal aggregation frequency. Use format
-            "<count><offset>" where <offset> is one of 'H', 'D', 'W',
-            'M', 'Q', 'Y'.
-        variables: A single variable name or iterable of variable names to be
-            resampled. If None, all data variables will be processed.
-        interp_methods: Optional interpolation method to be used for
-            upsampling the spatial variables in the temporal dimension. Can
-            be a single interpolation method for all variables or a
-            dictionary mapping variable names or dtypes to interpolation method.
-            Supported methods include:
+        source_ds: Input xarray Dataset containing a `time` dimension.
+        frequency: Target temporal frequency, following
+            Pandas period aliases. Format `<count><period>`, where `<period>`
+            may be one of 's', 'min', 'h', 'D', 'W', 'M', 'Q', 'Y'.
+        variables: Optional. Names of variables to resample. If None, all
+            data variables are processed, which have a time coordinate.
+        interp_methods: Optional interpolation method(s) for upsampling. Can be:
 
-            - "linear",
-            - "nearest",
-            - "zero",
-            - "slinear",
-            - "quadratic",
-            - "cubic",
-            - "polynomial"
+            - A single method for all variables
+            - A list of methods (applied sequentially, each output saved as
+              `varname_method`)
+            - A dictionary mapping variable names or dtypes to method(s)
 
-            The default is `linear`.
-        agg_methods: Optional aggregation methods for downsampling spatial
-            variables in the temporal dimension.
-            Can be a single method for all variables, a list a methods for
-            all variables or a dictionary mapping variable
-            names or dtypes to method(s). Supported methods include:
+            Available methods are defined in
+            [`TemporalInterpMethod`](api.md/#xcube_resampling.constants.TemporalInterpMethod).
+            Default is "nearest" for integer data, otherwise "linear".
+        agg_methods: Optional aggregation method(s) for downsampling. Can be:
 
-            - "all",
-            - "any",
-            - "argmax",
-            - "argmin",
-            - "count",
-            - "cumprod",
-            - "cumsum",
-            - "first",
-            - "last",
-            - "max",
-            - "min",
-            - "mean",
-            - "median",
-            - "percentile_<p>",
-            - "std",
-            - "sum",
-            - "var"
+            - A single method for all variables
+            - A list of methods (applied sequentially, each output saved as
+              `varname_method`)
+            - A dictionary mapping variable names or dtypes to method(s)
 
-            The default is `mean`.
-
-             Note: The value ``'percentile_<p>'`` is a placeholder,
-             where ``'<p>'`` must be replaced by an integer percentage
-             value, e.g. ``'percentile_90'`` is the 90%-percentile.
-        offset: Offset used to adjust the resampled time labels. Uses
-            same syntax as *frequency*.
-        tolerance: Time tolerance for selective upsampling methods.
-            Defaults to *frequency*.
-        metadata: Output metadata.
+            Available methods are defined in
+            [`TemporalAggMethod`](api.md/#xcube_resampling.constants.TemporalAggMethod).
+            The placeholder `'percentile_<p>'` can be used for percentiles
+            (e.g., `'percentile_90'`). Default is `'nearest'` for integer data,
+            otherwise `'mean'`.
+        offset: Optional offset to adjust resampled time labels. Uses the
+            same syntax as frequency.
+        tolerance: Optional maximum allowed distance for selective downsampling
+            methods (e.g., `'backfill'`, `'ffill'`, `'nearest'`). Defaults to the
+            resampling frequency.
 
     Returns:
-        A new xarray dataset resampled in time.
+        A new xarray Dataset resampled along the time dimension.
+
+    Notes:
+        - The function automatically decides whether to apply interpolation or
+          aggregation based on the target frequency and the dataset’s temporal
+          resolution, if `agg_methods` or `interp_methods` are not provided.
+        - If the time series is highly irregular (coefficient of variation > 5%),
+          explicit `agg_methods` or `interp_methods` must be provided.
     """
-    if frequency == "all":
-        time_gap = np.array(source_ds.time[-1]) - np.array(source_ds.time[0])
-        days = int((np.timedelta64(time_gap, "D") / np.timedelta64(1, "D")) + 1)
-        frequency = f"{days}D"
+
+    if "time" not in source_ds.dims:
+        raise ValueError("Dataset must have a 'time' dimension.")
 
     if variables:
         source_ds = _select_variables(source_ds, variables)
 
-    guessed_operation = _analyze_resampling_operation(source_ds,
-                                                      frequency,
-                                                      interp_methods,
-                                                      agg_methods
-                                                      )
+    if frequency == "all":
+        days = int((source_ds.time[-1] - source_ds.time[0]) / np.timedelta64(1, "D"))
+        frequency = f"{days + 1}D"
 
-    resampled_cubes = []
+    guessed_operation = _guess_resampling_operation(
+        source_ds, frequency, interp_methods, agg_methods
+    )
 
     if guessed_operation == "agg":
-        agg_methods_ = _prepare_methods(agg_methods, "mean")
-        for var, methods in agg_methods_.items():
-            resampled_cubes.extend(
-                _apply_resampling(source_ds, var, methods, "agg", frequency,
-                                  tolerance, offset)
-            )
+        target_ds = _apply_aggregation(
+            source_ds,
+            frequency,
+            agg_methods=agg_methods,
+            offset=offset,
+            tolerance=tolerance,
+        )
 
     elif guessed_operation == "interp":
-        interp_methods_ = _prepare_methods(interp_methods, "linear")
-        for var, methods in interp_methods_.items():
-            resampled_cubes.extend(
-                _apply_resampling(
-                    source_ds, var, methods, "interp", frequency, tolerance, offset
-                )
-            )
+        target_ds = _apply_interpolation(
+            source_ds,
+            frequency,
+            interp_methods=interp_methods,
+            offset=offset,
+        )
 
     else:
         LOG.warning(
@@ -149,157 +139,189 @@ def resample_in_time(
         )
         return source_ds
 
-    if len(resampled_cubes) == 1:
-        resampled_cube = resampled_cubes[0]
-    else:
-        resampled_cube = xr.merge(resampled_cubes)
-
     # TODO: add time_bnds to resampled_ds
     time_coverage_start = "%s" % source_ds.time[0]
     time_coverage_end = "%s" % source_ds.time[-1]
 
-    resampled_cube.attrs.update(metadata or {})
-    # TODO: add other time_coverage_ attributes
-    resampled_cube.attrs.update(
-        time_coverage_start=time_coverage_start, time_coverage_end=time_coverage_end
+    target_ds.attrs.update(
+        time_coverage_start=time_coverage_start,
+        time_coverage_end=time_coverage_end,
     )
 
-    return resampled_cube
+    return target_ds
 
-def _apply_resampling(ds, variable, methods, method_type, frequency, tolerance, offset):
-    """Handles both agg and interp resampling."""
-    results = []
+
+def _apply_aggregation(
+    dataset: xr.Dataset,
+    frequency: str,
+    agg_methods: TemporalAggMethods | None = None,
+    offset: str | None = None,
+    tolerance: str | None = None,
+) -> xr.Dataset:
     percentile_prefix = "percentile_"
 
-    if variable == "all":
-        source_ds = ds
-    else:
-        source_ds = ds[variable].to_dataset(name=variable)
-
-    resampler = source_ds.resample(
-        skipna=True, closed="left", label="left", time=frequency, offset=offset
-    )
-
-    for method in ([methods] if isinstance(methods, str) else methods):
-        method_args, method_kwargs = [], {}
-        method_postfix = method
-
-        if method_type == "agg":
+    resampled_dataset = xr.Dataset(attrs=dataset.attrs)
+    for var_name, data_array in dataset.data_vars.items():
+        if not "time" in data_array.coords:
+            continue
+        var_methods = _get_temporal_agg_method(agg_methods, var_name, data_array)
+        resampler = data_array.resample(
+            skipna=True, closed="left", label="left", time=frequency, offset=offset
+        )
+        for method in var_methods:
+            method_args, method_kwargs = [], {}
+            method_postfix = method
             if method.startswith(percentile_prefix):
-                p = int(method[len(percentile_prefix):])
+                p = int(method[len(percentile_prefix) :])
                 method_args = [p / 100.0]
                 method_postfix = f"p{p}"
                 method = "quantile"
             method_kwargs = _get_agg_method_kwargs(method, frequency, tolerance)
-        else:
-            method_kwargs = _get_interp_method_kwargs(method)
-            method = "interpolate"
+            func = getattr(resampler, method)
+            resampled_dataset[f"{var_name}_{method_postfix}"] = func(
+                *method_args, **method_kwargs
+            )
 
-        func = getattr(resampler, method)
-        result = func(*method_args, **method_kwargs)
+    return resampled_dataset
 
-        result = result.rename({
-            var: f"{var}_{method_postfix}"
-            for var in result.data_vars
-        })
 
-        results.append(result)
+def _apply_interpolation(
+    dataset: xr.Dataset,
+    frequency: str,
+    interp_methods: TemporalInterpMethods | None = None,
+    offset: str | None = None,
+) -> xr.Dataset:
+    resampled_dataset = xr.Dataset(attrs=dataset.attrs)
+    for var_name, data_array in dataset.data_vars.items():
+        if not "time" in data_array.coords:
+            continue
+        var_methods = _get_temporal_interp_method(interp_methods, var_name, data_array)
+        resampler = data_array.resample(
+            skipna=True, closed="left", label="left", time=frequency, offset=offset
+        )
+        for method in var_methods:
+            func = getattr(resampler, "interpolate")
+            resampled_dataset[f"{var_name}_{method}"] = func(kind=method)
 
-    return results
+    return resampled_dataset
 
-def _prepare_methods(user_methods, default_method):
-    if not user_methods:
-        return {"all": default_method}
-    if isinstance(user_methods, (str, list)):
-        return {"all": user_methods}
-    return user_methods
 
 def _get_agg_method_kwargs(
-        agg_method: str,
-        frequency: str,
-        tolerance: str,
-        ):
-    if agg_method in {
-        "nearest",
-        "bfill",
-        "backfill",
-        "ffill",
-        "pad"
-    }:
+    agg_method: str,
+    frequency: str,
+    tolerance: str | None = None,
+) -> dict:
+    if agg_method in {"backfill", "bfill", "ffill", "nearest", "pad"}:
         kwargs = {"tolerance": tolerance or frequency}
+    elif agg_method in {"all", "any", "count"}:
+        kwargs = {"dim": "time", "keep_attrs": True}
     elif agg_method in {
+        "cumprod",
+        "cumsum",
         "first",
         "last",
-        "sum",
-        "cumsum",
-        "cumprod",
-        "min",
         "max",
+        "min",
         "mean",
         "median",
+        "prod",
+        "quantile",
         "std",
+        "sum",
         "var",
     }:
         kwargs = {"dim": "time", "keep_attrs": True, "skipna": True}
-    elif agg_method == "prod":
-        kwargs = {"dim": "time", "skipna": True, "keep_attrs": True}
-    elif agg_method in {
-        "all",
-        "any"
-        "count",
-    }:
-        kwargs = {"dim": "time", "keep_attrs": True}
     else:
-        kwargs = {}
+        raise ValueError(f"Aggregation method {agg_method!r} not supported.")
     return kwargs
 
-def _get_interp_method_kwargs(
-        interp_method: str,
-        ):
-    kwargs = {"kind": interp_method}
-    return kwargs
 
-def _analyze_resampling_operation(
+def _guess_resampling_operation(
     ds: xr.Dataset,
     frequency: str,
     interp_methods: TemporalInterpMethods | None = None,
     agg_methods: TemporalAggMethods | None = None,
 ) -> Literal["agg", "interp", None]:
-    if "time" not in ds.dims:
-        raise ValueError("Dataset must have a 'time' dimension.")
 
     if agg_methods and interp_methods:
-        raise ValueError("Please provide either agg_methods or "
-                         "interp_methods, not both.")
-    if agg_methods:
+        raise ValueError(
+            "Please provide either agg_methods or " "interp_methods, not both."
+        )
+    elif agg_methods:
         return "agg"
-
-    if interp_methods:
+    elif interp_methods:
         return "interp"
 
     time = ds["time"].values
-
     if len(time) < 2:
         raise ValueError("Not enough time points to resample.")
-
-    tolerance = 0.05
-
     deltas = np.diff(time).astype("timedelta64[ns]").astype(float)
     mean_delta = np.mean(deltas)
     std_delta = np.std(deltas)
-
-    if mean_delta == 0 or (std_delta / mean_delta) > tolerance:
+    if mean_delta == 0 or (std_delta / mean_delta) > 0.05:
         # irregular time delta in the time series
         return None
 
-    mean_td = pd.to_timedelta(mean_delta, unit="ns")
+    mean_td = pd.to_timedelta(int(mean_delta), unit="ns")
     target_td = pd.Timedelta(frequency)
-
     ratio = mean_td / target_td
-
     if ratio < 1:
         return "agg"
     elif ratio > 1:
         return "interp"
     else:
         return None
+
+
+def _get_temporal_interp_method(
+    interp_methods: TemporalInterpMethods | None,
+    key: Hashable,
+    var: xr.DataArray,
+) -> TemporalInterpMethod | Sequence[TemporalInterpMethod]:
+    def assign_defaults(data_type: np.dtype) -> TemporalInterpMethod:
+        return "nearest" if np.issubdtype(data_type, np.integer) else "linear"
+
+    if isinstance(interp_methods, Mapping):
+        interp_method = interp_methods.get(str(key), interp_methods.get(var.dtype))
+        if interp_method is None:
+            LOG.warning(
+                f"Interpolation method could not be derived from the mapping "
+                f"`interp_methods` for data variable {key!r} with data type "
+                f"{var.dtype!r}. Defaults are assigned."
+            )
+            interp_method = assign_defaults(var.dtype)
+    elif isinstance(interp_methods, str) or isinstance(interp_methods, Sequence):
+        interp_method = interp_methods
+    else:
+        interp_method = assign_defaults(var.dtype)
+
+    if isinstance(interp_method, str):
+        interp_method = [interp_method]
+    return interp_method
+
+
+def _get_temporal_agg_method(
+    agg_methods: TemporalAggMethods | None,
+    key: Hashable,
+    var: xr.DataArray,
+) -> TemporalAggMethod | Sequence[TemporalAggMethod]:
+    def assign_defaults(data_type: np.dtype) -> TemporalAggMethod:
+        return "nearest" if np.issubdtype(data_type, np.integer) else "mean"
+
+    if isinstance(agg_methods, Mapping):
+        agg_method = agg_methods.get(str(key), agg_methods.get(var.dtype))
+        if agg_method is None:
+            LOG.warning(
+                f"Aggregation method could not be derived from the mapping "
+                f"`agg_methods` for data variable {key!r} with data type "
+                f"{var.dtype!r}. Defaults are assigned."
+            )
+            agg_method = assign_defaults(var.dtype)
+    elif isinstance(agg_methods, str) or isinstance(agg_methods, Sequence):
+        agg_method = agg_methods
+    else:
+        agg_method = assign_defaults(var.dtype)
+
+    if isinstance(agg_method, str):
+        agg_method = [agg_method]
+    return agg_method

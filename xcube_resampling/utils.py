@@ -369,7 +369,7 @@ def _is_equal_crs(source_gm: GridMapping, target_gm: GridMapping) -> bool:
     return geographic or source_gm.crs.equals(target_gm.crs)
 
 
-def _get_interp_method(
+def _get_spatial_interp_method(
     interp_methods: SpatialInterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
@@ -394,29 +394,29 @@ def _get_interp_method(
     return interp_method
 
 
-def _get_interp_method_int(
+def _get_spatial_interp_method_int(
     interp_methods: SpatialInterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> SpatialInterpMethodInt:
-    interp_method = _get_interp_method(interp_methods, key, var)
+    interp_method = _get_spatial_interp_method(interp_methods, key, var)
     if isinstance(interp_method, str):
         interp_method = INTERP_METHOD_MAPPING[interp_method]
     return interp_method
 
 
-def _get_interp_method_str(
+def _get_spatial_interp_method_str(
     interp_methods: SpatialInterpMethods | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> SpatialInterpMethodStr:
-    interp_method = _get_interp_method(interp_methods, key, var)
+    interp_method = _get_spatial_interp_method(interp_methods, key, var)
     if isinstance(interp_method, int):
         interp_method = INTERP_METHOD_MAPPING[interp_method]
     return interp_method
 
 
-def _prep_interp_methods_downscale(
+def _prep_spatial_interp_methods_downscale(
     interp_methods: SpatialInterpMethods | None,
 ) -> SpatialInterpMethods | None:
     if interp_methods == "triangular":
@@ -431,7 +431,7 @@ def _prep_interp_methods_downscale(
     return interp_methods
 
 
-def _get_agg_method(
+def _get_spatial_agg_method(
     agg_methods: SpatialAggMethods | None,
     key: Hashable,
     var: xr.DataArray,

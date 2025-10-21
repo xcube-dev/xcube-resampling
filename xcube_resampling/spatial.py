@@ -39,6 +39,7 @@ from .utils import _can_apply_affine_transform
 
 def resample_in_space(
     source_ds: xr.Dataset,
+    *,
     target_gm: GridMapping | None = None,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,

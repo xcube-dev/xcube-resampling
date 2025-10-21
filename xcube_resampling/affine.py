@@ -40,9 +40,9 @@ from .constants import (
 from .gridmapping import GridMapping
 from .utils import (
     _can_apply_affine_transform,
-    _get_agg_method,
+    _get_spatial_agg_method,
     _get_fill_value,
-    _get_interp_method_int,
+    _get_spatial_interp_method_int,
     _get_recover_nan,
     _select_variables,
     normalize_grid_mapping,
@@ -52,6 +52,7 @@ from .utils import (
 def affine_transform_dataset(
     source_ds: xr.Dataset,
     target_gm: GridMapping,
+    *,
     source_gm: GridMapping | None = None,
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
@@ -219,8 +220,8 @@ def resample_dataset(
                 affine_matrix,
                 output_shape,
                 output_chunks,
-                _get_interp_method_int(interp_methods, var_name, data_array),
-                _get_agg_method(agg_methods, var_name, data_array),
+                _get_spatial_interp_method_int(interp_methods, var_name, data_array),
+                _get_spatial_agg_method(agg_methods, var_name, data_array),
                 _get_recover_nan(recover_nans, var_name, data_array),
                 _get_fill_value(fill_values, var_name, data_array),
             )

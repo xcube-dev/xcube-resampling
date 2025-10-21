@@ -13,12 +13,12 @@ from xcube_resampling.constants import (
 
 # noinspection PyProtectedMember
 from xcube_resampling.utils import (
-    _get_agg_method,
+    _get_spatial_agg_method,
     _get_fill_value,
     _get_grid_mapping_name,
-    _get_interp_method,
+    _get_spatial_interp_method,
     _get_recover_nan,
-    _prep_interp_methods_downscale,
+    _prep_spatial_interp_methods_downscale,
     _select_variables,
     bbox_overlap,
     clip_dataset_by_bbox,
@@ -117,55 +117,63 @@ class TestUtils(unittest.TestCase):
         )
 
         # integer type data array
-        result = _get_interp_method(None, "var", int_var)
+        result = _get_spatial_interp_method(None, "var", int_var)
         self.assertEqual(result, 0)
 
         # float type data array
-        result = _get_interp_method(None, "var", float_var)
+        result = _get_spatial_interp_method(None, "var", float_var)
         self.assertEqual(result, 1)
 
         # integer scalar
-        result = _get_interp_method(1, "var", float_var)
+        result = _get_spatial_interp_method(1, "var", float_var)
         self.assertEqual(result, 1)
 
         # string
-        result = _get_interp_method("nearest", "var", int_var)
+        result = _get_spatial_interp_method("nearest", "var", int_var)
         self.assertEqual(result, "nearest")
 
         # key matching
         interp_methods = {"var": "bilinear"}
         # noinspection PyTypeChecker
-        result = _get_interp_method(interp_methods, "var", float_var)
+        result = _get_spatial_interp_method(interp_methods, "var", float_var)
         self.assertEqual(result, "bilinear")
 
         # dtaa type matching
         interp_methods = {np.dtype("float32"): "bilinear"}
         # noinspection PyTypeChecker
-        result = _get_interp_method(interp_methods, "other", float_var)
+        result = _get_spatial_interp_method(interp_methods, "other", float_var)
         self.assertEqual(result, "bilinear")
 
         # no matching keys shall trigger a log warning
         interp_methods = {"something": "bilinear"}
         with self.assertLogs("xcube.resampling", level="WARNING") as cm:
             # noinspection PyTypeChecker
-            result = _get_interp_method(interp_methods, "var", int_var)
+            result = _get_spatial_interp_method(interp_methods, "var", int_var)
         self.assertEqual(result, 0)  # default value
         self.assertIn("Defaults are assigned", cm.output[0])
 
     def test_prep_interp_methods_downscale(self):
-        self.assertIsNone(_prep_interp_methods_downscale(None))
-        self.assertEqual(_prep_interp_methods_downscale("triangular"), "bilinear")
-        self.assertEqual(_prep_interp_methods_downscale("nearest"), "nearest")
-        self.assertEqual(_prep_interp_methods_downscale(1), 1)
+        self.assertIsNone(_prep_spatial_interp_methods_downscale(None))
+        self.assertEqual(
+            _prep_spatial_interp_methods_downscale("triangular"), "bilinear"
+        )
+        self.assertEqual(_prep_spatial_interp_methods_downscale("nearest"), "nearest")
+        self.assertEqual(_prep_spatial_interp_methods_downscale(1), 1)
 
         interp_map = {"a": "triangular", "b": "nearest"}
         expected = {"a": "bilinear", "b": "nearest"}
         # noinspection PyTypeChecker
-        self.assertEqual(_prep_interp_methods_downscale(interp_map), expected)
+        self.assertEqual(
+            _prep_spatial_interp_methods_downscale(interp_map),
+            expected,
+        )
 
         interp_map = {"a": "nearest", "b": "bilinear"}
         # noinspection PyTypeChecker
-        self.assertEqual(_prep_interp_methods_downscale(interp_map), interp_map)
+        self.assertEqual(
+            _prep_spatial_interp_methods_downscale(interp_map),
+            interp_map,
+        )
 
     def test_get_agg_method(self):
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
@@ -174,34 +182,34 @@ class TestUtils(unittest.TestCase):
         )
 
         # integer type data array, default
-        result = _get_agg_method(None, "var", int_var)
+        result = _get_spatial_agg_method(None, "var", int_var)
         self.assertEqual(result, AGG_METHODS["center"])
 
         # float type data array, default
-        result = _get_agg_method(None, "var", float_var)
+        result = _get_spatial_agg_method(None, "var", float_var)
         self.assertEqual(result, AGG_METHODS["mean"])
 
         # string as method
-        result = _get_agg_method("center", "var", float_var)
+        result = _get_spatial_agg_method("center", "var", float_var)
         self.assertEqual(result, AGG_METHODS["center"])
 
         # key matching
         agg_methods = {"var": "mean"}
         # noinspection PyTypeChecker
-        result = _get_agg_method(agg_methods, "var", int_var)
+        result = _get_spatial_agg_method(agg_methods, "var", int_var)
         self.assertEqual(result, AGG_METHODS["mean"])
 
         # data type matching
         agg_methods = {np.dtype("float32"): "mean"}
         # noinspection PyTypeChecker
-        result = _get_agg_method(agg_methods, "other", float_var)
+        result = _get_spatial_agg_method(agg_methods, "other", float_var)
         self.assertEqual(result, AGG_METHODS["mean"])
 
         # no matching keys triggers log warning
         agg_methods = {"something": "mean"}
         with self.assertLogs("xcube.resampling", level="WARNING") as cm:
             # noinspection PyTypeChecker
-            result = _get_agg_method(agg_methods, "var", int_var)
+            result = _get_spatial_agg_method(agg_methods, "var", int_var)
         self.assertEqual(result, AGG_METHODS["center"])  # default value
         self.assertIn("Defaults are assigned", cm.output[0])
 

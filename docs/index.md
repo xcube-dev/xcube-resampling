@@ -12,6 +12,7 @@ spatial and temporal domains.
     - **Rectification** – transform irregular grids into regular, well-structured grids  
 
 - #### Temporal Resampling
+    - **Time-based resampling** – upsample or downsample data along the time dimension
 
 All methods work seamlessly with chunked (lazily loaded) [xarray.Datasets](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html) and are powered by [Dask](https://www.dask.org/) for scalable, out-of-core computation.
 
@@ -38,9 +39,10 @@ into the requested frequency.
 
 ### `resample_in_space` — the gateway to Spatial Resampling of Gridded datasets
 
-The **central function** for spatial up and down resampling
-[`resample_in_space`](api.md/#xcube_resampling.spatial.resample_in_space), integrates all three algorithms and **automatically selects** the appropriate one
-based on the criteria below.
+The **central function** for spatial up and down resampling is
+[`resample_in_space`](api.md/#xcube_resampling.resample_in_space), which integrates all
+three algorithms and **automatically selects** the appropriate one based on the
+criteria below.
 
 | Algorithm             | Function                                                                               | Selection Criteria                                                                                   |
 |-----------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
@@ -54,8 +56,8 @@ algorithm—the function determines and applies it automatically.
 ### `resample_in_time` — the gateway to Temporal Resampling of Gridded datasets
 
 The **central function** for resampling in the temporal domain is
-`resample_in_time` which handles both up and downsampling of a dataset in the 
-`time` dimension.
+[`resample_in_time`](api.md/#xcube_resampling.resample_in_time) which handles both up
+and downsampling of a dataset in the `time` dimension.
 
 👉 For usage examples and details, see the [User Guide](guide.md).
 
