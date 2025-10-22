@@ -598,6 +598,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.resolution_meters_to_degrees" class="md-nav__link">
+    <span class="md-ellipsis">
+      resolution_meters_to_degrees
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#xcube_resampling.utils.normalize_grid_mapping" class="md-nav__link">
     <span class="md-ellipsis">
       normalize_grid_mapping
@@ -967,6 +976,15 @@
   <a href="#xcube_resampling.gridmapping.GridMapping.regular" class="md-nav__link">
     <span class="md-ellipsis">
       regular
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xcube_resampling.gridmapping.GridMapping.regular_from_bbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      regular_from_bbox
     </span>
   </a>
   
@@ -1336,6 +1354,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#xcube_resampling.utils.resolution_meters_to_degrees" class="md-nav__link">
+    <span class="md-ellipsis">
+      resolution_meters_to_degrees
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#xcube_resampling.utils.normalize_grid_mapping" class="md-nav__link">
     <span class="md-ellipsis">
       normalize_grid_mapping
@@ -1711,6 +1738,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#xcube_resampling.gridmapping.GridMapping.regular_from_bbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      regular_from_bbox
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#xcube_resampling.gridmapping.GridMapping.to_regular" class="md-nav__link">
     <span class="md-ellipsis">
       to_regular
@@ -1953,7 +1989,7 @@
 
 
 <h2 id="xcube_resampling.resample_in_space" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">resample_in_space</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -2106,7 +2142,7 @@ Defaults to "center" for integer arrays, else "mean".</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>recover_nans</code>
+                <code>prevent_nan_propagations</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-internal" title="RecoverNans = bool | Mapping[np.dtype | str, bool]
@@ -2117,10 +2153,10 @@ Defaults to "center" for integer arrays, else "mean".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional boolean or mapping to enable NaN recovery during
-upsampling (only applies when interpolation method is not nearest).
-Can be a single boolean or a dictionary mapping variable names or dtypes
-to booleans. Defaults to False.</p>
+                <p>Optional boolean or mapping to prevent NaN
+propagation during upsampling (only applies when interpolation method
+is not nearest). Can be a single boolean or a dictionary mapping
+variable names or dtypes to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -2356,7 +2392,7 @@ mapping.</p>
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">interp_methods</span><span class="p">:</span> <span class="n">SpatialInterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">SpatialAggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">prevent_nan_propagations</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
@@ -2397,10 +2433,10 @@ mapping.</p>
 <span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
 <span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
 <span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
-<span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
-<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
-<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
-<span class="sd">            to booleans. Defaults to False.</span>
+<span class="sd">        prevent_nan_propagations: Optional boolean or mapping to prevent NaN</span>
+<span class="sd">            propagation during upsampling (only applies when interpolation method</span>
+<span class="sd">            is not nearest). Can be a single boolean or a dictionary mapping</span>
+<span class="sd">            variable names or dtypes to booleans. Defaults to False.</span>
 <span class="sd">        fill_values: Optional fill value(s) for areas outside input coverage.</span>
 <span class="sd">            Can be a single value or dictionary by variable or type. If not provided,</span>
 <span class="sd">            defaults based on data type are used:</span>
@@ -2441,7 +2477,7 @@ mapping.</p>
             <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>
             <span class="n">interp_methods</span><span class="o">=</span><span class="n">interp_methods</span><span class="p">,</span>
             <span class="n">agg_methods</span><span class="o">=</span><span class="n">agg_methods</span><span class="p">,</span>
-            <span class="n">recover_nans</span><span class="o">=</span><span class="n">recover_nans</span><span class="p">,</span>
+            <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="n">prevent_nan_propagations</span><span class="p">,</span>
             <span class="n">fill_values</span><span class="o">=</span><span class="n">fill_values</span><span class="p">,</span>
             <span class="n">tile_size</span><span class="o">=</span><span class="n">tile_size</span><span class="p">,</span>
         <span class="p">)</span>
@@ -2464,7 +2500,7 @@ mapping.</p>
                 <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>
                 <span class="n">interp_methods</span><span class="o">=</span><span class="n">interp_methods</span><span class="p">,</span>
                 <span class="n">agg_methods</span><span class="o">=</span><span class="n">agg_methods</span><span class="p">,</span>
-                <span class="n">recover_nans</span><span class="o">=</span><span class="n">recover_nans</span><span class="p">,</span>
+                <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="n">prevent_nan_propagations</span><span class="p">,</span>
                 <span class="n">fill_values</span><span class="o">=</span><span class="n">fill_values</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -2475,7 +2511,7 @@ mapping.</p>
                 <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>
                 <span class="n">interp_methods</span><span class="o">=</span><span class="n">interp_methods</span><span class="p">,</span>
                 <span class="n">agg_methods</span><span class="o">=</span><span class="n">agg_methods</span><span class="p">,</span>
-                <span class="n">recover_nans</span><span class="o">=</span><span class="n">recover_nans</span><span class="p">,</span>
+                <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="n">prevent_nan_propagations</span><span class="p">,</span>
                 <span class="n">fill_values</span><span class="o">=</span><span class="n">fill_values</span><span class="p">,</span>
             <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -2488,7 +2524,7 @@ mapping.</p>
 
 
 <h2 id="xcube_resampling.affine_transform_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">affine_transform_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">affine_transform_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -2633,7 +2669,7 @@ Defaults to "center" for integer arrays, else "mean".</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>recover_nans</code>
+                <code>prevent_nan_propagations</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-internal" title="RecoverNans = bool | Mapping[np.dtype | str, bool]
@@ -2644,10 +2680,10 @@ Defaults to "center" for integer arrays, else "mean".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional boolean or mapping to enable NaN recovery during
-upsampling (only applies when interpolation method is not nearest).
-Can be a single boolean or a dictionary mapping variable names or dtypes
-to booleans. Defaults to False.</p>
+                <p>Optional boolean or mapping to prevent NaN
+propagation during upsampling (only applies when interpolation method
+is not nearest). Can be a single boolean or a dictionary mapping
+variable names or dtypes to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -2807,7 +2843,7 @@ Data variables with only one spatial dimension are ignored.</p>
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">interp_methods</span><span class="p">:</span> <span class="n">SpatialInterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">SpatialAggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">prevent_nan_propagations</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2838,10 +2874,10 @@ Data variables with only one spatial dimension are ignored.</p>
 <span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
 <span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
 <span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
-<span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
-<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
-<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
-<span class="sd">            to booleans. Defaults to False.</span>
+<span class="sd">        prevent_nan_propagations: Optional boolean or mapping to prevent NaN</span>
+<span class="sd">            propagation during upsampling (only applies when interpolation method</span>
+<span class="sd">            is not nearest). Can be a single boolean or a dictionary mapping</span>
+<span class="sd">            variable names or dtypes to booleans. Defaults to False.</span>
 <span class="sd">        fill_values: Optional fill value(s) for areas outside the input bounds.</span>
 <span class="sd">            Can be a single value or a dictionary mapping variable names or dtypes</span>
 <span class="sd">            to fill values. If not provided, defaults are:</span>
@@ -2875,7 +2911,7 @@ Data variables with only one spatial dimension are ignored.</p>
         <span class="n">target_gm</span><span class="o">.</span><span class="n">tile_size</span><span class="p">,</span>
         <span class="n">interp_methods</span><span class="p">,</span>
         <span class="n">agg_methods</span><span class="p">,</span>
-        <span class="n">recover_nans</span><span class="p">,</span>
+        <span class="n">prevent_nan_propagations</span><span class="p">,</span>
         <span class="n">fill_values</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -2896,7 +2932,7 @@ Data variables with only one spatial dimension are ignored.</p>
 
 
 <h2 id="xcube_resampling.reproject_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">reproject_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">reproject_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">target_gm</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -3045,7 +3081,7 @@ Defaults to "center" for integer arrays, else "mean".</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>recover_nans</code>
+                <code>prevent_nan_propagations</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-internal" title="RecoverNans = bool | Mapping[np.dtype | str, bool]
@@ -3056,10 +3092,10 @@ Defaults to "center" for integer arrays, else "mean".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional boolean or mapping to enable NaN recovery during
-upsampling (only applies when interpolation method is not nearest).
-Can be a single boolean or a dictionary mapping variable names or dtypes
-to booleans. Defaults to False.</p>
+                <p>Optional boolean or mapping to prevent NaN
+propagation during upsampling (only applies when interpolation method
+is not nearest). Can be a single boolean or a dictionary mapping
+variable names or dtypes to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -3269,7 +3305,7 @@ grid. Variables without 2D spatial dimensions are copied as-is.
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">interp_methods</span><span class="p">:</span> <span class="n">SpatialInterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">SpatialAggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">prevent_nan_propagations</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -3305,10 +3341,10 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 <span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
 <span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
 <span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
-<span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
-<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
-<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
-<span class="sd">            to booleans. Defaults to False.</span>
+<span class="sd">        prevent_nan_propagations: Optional boolean or mapping to prevent NaN</span>
+<span class="sd">            propagation during upsampling (only applies when interpolation method</span>
+<span class="sd">            is not nearest). Can be a single boolean or a dictionary mapping</span>
+<span class="sd">            variable names or dtypes to booleans. Defaults to False.</span>
 <span class="sd">        fill_values: Optional fill value(s) to assign outside source coverage.</span>
 <span class="sd">            Can be a single value or dictionary by variable or type. If not set,</span>
 <span class="sd">            defaults are:</span>
@@ -3347,7 +3383,7 @@ grid. Variables without 2D spatial dimensions are copied as-is.
         <span class="n">transformer</span><span class="p">,</span>
         <span class="n">interp_methods</span><span class="p">,</span>
         <span class="n">agg_methods</span><span class="p">,</span>
-        <span class="n">recover_nans</span><span class="p">,</span>
+        <span class="n">prevent_nan_propagations</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># For each bounding box in the target grid mapping:</span>
@@ -3408,7 +3444,7 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 
 
 <h2 id="xcube_resampling.rectify_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">rectify_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recover_nans</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">rectify_dataset</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">target_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prevent_nan_propagations</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -3557,7 +3593,7 @@ Defaults to "center" for integer arrays, else "mean".</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>recover_nans</code>
+                <code>prevent_nan_propagations</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-internal" title="RecoverNans = bool | Mapping[np.dtype | str, bool]
@@ -3568,10 +3604,10 @@ Defaults to "center" for integer arrays, else "mean".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional boolean or mapping to enable NaN recovery during
-upsampling (only applies when interpolation method is not nearest).
-Can be a single boolean or a dictionary mapping variable names or dtypes
-to booleans. Defaults to False.</p>
+                <p>Optional boolean or mapping to prevent NaN
+propagation during upsampling (only applies when interpolation method
+is not nearest). Can be a single boolean or a dictionary mapping
+variable names or dtypes to booleans. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -3811,7 +3847,7 @@ coordinate variables are ignored in the output.</p>
     <span class="n">variables</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">interp_methods</span><span class="p">:</span> <span class="n">SpatialInterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">agg_methods</span><span class="p">:</span> <span class="n">SpatialAggMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">recover_nans</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">prevent_nan_propagations</span><span class="p">:</span> <span class="n">RecoverNans</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
@@ -3848,10 +3884,10 @@ coordinate variables are ignored in the output.</p>
 <span class="sd">                &quot;center&quot;, &quot;count&quot;, &quot;first&quot;, &quot;last&quot;, &quot;max&quot;, &quot;mean&quot;, &quot;median&quot;,</span>
 <span class="sd">                &quot;mode&quot;, &quot;min&quot;, &quot;prod&quot;, &quot;std&quot;, &quot;sum&quot;, and &quot;var&quot;.</span>
 <span class="sd">            Defaults to &quot;center&quot; for integer arrays, else &quot;mean&quot;.</span>
-<span class="sd">        recover_nans: Optional boolean or mapping to enable NaN recovery during</span>
-<span class="sd">            upsampling (only applies when interpolation method is not nearest).</span>
-<span class="sd">            Can be a single boolean or a dictionary mapping variable names or dtypes</span>
-<span class="sd">            to booleans. Defaults to False.</span>
+<span class="sd">        prevent_nan_propagations: Optional boolean or mapping to prevent NaN</span>
+<span class="sd">            propagation during upsampling (only applies when interpolation method</span>
+<span class="sd">            is not nearest). Can be a single boolean or a dictionary mapping</span>
+<span class="sd">            variable names or dtypes to booleans. Defaults to False.</span>
 <span class="sd">        fill_values: Optional fill value(s) for areas outside input coverage.</span>
 <span class="sd">            Can be a single value or dictionary by variable or type. If not provided,</span>
 <span class="sd">            defaults based on data type are used:</span>
@@ -3915,7 +3951,7 @@ coordinate variables are ignored in the output.</p>
         <span class="n">target_gm</span><span class="p">,</span>
         <span class="n">interp_methods</span><span class="p">,</span>
         <span class="n">agg_methods</span><span class="p">,</span>
-        <span class="n">recover_nans</span><span class="p">,</span>
+        <span class="n">prevent_nan_propagations</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># calculate source indices in target grid-mapping</span>
@@ -5083,7 +5119,7 @@ width/height) can be applied to expand the resulting bounding box.</p>
     <div class="doc doc-contents ">
 
         <p>Calculate the fraction of the source bounding box that overlaps with the target
-bounding box.</p>
+bounding box relative to the area of the source bounding box.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5190,12 +5226,22 @@ bounding box.</p>
 <span class="normal">255</span>
 <span class="normal">256</span>
 <span class="normal">257</span>
-<span class="normal">258</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bbox_overlap</span><span class="p">(</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bbox_overlap</span><span class="p">(</span>
     <span class="n">source_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculate the fraction of the source bounding box that overlaps with the target</span>
-<span class="sd">    bounding box.</span>
+<span class="sd">    bounding box relative to the area of the source bounding box.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        source_bbox: (min_x, min_y, max_x, max_y)</span>
@@ -5204,17 +5250,214 @@ bounding box.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        float in [0, 1]</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">inter_min_x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">inter_min_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">inter_max_x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">inter_max_y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">source_bboxes</span> <span class="o">=</span> <span class="n">_split_bbox_antimeridian</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">)</span>
+    <span class="n">target_bboxes</span> <span class="o">=</span> <span class="n">_split_bbox_antimeridian</span><span class="p">(</span><span class="n">target_bbox</span><span class="p">)</span>
 
-    <span class="n">inter_w</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inter_max_x</span> <span class="o">-</span> <span class="n">inter_min_x</span><span class="p">)</span>
-    <span class="n">inter_h</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inter_max_y</span> <span class="o">-</span> <span class="n">inter_min_y</span><span class="p">)</span>
-    <span class="n">inter_area</span> <span class="o">=</span> <span class="n">inter_w</span> <span class="o">*</span> <span class="n">inter_h</span>
-    <span class="n">area_source</span> <span class="o">=</span> <span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">source_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">source_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">inter_area</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">source_bbox</span> <span class="ow">in</span> <span class="n">source_bboxes</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">target_bbox</span> <span class="ow">in</span> <span class="n">target_bboxes</span><span class="p">:</span>
+            <span class="n">inter_min_x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">inter_min_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">inter_max_x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">inter_max_y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+            <span class="n">inter_w</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inter_max_x</span> <span class="o">-</span> <span class="n">inter_min_x</span><span class="p">)</span>
+            <span class="n">inter_h</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inter_max_y</span> <span class="o">-</span> <span class="n">inter_min_y</span><span class="p">)</span>
+            <span class="n">inter_area</span> <span class="o">+=</span> <span class="n">inter_w</span> <span class="o">*</span> <span class="n">inter_h</span>
+    <span class="n">area_source</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">source_bbox</span> <span class="ow">in</span> <span class="n">source_bboxes</span><span class="p">:</span>
+        <span class="n">area_source</span> <span class="o">+=</span> <span class="p">(</span><span class="n">source_bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">source_bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">source_bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">source_bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">inter_area</span> <span class="o">/</span> <span class="n">area_source</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.utils.resolution_meters_to_degrees" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">resolution_meters_to_degrees</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">latitude</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert spatial resolution from meters to degrees in latitude and longitude
+at a given geographic latitude.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a> | <span title="tuple">tuple</span>[<a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a>, <a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Spatial resolution in meters. Can be a single number
+(applied equally to both axes) or a tuple <code>(x_res, y_res)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>latitude</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Latitude in degrees at which to compute the longitude scaling.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A tuple <code>(lat_res_deg, lon_res_deg)</code> giving the approximate spatial</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>resolution in degrees for the latitude and longitude directions.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="notes" open>
+  <summary>Notes</summary>
+  <ul>
+<li>1 degree of latitude ≈ 111,320 meters (constant approximation).</li>
+<li>1 degree of longitude ≈ 111,320 * cos(latitude) meters.</li>
+</ul>
+</details>
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_meters_to_degrees</span><span class="p">(</span>
+    <span class="n">resolution</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span> <span class="n">latitude</span><span class="p">:</span> <span class="n">FloatInt</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert spatial resolution from meters to degrees in latitude and longitude</span>
+<span class="sd">    at a given geographic latitude.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        resolution: Spatial resolution in meters. Can be a single number</span>
+<span class="sd">            (applied equally to both axes) or a tuple ``(x_res, y_res)``.</span>
+<span class="sd">        latitude: Latitude in degrees at which to compute the longitude scaling.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple `(lat_res_deg, lon_res_deg)` giving the approximate spatial</span>
+<span class="sd">        resolution in degrees for the latitude and longitude directions.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        - 1 degree of latitude ≈ 111,320 meters (constant approximation).</span>
+<span class="sd">        - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">resolution</span> <span class="o">=</span> <span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">111320</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">latitude</span><span class="p">))),</span>
+        <span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mi">111320</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5312,31 +5555,31 @@ removes the original grid mapping variable (if present), and adds a new
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">261</span>
-<span class="normal">262</span>
-<span class="normal">263</span>
-<span class="normal">264</span>
-<span class="normal">265</span>
-<span class="normal">266</span>
-<span class="normal">267</span>
-<span class="normal">268</span>
-<span class="normal">269</span>
-<span class="normal">270</span>
-<span class="normal">271</span>
-<span class="normal">272</span>
-<span class="normal">273</span>
-<span class="normal">274</span>
-<span class="normal">275</span>
-<span class="normal">276</span>
-<span class="normal">277</span>
-<span class="normal">278</span>
-<span class="normal">279</span>
-<span class="normal">280</span>
-<span class="normal">281</span>
-<span class="normal">282</span>
-<span class="normal">283</span>
-<span class="normal">284</span>
-<span class="normal">285</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Normalize the grid mapping of a dataset to use a standard &quot;spatial_ref&quot; coordinate.</span>
 
@@ -5397,18 +5640,18 @@ defined in a well-known coordinate reference system (CRS).</p>
 <p>This class cannot be instantiated directly. Use one of its factory methods
 to create instances:</p>
 <ul>
-<li>:meth:<code>regular</code></li>
-<li>:meth:<code>from_dataset</code></li>
-<li>:meth:<code>from_coords</code></li>
+<li><code>regular</code></li>
+<li><code>regular_from_bbox</code></li>
+<li><code>from_dataset</code></li>
+<li><code>from_coords</code></li>
 </ul>
 <p>Some instance methods can be used to derive new instances:</p>
 <ul>
-<li>:meth:<code>derive</code></li>
-<li>:meth:<code>scale</code></li>
-<li>:meth:<code>transform</code></li>
-<li>:meth:<code>to_regular</code></li>
+<li><code>derive</code></li>
+<li><code>scale</code></li>
+<li><code>transform</code></li>
+<li><code>to_regular</code></li>
 </ul>
-<p>This class is thread-safe.</p>
 
 
 
@@ -5418,8 +5661,7 @@ to create instances:</p>
 
               <details class="quote">
                 <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 59</span>
-<span class="normal"> 60</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 60</span>
 <span class="normal"> 61</span>
 <span class="normal"> 62</span>
 <span class="normal"> 63</span>
@@ -6272,7 +6514,36 @@ to create instances:</p>
 <span class="normal">910</span>
 <span class="normal">911</span>
 <span class="normal">912</span>
-<span class="normal">913</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GridMapping</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span>
+<span class="normal">941</span>
+<span class="normal">942</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GridMapping</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An abstract base class for grid mappings that define an image grid and</span>
 <span class="sd">    a transformation from image pixel coordinates to spatial Earth coordinates</span>
 <span class="sd">    defined in a well-known coordinate reference system (CRS).</span>
@@ -6280,19 +6551,17 @@ to create instances:</p>
 <span class="sd">    This class cannot be instantiated directly. Use one of its factory methods</span>
 <span class="sd">    to create instances:</span>
 
-<span class="sd">    * :meth:`regular`</span>
-<span class="sd">    * :meth:`from_dataset`</span>
-<span class="sd">    * :meth:`from_coords`</span>
+<span class="sd">    * `regular`</span>
+<span class="sd">    * `regular_from_bbox`</span>
+<span class="sd">    * `from_dataset`</span>
+<span class="sd">    * `from_coords`</span>
 
 <span class="sd">    Some instance methods can be used to derive new instances:</span>
 
-<span class="sd">    * :meth:`derive`</span>
-<span class="sd">    * :meth:`scale`</span>
-<span class="sd">    * :meth:`transform`</span>
-<span class="sd">    * :meth:`to_regular`</span>
-
-<span class="sd">    This class is thread-safe.</span>
-
+<span class="sd">    * `derive`</span>
+<span class="sd">    * `scale`</span>
+<span class="sd">    * `transform`</span>
+<span class="sd">    * `to_regular`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -6951,6 +7220,36 @@ to create instances:</p>
             <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">,</span>
             <span class="n">tile_size</span><span class="o">=</span><span class="n">tile_size</span><span class="p">,</span>
             <span class="n">is_j_axis_up</span><span class="o">=</span><span class="n">is_j_axis_up</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">regular_from_bbox</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
+        <span class="n">xy_res</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">CRS</span><span class="p">,</span>
+        <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_j_axis_up</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a regular grid mapping for a given coordinate reference system based</span>
+<span class="sd">        on the given bounding box and spatial resolution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bbox: Bounding box coordinates in the format [west, south, east, north].</span>
+<span class="sd">                The values must be in the given CRS.</span>
+<span class="sd">            xy_res: Resolution in x- and y-directions.</span>
+<span class="sd">            crs: Coordinate reference system (e.g., &quot;EPSG:4326&quot;).</span>
+<span class="sd">            tile_size: Chunk size for the grid; if a single int is given,</span>
+<span class="sd">                square chunk size is assumed. Defaults to 1024.</span>
+<span class="sd">            is_j_axis_up: Whether positive j-axis points up. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A regular grid mapping object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.regular</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_regular_grid_mapping_from_bbox</span>
+
+        <span class="k">return</span> <span class="n">new_regular_grid_mapping_from_bbox</span><span class="p">(</span>
+            <span class="n">bbox</span><span class="p">,</span> <span class="n">xy_res</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="n">tile_size</span><span class="p">,</span> <span class="n">is_j_axis_up</span><span class="o">=</span><span class="n">is_j_axis_up</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_regular</span><span class="p">(</span>
@@ -7979,7 +8278,8 @@ Defined only for grid mappings with rectified x,y coordinates.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">145</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">144</span>
+<span class="normal">145</span>
 <span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span>
@@ -8038,8 +8338,7 @@ Defined only for grid mappings with rectified x,y coordinates.</p>
 <span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span>
+<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">/</span><span class="p">,</span>
     <span class="n">xy_var_names</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8209,7 +8508,8 @@ number or tuple.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">207</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">206</span>
+<span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
 <span class="normal">210</span>
@@ -8247,8 +8547,7 @@ number or tuple.</p>
 <span class="normal">242</span>
 <span class="normal">243</span>
 <span class="normal">244</span>
-<span class="normal">245</span>
-<span class="normal">246</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scale</span><span class="p">(</span>
+<span class="normal">245</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scale</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">xy_scale</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span>
     <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8371,7 +8670,8 @@ of this image geometry.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">460</span>
+<span class="normal">461</span>
 <span class="normal">462</span>
 <span class="normal">463</span>
 <span class="normal">464</span>
@@ -8387,8 +8687,7 @@ of this image geometry.</p>
 <span class="normal">474</span>
 <span class="normal">475</span>
 <span class="normal">476</span>
-<span class="normal">477</span>
-<span class="normal">478</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
+<span class="normal">477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the affine transformation matrix that transforms</span>
 <span class="sd">    image coordinates of *other* into image coordinates</span>
 <span class="sd">    of this image geometry.</span>
@@ -8489,7 +8788,8 @@ coordinates of <em>other</em>.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">480</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">479</span>
+<span class="normal">480</span>
 <span class="normal">481</span>
 <span class="normal">482</span>
 <span class="normal">483</span>
@@ -8504,8 +8804,7 @@ coordinates of <em>other</em>.</p>
 <span class="normal">492</span>
 <span class="normal">493</span>
 <span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
+<span class="normal">495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the affine transformation matrix that transforms</span>
 <span class="sd">    image coordinates of this image geometry to image</span>
 <span class="sd">    coordinates of *other*.</span>
@@ -8654,7 +8953,8 @@ and clips it to size. Defaults to 0.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">535</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">534</span>
+<span class="normal">535</span>
 <span class="normal">536</span>
 <span class="normal">537</span>
 <span class="normal">538</span>
@@ -8681,8 +8981,7 @@ and clips it to size. Defaults to 0.</p>
 <span class="normal">559</span>
 <span class="normal">560</span>
 <span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_bbox_from_xy_bbox</span><span class="p">(</span>
+<span class="normal">562</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_bbox_from_xy_bbox</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">xy_bbox</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
     <span class="n">xy_border</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -8859,7 +9158,8 @@ shape as <em>xy_bboxes</em>.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">565</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">564</span>
+<span class="normal">565</span>
 <span class="normal">566</span>
 <span class="normal">567</span>
 <span class="normal">568</span>
@@ -8899,8 +9199,7 @@ shape as <em>xy_bboxes</em>.</p>
 <span class="normal">602</span>
 <span class="normal">603</span>
 <span class="normal">604</span>
-<span class="normal">605</span>
-<span class="normal">606</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_bboxes_from_xy_bboxes</span><span class="p">(</span>
+<span class="normal">605</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_bboxes_from_xy_bboxes</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">xy_bboxes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">xy_border</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -9072,7 +9371,8 @@ arrays from target_gm or to compute new ones.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">631</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">630</span>
+<span class="normal">631</span>
 <span class="normal">632</span>
 <span class="normal">633</span>
 <span class="normal">634</span>
@@ -9105,8 +9405,7 @@ arrays from target_gm or to compute new ones.</p>
 <span class="normal">661</span>
 <span class="normal">662</span>
 <span class="normal">663</span>
-<span class="normal">664</span>
-<span class="normal">665</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_coords</span><span class="p">(</span>
+<span class="normal">664</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_coords</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">xy_var_names</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">xy_dim_names</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -9298,7 +9597,8 @@ coordinates with each other. Must be in the units of the
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">667</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">666</span>
+<span class="normal">667</span>
 <span class="normal">668</span>
 <span class="normal">669</span>
 <span class="normal">670</span>
@@ -9332,8 +9632,7 @@ coordinates with each other. Must be in the units of the
 <span class="normal">698</span>
 <span class="normal">699</span>
 <span class="normal">700</span>
-<span class="normal">701</span>
-<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
+<span class="normal">701</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">CRS</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -9530,7 +9829,8 @@ false.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">704</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">703</span>
+<span class="normal">704</span>
 <span class="normal">705</span>
 <span class="normal">706</span>
 <span class="normal">707</span>
@@ -9563,8 +9863,7 @@ false.</p>
 <span class="normal">734</span>
 <span class="normal">735</span>
 <span class="normal">736</span>
-<span class="normal">737</span>
-<span class="normal">738</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">737</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">regular</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
@@ -9598,6 +9897,214 @@ false.</p>
         <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">,</span>
         <span class="n">tile_size</span><span class="o">=</span><span class="n">tile_size</span><span class="p">,</span>
         <span class="n">is_j_axis_up</span><span class="o">=</span><span class="n">is_j_axis_up</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="xcube_resampling.gridmapping.GridMapping.regular_from_bbox" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">regular_from_bbox</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="n">xy_res</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_j_axis_up</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Creates a regular grid mapping for a given coordinate reference system based
+on the given bounding box and spatial resolution.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>bbox</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" title="FloatInt = int | float
+
+  
+      module-attribute
+   (xcube_resampling.constants.FloatInt)" href="#xcube_resampling.constants.FloatInt">FloatInt</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Bounding box coordinates in the format [west, south, east, north].
+The values must be in the given CRS.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>xy_res</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> | <span title="tuple">tuple</span>[<span title="float">float</span>, <span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Resolution in x- and y-directions.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>crs</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="pyproj.crs.CRS">CRS</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Coordinate reference system (e.g., "EPSG:4326").</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>tile_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="tuple">tuple</span>[<span title="int">int</span>, <span title="int">int</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Chunk size for the grid; if a single int is given,
+square chunk size is assumed. Defaults to 1024.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>is_j_axis_up</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether positive j-axis points up. Defaults to False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="xcube_resampling.gridmapping.GridMapping (xcube_resampling.gridmapping.base.GridMapping)" href="#xcube_resampling.gridmapping.GridMapping">GridMapping</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A regular grid mapping object.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">739</span>
+<span class="normal">740</span>
+<span class="normal">741</span>
+<span class="normal">742</span>
+<span class="normal">743</span>
+<span class="normal">744</span>
+<span class="normal">745</span>
+<span class="normal">746</span>
+<span class="normal">747</span>
+<span class="normal">748</span>
+<span class="normal">749</span>
+<span class="normal">750</span>
+<span class="normal">751</span>
+<span class="normal">752</span>
+<span class="normal">753</span>
+<span class="normal">754</span>
+<span class="normal">755</span>
+<span class="normal">756</span>
+<span class="normal">757</span>
+<span class="normal">758</span>
+<span class="normal">759</span>
+<span class="normal">760</span>
+<span class="normal">761</span>
+<span class="normal">762</span>
+<span class="normal">763</span>
+<span class="normal">764</span>
+<span class="normal">765</span>
+<span class="normal">766</span>
+<span class="normal">767</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">regular_from_bbox</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
+    <span class="n">xy_res</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">CRS</span><span class="p">,</span>
+    <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_j_axis_up</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a regular grid mapping for a given coordinate reference system based</span>
+<span class="sd">    on the given bounding box and spatial resolution.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        bbox: Bounding box coordinates in the format [west, south, east, north].</span>
+<span class="sd">            The values must be in the given CRS.</span>
+<span class="sd">        xy_res: Resolution in x- and y-directions.</span>
+<span class="sd">        crs: Coordinate reference system (e.g., &quot;EPSG:4326&quot;).</span>
+<span class="sd">        tile_size: Chunk size for the grid; if a single int is given,</span>
+<span class="sd">            square chunk size is assumed. Defaults to 1024.</span>
+<span class="sd">        is_j_axis_up: Whether positive j-axis points up. Defaults to False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A regular grid mapping object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.regular</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_regular_grid_mapping_from_bbox</span>
+
+    <span class="k">return</span> <span class="n">new_regular_grid_mapping_from_bbox</span><span class="p">(</span>
+        <span class="n">bbox</span><span class="p">,</span> <span class="n">xy_res</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="n">tile_size</span><span class="p">,</span> <span class="n">is_j_axis_up</span><span class="o">=</span><span class="n">is_j_axis_up</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9702,25 +10209,25 @@ false.</p>
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">740</span>
-<span class="normal">741</span>
-<span class="normal">742</span>
-<span class="normal">743</span>
-<span class="normal">744</span>
-<span class="normal">745</span>
-<span class="normal">746</span>
-<span class="normal">747</span>
-<span class="normal">748</span>
-<span class="normal">749</span>
-<span class="normal">750</span>
-<span class="normal">751</span>
-<span class="normal">752</span>
-<span class="normal">753</span>
-<span class="normal">754</span>
-<span class="normal">755</span>
-<span class="normal">756</span>
-<span class="normal">757</span>
-<span class="normal">758</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_regular</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">769</span>
+<span class="normal">770</span>
+<span class="normal">771</span>
+<span class="normal">772</span>
+<span class="normal">773</span>
+<span class="normal">774</span>
+<span class="normal">775</span>
+<span class="normal">776</span>
+<span class="normal">777</span>
+<span class="normal">778</span>
+<span class="normal">779</span>
+<span class="normal">780</span>
+<span class="normal">781</span>
+<span class="normal">782</span>
+<span class="normal">783</span>
+<span class="normal">784</span>
+<span class="normal">785</span>
+<span class="normal">786</span>
+<span class="normal">787</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_regular</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_j_axis_up</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform this grid mapping into one that is regular.</span>
@@ -9920,36 +10427,7 @@ coordinates with each other. Must be in the units of the
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">760</span>
-<span class="normal">761</span>
-<span class="normal">762</span>
-<span class="normal">763</span>
-<span class="normal">764</span>
-<span class="normal">765</span>
-<span class="normal">766</span>
-<span class="normal">767</span>
-<span class="normal">768</span>
-<span class="normal">769</span>
-<span class="normal">770</span>
-<span class="normal">771</span>
-<span class="normal">772</span>
-<span class="normal">773</span>
-<span class="normal">774</span>
-<span class="normal">775</span>
-<span class="normal">776</span>
-<span class="normal">777</span>
-<span class="normal">778</span>
-<span class="normal">779</span>
-<span class="normal">780</span>
-<span class="normal">781</span>
-<span class="normal">782</span>
-<span class="normal">783</span>
-<span class="normal">784</span>
-<span class="normal">785</span>
-<span class="normal">786</span>
-<span class="normal">787</span>
-<span class="normal">788</span>
-<span class="normal">789</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">789</span>
 <span class="normal">790</span>
 <span class="normal">791</span>
 <span class="normal">792</span>
@@ -9961,7 +10439,36 @@ coordinates with each other. Must be in the units of the
 <span class="normal">798</span>
 <span class="normal">799</span>
 <span class="normal">800</span>
-<span class="normal">801</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">801</span>
+<span class="normal">802</span>
+<span class="normal">803</span>
+<span class="normal">804</span>
+<span class="normal">805</span>
+<span class="normal">806</span>
+<span class="normal">807</span>
+<span class="normal">808</span>
+<span class="normal">809</span>
+<span class="normal">810</span>
+<span class="normal">811</span>
+<span class="normal">812</span>
+<span class="normal">813</span>
+<span class="normal">814</span>
+<span class="normal">815</span>
+<span class="normal">816</span>
+<span class="normal">817</span>
+<span class="normal">818</span>
+<span class="normal">819</span>
+<span class="normal">820</span>
+<span class="normal">821</span>
+<span class="normal">822</span>
+<span class="normal">823</span>
+<span class="normal">824</span>
+<span class="normal">825</span>
+<span class="normal">826</span>
+<span class="normal">827</span>
+<span class="normal">828</span>
+<span class="normal">829</span>
+<span class="normal">830</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_dataset</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
@@ -10151,41 +10658,41 @@ coordinates with each other. Must be in the units of the
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">803</span>
-<span class="normal">804</span>
-<span class="normal">805</span>
-<span class="normal">806</span>
-<span class="normal">807</span>
-<span class="normal">808</span>
-<span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span>
-<span class="normal">812</span>
-<span class="normal">813</span>
-<span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span>
-<span class="normal">821</span>
-<span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span>
-<span class="normal">826</span>
-<span class="normal">827</span>
-<span class="normal">828</span>
-<span class="normal">829</span>
-<span class="normal">830</span>
-<span class="normal">831</span>
-<span class="normal">832</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">832</span>
 <span class="normal">833</span>
 <span class="normal">834</span>
 <span class="normal">835</span>
 <span class="normal">836</span>
-<span class="normal">837</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">837</span>
+<span class="normal">838</span>
+<span class="normal">839</span>
+<span class="normal">840</span>
+<span class="normal">841</span>
+<span class="normal">842</span>
+<span class="normal">843</span>
+<span class="normal">844</span>
+<span class="normal">845</span>
+<span class="normal">846</span>
+<span class="normal">847</span>
+<span class="normal">848</span>
+<span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
+<span class="normal">852</span>
+<span class="normal">853</span>
+<span class="normal">854</span>
+<span class="normal">855</span>
+<span class="normal">856</span>
+<span class="normal">857</span>
+<span class="normal">858</span>
+<span class="normal">859</span>
+<span class="normal">860</span>
+<span class="normal">861</span>
+<span class="normal">862</span>
+<span class="normal">863</span>
+<span class="normal">864</span>
+<span class="normal">865</span>
+<span class="normal">866</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_coords</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">x_coords</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
@@ -10314,36 +10821,7 @@ coordinates with each other. Must be in the units of the
 
             <details class="quote">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">839</span>
-<span class="normal">840</span>
-<span class="normal">841</span>
-<span class="normal">842</span>
-<span class="normal">843</span>
-<span class="normal">844</span>
-<span class="normal">845</span>
-<span class="normal">846</span>
-<span class="normal">847</span>
-<span class="normal">848</span>
-<span class="normal">849</span>
-<span class="normal">850</span>
-<span class="normal">851</span>
-<span class="normal">852</span>
-<span class="normal">853</span>
-<span class="normal">854</span>
-<span class="normal">855</span>
-<span class="normal">856</span>
-<span class="normal">857</span>
-<span class="normal">858</span>
-<span class="normal">859</span>
-<span class="normal">860</span>
-<span class="normal">861</span>
-<span class="normal">862</span>
-<span class="normal">863</span>
-<span class="normal">864</span>
-<span class="normal">865</span>
-<span class="normal">866</span>
-<span class="normal">867</span>
-<span class="normal">868</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">868</span>
 <span class="normal">869</span>
 <span class="normal">870</span>
 <span class="normal">871</span>
@@ -10351,7 +10829,36 @@ coordinates with each other. Must be in the units of the
 <span class="normal">873</span>
 <span class="normal">874</span>
 <span class="normal">875</span>
-<span class="normal">876</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_close</span><span class="p">(</span>
+<span class="normal">876</span>
+<span class="normal">877</span>
+<span class="normal">878</span>
+<span class="normal">879</span>
+<span class="normal">880</span>
+<span class="normal">881</span>
+<span class="normal">882</span>
+<span class="normal">883</span>
+<span class="normal">884</span>
+<span class="normal">885</span>
+<span class="normal">886</span>
+<span class="normal">887</span>
+<span class="normal">888</span>
+<span class="normal">889</span>
+<span class="normal">890</span>
+<span class="normal">891</span>
+<span class="normal">892</span>
+<span class="normal">893</span>
+<span class="normal">894</span>
+<span class="normal">895</span>
+<span class="normal">896</span>
+<span class="normal">897</span>
+<span class="normal">898</span>
+<span class="normal">899</span>
+<span class="normal">900</span>
+<span class="normal">901</span>
+<span class="normal">902</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_close</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_TOLERANCE</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Tests whether this grid mapping is close to *other*.</span>
