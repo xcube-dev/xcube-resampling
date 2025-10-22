@@ -119,7 +119,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
             target_gm,
             source_gm=self.source_gm,
             interp_methods=1,
-            recover_nans=True,
+            prevent_nan_propagations=True,
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(

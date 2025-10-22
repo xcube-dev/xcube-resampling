@@ -114,7 +114,7 @@ algorithm—the function determines and applies it automatically.
 | `variables`     | `str` or iterable of `str` | Name(s) of variables to resample. If `None`, all data variables are processed. | `None`                                                                      |
 | `interp_methods`| `int`, `str`, or `dict` mapping var/dtype to method. Supported:<br>• `0` — nearest neighbor<br>• `1` — linear / bilinear<br>• `"nearest"`<br>• `"triangular"`<br>• `"bilinear"` | Interpolation method for upsampling spatial data variables. Can be a single value or per-variable/dtype mapping. | `0` for integer arrays, else `1`                                            |
 | `agg_methods`   | `str` or `dict` mapping var/dtype to method. Supported:<br>`"center"`, `"count"`, `"first"`, `"last"`, `"max"`, `"mean"`, `"median"`, `"mode"`, `"min"`, `"prod"`, `"std"`, `"sum"`, `"var"` | Aggregation method for downsampling spatial data variables. | `"center"` for integer arrays, else `"mean"`                                |
-| `recover_nans`  | `bool` or `dict` mapping var/dtype to `bool` | Enable NaN recovery during upsampling (only applies when interpolation method is not nearest). | `False`                                                                     |
+| `prevent_nan_propagation`  | `bool` or `dict` mapping var/dtype to `bool` | Prevents NaN propagation during upsampling (only applies when interpolation method is not nearest). | `False`                                                                     |
 | `fill_values`   | scalar or `dict` mapping var/dtype to value. | Fill value(s) for areas outside input coverage. | <br>• float — NaN<br>• uint8 — 255<br>• uint16 — 65535<br>• other ints — -1 |
 
 

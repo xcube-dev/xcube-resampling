@@ -62,7 +62,7 @@ def rectify_dataset(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    recover_nans: RecoverNans = False,
+    prevent_nan_propagations: RecoverNans = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
@@ -99,10 +99,10 @@ def rectify_dataset(
                 "center", "count", "first", "last", "max", "mean", "median",
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
-        recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when interpolation method is not nearest).
-            Can be a single boolean or a dictionary mapping variable names or dtypes
-            to booleans. Defaults to False.
+        prevent_nan_propagations: Optional boolean or mapping to prevent NaN
+            propagation during upsampling (only applies when interpolation method
+            is not nearest). Can be a single boolean or a dictionary mapping
+            variable names or dtypes to booleans. Defaults to False.
         fill_values: Optional fill value(s) for areas outside input coverage.
             Can be a single value or dictionary by variable or type. If not provided,
             defaults based on data type are used:
@@ -166,7 +166,7 @@ def rectify_dataset(
         target_gm,
         interp_methods,
         agg_methods,
-        recover_nans,
+        prevent_nan_propagations,
     )
 
     # calculate source indices in target grid-mapping
@@ -305,7 +305,7 @@ def _downscale_source_dataset(
     target_gm: GridMapping,
     interp_methods: SpatialInterpMethods | None,
     agg_methods: SpatialAggMethods | None,
-    recover_nans: RecoverNans,
+    prevent_nan_propagations: RecoverNans,
 ) -> (xr.Dataset, GridMapping):
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
@@ -321,7 +321,7 @@ def _downscale_source_dataset(
             source_gm.tile_size,
             _prep_spatial_interp_methods_downscale(interp_methods),
             agg_methods,
-            recover_nans,
+            prevent_nan_propagations,
         )
         source_gm = GridMapping.from_dataset(source_ds)
 

@@ -45,7 +45,7 @@ def resample_in_space(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    recover_nans: RecoverNans = False,
+    prevent_nan_propagations: RecoverNans = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
@@ -86,10 +86,10 @@ def resample_in_space(
                 "center", "count", "first", "last", "max", "mean", "median",
                 "mode", "min", "prod", "std", "sum", and "var".
             Defaults to "center" for integer arrays, else "mean".
-        recover_nans: Optional boolean or mapping to enable NaN recovery during
-            upsampling (only applies when interpolation method is not nearest).
-            Can be a single boolean or a dictionary mapping variable names or dtypes
-            to booleans. Defaults to False.
+        prevent_nan_propagations: Optional boolean or mapping to prevent NaN
+            propagation during upsampling (only applies when interpolation method
+            is not nearest). Can be a single boolean or a dictionary mapping
+            variable names or dtypes to booleans. Defaults to False.
         fill_values: Optional fill value(s) for areas outside input coverage.
             Can be a single value or dictionary by variable or type. If not provided,
             defaults based on data type are used:
@@ -130,7 +130,7 @@ def resample_in_space(
             variables=variables,
             interp_methods=interp_methods,
             agg_methods=agg_methods,
-            recover_nans=recover_nans,
+            prevent_nan_propagations=prevent_nan_propagations,
             fill_values=fill_values,
             tile_size=tile_size,
         )
@@ -153,7 +153,7 @@ def resample_in_space(
                 variables=variables,
                 interp_methods=interp_methods,
                 agg_methods=agg_methods,
-                recover_nans=recover_nans,
+                prevent_nan_propagations=prevent_nan_propagations,
                 fill_values=fill_values,
             )
         else:
@@ -164,6 +164,6 @@ def resample_in_space(
                 variables=variables,
                 interp_methods=interp_methods,
                 agg_methods=agg_methods,
-                recover_nans=recover_nans,
+                prevent_nan_propagations=prevent_nan_propagations,
                 fill_values=fill_values,
             )
