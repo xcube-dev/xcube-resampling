@@ -42,7 +42,7 @@ __all__ = [
     "TemporalAggMethods",
     "TemporalInterpMethods",
     "TemporalInterpMethod",
-    "RecoverNans",
+    "PreventNaNPropagations",
     "FillValues",
     "FILLVALUE_UINT8",
     "FILLVALUE_UINT16",
@@ -147,8 +147,11 @@ TemporalInterpMethods: TypeAlias = (
 mapping from variable name or dtype to interpolation method(s).
 """
 
-RecoverNans: TypeAlias = bool | Mapping[np.dtype | str, bool]
-"""Whether to attempt recovery of NaN values, globally or per dtype."""
+PreventNaNPropagations: TypeAlias = bool | Mapping[np.dtype | str, bool]
+"""It True, it prevents NaN propagation during upsampling (only applies when 
+interpolation method is not nearest). It can be set globally or per data variable
+or dtype.
+"""
 
 FillValues: TypeAlias = FloatInt | Mapping[np.dtype | str, FloatInt]
 """Fill values for missing data, as a scalar or mapping from dtype to value."""

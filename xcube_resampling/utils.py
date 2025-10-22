@@ -40,7 +40,7 @@ from .constants import (
     SpatialInterpMethodInt,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    RecoverNans,
+    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 
@@ -457,7 +457,7 @@ def _get_spatial_agg_method(
 
 
 def _get_prevent_nan_propagation(
-    prevent_nan_propagations: RecoverNans | None,
+    prevent_nan_propagations: PreventNaNPropagations | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> bool:
@@ -467,9 +467,9 @@ def _get_prevent_nan_propagation(
         )
         if prevent_nan_propagation is None:
             LOG.warning(
-                f"The method to recover nan could not be derived from the mapping "
-                f"`prevent_nan_propagations`  for data variable {key!r} with data type "
-                f"{var.dtype!r}. Defaults are assigned."
+                f"The method to prevent NaN propagation could not be derived from "
+                f"the mapping `prevent_nan_propagations`  for data variable {key!r} "
+                f"with data type {var.dtype!r}. Defaults are assigned."
             )
             prevent_nan_propagation = False
     elif isinstance(prevent_nan_propagations, bool):

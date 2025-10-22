@@ -35,7 +35,7 @@ from .constants import (
     FloatInt,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    RecoverNans,
+    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 from .utils import (
@@ -56,7 +56,7 @@ def reproject_dataset(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    prevent_nan_propagations: RecoverNans = False,
+    prevent_nan_propagations: PreventNaNPropagations = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     """
@@ -343,7 +343,7 @@ def _downscale_source_dataset(
     transformer: pyproj.Transformer,
     interp_methods: SpatialInterpMethods | None,
     agg_methods: SpatialAggMethods | None,
-    prevent_nan_propagations: RecoverNans,
+    prevent_nan_propagations: PreventNaNPropagations,
 ) -> (xr.Dataset, GridMapping):
     bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
     xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width

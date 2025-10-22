@@ -35,7 +35,7 @@ from .constants import (
     FloatInt,
     SpatialInterpMethodInt,
     SpatialInterpMethods,
-    RecoverNans,
+    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 from .utils import (
@@ -57,7 +57,7 @@ def affine_transform_dataset(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    prevent_nan_propagations: RecoverNans = False,
+    prevent_nan_propagations: PreventNaNPropagations = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     """
@@ -146,7 +146,7 @@ def resample_dataset(
     target_tile_size: tuple[int, int],
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    prevent_nan_propagations: RecoverNans = False,
+    prevent_nan_propagations: PreventNaNPropagations = False,
     fill_values: FillValues | None = None,
 ) -> xr.Dataset:
     """

@@ -29,7 +29,7 @@ from .constants import (
     SpatialAggMethods,
     FillValues,
     SpatialInterpMethods,
-    RecoverNans,
+    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 from .rectify import rectify_dataset
@@ -45,7 +45,7 @@ def resample_in_space(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    prevent_nan_propagations: RecoverNans = False,
+    prevent_nan_propagations: PreventNaNPropagations = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:

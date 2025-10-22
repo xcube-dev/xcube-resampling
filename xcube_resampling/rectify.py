@@ -38,7 +38,7 @@ from .constants import (
     FloatInt,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    RecoverNans,
+    PreventNaNPropagations,
 )
 from .dask import compute_array_from_func
 from .gridmapping import GridMapping
@@ -62,7 +62,7 @@ def rectify_dataset(
     variables: str | Iterable[str] | None = None,
     interp_methods: SpatialInterpMethods | None = None,
     agg_methods: SpatialAggMethods | None = None,
-    prevent_nan_propagations: RecoverNans = False,
+    prevent_nan_propagations: PreventNaNPropagations = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
 ) -> xr.Dataset:
@@ -305,7 +305,7 @@ def _downscale_source_dataset(
     target_gm: GridMapping,
     interp_methods: SpatialInterpMethods | None,
     agg_methods: SpatialAggMethods | None,
-    prevent_nan_propagations: RecoverNans,
+    prevent_nan_propagations: PreventNaNPropagations,
 ) -> (xr.Dataset, GridMapping):
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
