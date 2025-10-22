@@ -13,10 +13,10 @@
   along axis 1.
 - Added `xcube_resampling.resample_in_time` which allows to resample a dataset along
   the time axis. It supports up- and down-sampling.
-- - Renamed the parameter `recover_nans` to `prevent_nan_propagations`, which can be
+- Renamed the parameter `recover_nans` to `prevent_nan_propagations`, which can be
   a boolean or a mapping (from variable name or dtype to boolean) that, when `True`,
   prevents NaN propagation during upsampling or interpolation.
- 
+
 
 ## Changes in 0.1.1
 
