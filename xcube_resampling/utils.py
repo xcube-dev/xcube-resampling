@@ -279,7 +279,7 @@ def _split_bbox_antimeridian(bbox: Sequence[FloatInt]) -> Sequence[Sequence[Floa
 def resolution_meters_to_degrees(
     resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
 ) -> tuple[FloatInt, FloatInt]:
-    """Convert spatial resolution from meters to degrees in latitude and longitude
+    """Convert spatial resolution from meters to degrees in longitude and latitude
     at a given geographic latitude.
 
     Args:
@@ -288,7 +288,7 @@ def resolution_meters_to_degrees(
         latitude: Latitude in degrees at which to compute the longitude scaling.
 
     Returns:
-        A tuple `(lat_res_deg, lon_res_deg)` giving the approximate spatial
+        A tuple `(lon_res_deg, lat_res_deg)` giving the approximate spatial
         resolution in degrees for the latitude and longitude directions.
 
     Notes:
