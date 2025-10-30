@@ -43,8 +43,8 @@ def resample_in_time(
     variables: str | Iterable[str] | None = None,
     interp_methods: TemporalInterpMethods | None = None,
     agg_methods: TemporalAggMethods | None = None,
-    offset: float | None = None,
-    tolerance: float | None = None,
+    offset: str | None = None,
+    tolerance: str | None = None,
 ) -> xr.Dataset:
     """
     Resample a dataset along the time dimension.
