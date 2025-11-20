@@ -115,7 +115,7 @@ def rectify_dataset(
         tile_size: Optional tile size for inferring a regular grid, if `target_gm` is
             not provided.
         output_indices_names: Optional names for two variables that store the source
-            pixel indices for the last and second-last spatial dimensions, respectively.
+            pixel indices for the last and second-last dimension, respectively.
 
     Returns:
         A new dataset with spatial variables rectified to a regular grid.
