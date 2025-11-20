@@ -46,7 +46,12 @@ class RectifyDatasetTest(unittest.TestCase):
         target_gm = GridMapping.regular(
             size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
         )
-        target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
+        target_ds = rectify_dataset(
+            source_ds,
+            target_gm=target_gm,
+            interp_methods=0,
+            output_indices_names=("indices_lon", "indices_lat")
+        )
 
         np.testing.assert_almost_equal(
             target_ds.rad.values,
@@ -58,6 +63,31 @@ class RectifyDatasetTest(unittest.TestCase):
                     [nan, 4.0, nan, nan],
                 ],
                 dtype=target_ds.rad.dtype,
+            ),
+        )
+        np.testing.assert_almost_equal(
+            target_ds.indices_lon.values,
+            np.array(
+                [
+                    [nan, nan, nan, nan],
+                    [nan, 0.26086957, 0.60869565, nan],
+                    [0., 0.42857143, 0.85714286, nan],
+                    [nan,        1.,  nan,nan],
+
+                ],
+                dtype=target_ds.indices_lon.dtype,
+            ),
+        )
+        np.testing.assert_almost_equal(
+            target_ds.indices_lat.values,
+            np.array(
+                [
+                    [nan, nan, nan, nan],
+                    [nan, 0.30434783, 0.04347826, nan],
+                    [1.0, 0.71428571, 0.42857143, nan],
+                    [nan, 1.0, nan, nan],
+                ],
+                dtype=target_ds.indices_lat.dtype,
             ),
         )
 

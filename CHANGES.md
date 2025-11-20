@@ -1,3 +1,9 @@
+## Changes in 0.2.1
+
+- Added the `output_indices_names` parameter to `xcube_resampling.rectify_dataset` to
+  allow storing the source pixel indices.
+
+
 ## Changes in 0.2.0
 
 - Enhanced the function `bbox_overlap` so that it can handle bounding boxes crossing
