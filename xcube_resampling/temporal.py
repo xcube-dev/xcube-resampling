@@ -162,7 +162,7 @@ def _apply_aggregation(
 
     resampled_dataset = xr.Dataset(attrs=dataset.attrs)
     for var_name, data_array in dataset.data_vars.items():
-        if not "time" in data_array.coords:
+        if "time" not in data_array.coords:
             continue
         var_methods = _get_temporal_agg_method(agg_methods, var_name, data_array)
         resampler = data_array.resample(
@@ -193,7 +193,7 @@ def _apply_interpolation(
 ) -> xr.Dataset:
     resampled_dataset = xr.Dataset(attrs=dataset.attrs)
     for var_name, data_array in dataset.data_vars.items():
-        if not "time" in data_array.coords:
+        if "time" not in data_array.coords:
             continue
         var_methods = _get_temporal_interp_method(interp_methods, var_name, data_array)
         resampler = data_array.resample(

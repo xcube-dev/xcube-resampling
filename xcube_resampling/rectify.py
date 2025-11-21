@@ -28,7 +28,6 @@ import pyproj
 import xarray as xr
 
 from .affine import resample_dataset
-from .affine import resample_dataset
 from .constants import (
     LOG,
     SCALE_LIMIT,
@@ -65,6 +64,7 @@ def rectify_dataset(
     prevent_nan_propagations: PreventNaNPropagations = False,
     fill_values: FillValues | None = None,
     tile_size: int | tuple[int, int] | None = None,
+    output_indices_names: tuple[str, str] | None = None,
 ) -> xr.Dataset:
     """
     Rectify a dataset with non-regular grid to a regular grid defined by a target
@@ -114,6 +114,8 @@ def rectify_dataset(
 
         tile_size: Optional tile size for inferring a regular grid, if `target_gm` is
             not provided.
+        output_indices_names: Optional names for two variables that store the source
+            pixel indices for the last and second-last dimension, respectively.
 
     Returns:
         A new dataset with spatial variables rectified to a regular grid.
@@ -202,6 +204,10 @@ def rectify_dataset(
 
         elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
             target_ds[var_name] = data_array
+
+    if output_indices_names:
+        target_ds[output_indices_names[0]] = ((y_name, x_name), (target_source_ij[0]))
+        target_ds[output_indices_names[1]] = ((y_name, x_name), (target_source_ij[1]))
 
     return target_ds
 
