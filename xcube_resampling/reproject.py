@@ -152,7 +152,7 @@ def reproject_dataset(
     # reproject dataset
     x_name, y_name = source_gm.xy_var_names
     coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name))
+    coords = coords.drop_vars((x_name, y_name), errors="ignore")
     x_name, y_name = target_gm.xy_var_names
     coords[x_name] = target_gm.x_coords
     coords[y_name] = target_gm.y_coords

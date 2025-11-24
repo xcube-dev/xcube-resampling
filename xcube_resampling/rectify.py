@@ -177,7 +177,7 @@ def rectify_dataset(
     # rectify dataset
     x_name, y_name = source_gm.xy_var_names
     coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name))
+    coords = coords.drop_vars((x_name, y_name), errors="ignore")
     x_name, y_name = target_gm.xy_var_names
     target_coords = target_gm.to_coords()
     coords[x_name] = target_coords[x_name]
@@ -220,7 +220,7 @@ def _create_empty_dataset(
 ) -> xr.Dataset:
     x_name, y_name = source_gm.xy_var_names
     coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name))
+    coords = coords.drop_vars((x_name, y_name), errors="ignore")
     x_name, y_name = target_gm.xy_var_names
     coords[x_name] = target_gm.x_coords
     coords[y_name] = target_gm.y_coords
