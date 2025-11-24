@@ -1,3 +1,10 @@
+## Changes in 0.2.2
+
+- Added support for spatial rectification of datasets in
+  `xcube_resampling.rectify_dataset` even when spatial coordinates are not stored in
+  the dataset’s coordinate variables.
+
+
 ## Changes in 0.2.1
 
 - Added the `output_indices_names` parameter to `xcube_resampling.rectify_dataset` to
