@@ -1,3 +1,10 @@
+## Changes in 0.2.3 (under development)
+
+- In `xcube_resampling.resample_in_time` the method is only added if the parameters
+  `agg_methods` or `interp_methods` are a mapping or if multiple resampling  methods
+  are applied to the data variable.
+
+
 ## Changes in 0.2.2
 
 - Added support for spatial rectification of datasets in
