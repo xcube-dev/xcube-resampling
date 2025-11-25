@@ -1,8 +1,9 @@
 ## Changes in 0.2.3 (under development)
 
-- In `xcube_resampling.resample_in_time` the method is only added if the parameters
-  `agg_methods` or `interp_methods` are a mapping or if multiple resampling  methods
-  are applied to the data variable.
+- In `xcube_resampling.resample_in_time`, the method suffix in the output data variable
+  names is now added only when the `agg_methods` or `interp_methods` parameters are
+  provided as mappings, or when multiple resampling methods are applied to the data
+  variable.
 
 
 ## Changes in 0.2.2
