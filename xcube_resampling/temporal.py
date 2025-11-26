@@ -178,9 +178,11 @@ def _apply_aggregation(
                 method = "quantile"
             method_kwargs = _get_agg_method_kwargs(method, frequency, tolerance)
             func = getattr(resampler, method)
-            resampled_dataset[f"{var_name}_{method_postfix}"] = func(
-                *method_args, **method_kwargs
-            )
+            if agg_methods is None or isinstance(agg_methods, str):
+                var_name_out = var_name
+            else:
+                var_name_out = f"{var_name}_{method_postfix}"
+            resampled_dataset[var_name_out] = func(*method_args, **method_kwargs)
 
     return resampled_dataset
 
@@ -201,8 +203,11 @@ def _apply_interpolation(
         )
         for method in var_methods:
             func = getattr(resampler, "interpolate")
-            resampled_dataset[f"{var_name}_{method}"] = func(kind=method)
-
+            if interp_methods is None or isinstance(interp_methods, str):
+                var_name_out = var_name
+            else:
+                var_name_out = f"{var_name}_{method}"
+            resampled_dataset[var_name_out] = func(kind=method)
     return resampled_dataset
 
 

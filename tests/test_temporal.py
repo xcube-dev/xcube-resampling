@@ -89,10 +89,10 @@ class ResampleInTimeTest(unittest.TestCase):
         input_cube = create_nx8x6_dataset_with_regular_coords(8)
         resampled_cube = resample_in_time(input_cube, "3D", agg_methods="percentile_90")
         self.assertIn("time", resampled_cube)
-        self.assertIn("refl_p90", resampled_cube)
+        self.assertIn("refl", resampled_cube)
         self.assertEqual((3,), resampled_cube.time.shape)
-        self.assertEqual(("time", "lat", "lon"), resampled_cube.refl_p90.dims)
-        self.assertEqual((3, 6, 8), resampled_cube.refl_p90.shape)
+        self.assertEqual(("time", "lat", "lon"), resampled_cube.refl.dims)
+        self.assertEqual((3, 6, 8), resampled_cube.refl.shape)
         self.assertEqual(
             list(resampled_cube.time.values),
             [
@@ -102,7 +102,7 @@ class ResampleInTimeTest(unittest.TestCase):
             ],
         )
         np.testing.assert_allclose(
-            resampled_cube.refl_p90.values[..., 0, 1],
+            resampled_cube.refl.values[..., 0, 1],
             np.array([-1.2, 1.8, 3.9]),
         )
 
@@ -142,11 +142,11 @@ class ResampleInTimeTest(unittest.TestCase):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         resampled_cube = resample_in_time(input_cube, "6H", interp_methods="nearest")
         self.assertIn("time", resampled_cube)
-        self.assertIn("refl_nearest", resampled_cube)
-        self.assertIn("ndvi_nearest", resampled_cube)
+        self.assertIn("refl", resampled_cube)
+        self.assertIn("ndvi", resampled_cube)
         self.assertEqual((13,), resampled_cube.time.shape)
         np.testing.assert_allclose(
-            resampled_cube.refl_nearest.values[..., 0, 1],
+            resampled_cube.refl.values[..., 0, 1],
             np.array([-1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2]),
         )
 
@@ -154,11 +154,11 @@ class ResampleInTimeTest(unittest.TestCase):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         resampled_cube = resample_in_time(input_cube, "6H", interp_methods="linear")
         self.assertIn("time", resampled_cube)
-        self.assertIn("refl_linear", resampled_cube)
-        self.assertIn("ndvi_linear", resampled_cube)
+        self.assertIn("refl", resampled_cube)
+        self.assertIn("ndvi", resampled_cube)
         self.assertEqual((13,), resampled_cube.time.shape)
         np.testing.assert_allclose(
-            resampled_cube.refl_linear.values[..., 0, 1],
+            resampled_cube.refl.values[..., 0, 1],
             np.array(
                 [-1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
             ),
@@ -188,11 +188,11 @@ class ResampleInTimeTest(unittest.TestCase):
             input_cube, "6H", interp_methods="linear", variables="refl"
         )
         self.assertIn("time", resampled_cube)
-        self.assertIn("refl_linear", resampled_cube)
-        self.assertNotIn("ndvi_linear", resampled_cube)
+        self.assertIn("refl", resampled_cube)
+        self.assertNotIn("ndvi", resampled_cube)
         self.assertEqual((13,), resampled_cube.time.shape)
         np.testing.assert_allclose(
-            resampled_cube.refl_linear.values[..., 0, 1],
+            resampled_cube.refl.values[..., 0, 1],
             np.array(
                 [-1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
             ),
@@ -202,11 +202,11 @@ class ResampleInTimeTest(unittest.TestCase):
             input_cube, "6H", interp_methods="linear", variables="ndvi"
         )
         self.assertIn("time", resampled_cube)
-        self.assertNotIn("refl_linear", resampled_cube)
-        self.assertIn("ndvi_linear", resampled_cube)
+        self.assertNotIn("refl", resampled_cube)
+        self.assertIn("ndvi", resampled_cube)
         self.assertEqual((13,), resampled_cube.time.shape)
         np.testing.assert_allclose(
-            resampled_cube.ndvi_linear.values[..., 0, 1],
+            resampled_cube.ndvi.values[..., 0, 1],
             np.array(
                 [-1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
             ),
