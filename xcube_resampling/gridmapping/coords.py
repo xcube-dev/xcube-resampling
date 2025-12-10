@@ -20,7 +20,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-import math
 
 import dask.array as da
 import numpy as np
@@ -36,7 +35,6 @@ from .helpers import (
     _default_xy_var_names,
     _normalize_crs,
     _normalize_int_pair,
-    _normalize_number_pair,
     _to_int_or_float,
     from_lon_360,
     round_to_fraction,
@@ -101,7 +99,6 @@ def new_grid_mapping_from_coords(
     y_coords: xr.DataArray,
     crs: str | pyproj.crs.CRS,
     *,
-    xy_res: FloatInt | tuple[FloatInt, FloatInt] = None,
     xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] = None,
     tile_size: int | tuple[int, int] = None,
     tolerance: float = DEFAULT_TOLERANCE,
@@ -121,210 +118,198 @@ def new_grid_mapping_from_coords(
         xy_var_names = _default_xy_var_names(crs)
 
     tile_size = _normalize_int_pair(tile_size, default=None)
-    is_lon_360 = None  # None means "not yet known"
+
+    if x_coords.ndim == 1 and x_coords.ndim == 1:
+        gm = new_1d_grid_mapping_from_coords(
+            x_coords,
+            y_coords,
+            crs,
+            xy_var_names,
+            xy_bbox=xy_bbox,
+            tile_size=tile_size,
+            tolerance=tolerance,
+        )
+    else:
+        gm = new_2d_grid_mapping_from_coords(
+            x_coords,
+            y_coords,
+            crs,
+            xy_var_names,
+            xy_bbox=xy_bbox,
+            tile_size=tile_size,
+            tolerance=tolerance,
+        )
+    return gm
+
+
+def new_1d_grid_mapping_from_coords(
+    x_coords: xr.DataArray,
+    y_coords: xr.DataArray,
+    crs: str | pyproj.crs.CRS,
+    xy_var_names: tuple[str, str],
+    *,
+    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] = None,
+    tile_size: int | tuple[int, int] = None,
+    tolerance: float = DEFAULT_TOLERANCE,
+) -> Coords1DGridMapping:
+
+    assert_true(
+        x_coords.size >= 2 and y_coords.size >= 2,
+        "sizes of x_coords and y_coords 1D arrays must be >= 2",
+    )
+
+    is_lon_360 = None
     if crs.is_geographic:
         is_lon_360 = bool(da.any(x_coords > 180))
+    y_diff = np.diff(y_coords)
+    x_diff = np.diff(x_coords)
+    if np.any(np.nanmax(x_diff) > 180) and not is_lon_360 and crs.is_geographic:
+        x_coords = to_lon_360(x_coords)
+        x_diff = _abs_no_zero(x_coords.diff(dim=x_coords.dims[0]))
+        is_lon_360 = True
 
-    if x_coords.ndim == 1:
-        # We have 1D x,y coordinates
-        cls = Coords1DGridMapping
-
-        assert_true(
-            x_coords.size >= 2 and y_coords.size >= 2,
-            "sizes of x_coords and y_coords 1D arrays must be >= 2",
-        )
-
-        size = x_coords.size, y_coords.size
-
-        x_dim, y_dim = x_coords.dims[0], y_coords.dims[0]
-
-        x_diff = _abs_no_zero(x_coords.diff(dim=x_dim).values)
-        y_diff = _abs_no_zero(y_coords.diff(dim=y_dim).values)
-
-        if not is_lon_360 and crs.is_geographic:
-            is_anti_meridian_crossed = np.any(np.nanmax(x_diff) > 180)
-            if is_anti_meridian_crossed:
-                x_coords = to_lon_360(x_coords)
-                x_diff = _abs_no_zero(x_coords.diff(dim=x_dim))
-                is_lon_360 = True
-
-        if xy_res is not None:
-            x_res, y_res = _normalize_number_pair(xy_res)
-        else:
-            x_res = x_diff[0]
-            y_res = y_diff[0]
-            is_regular = da.allclose(x_diff, x_res, atol=tolerance) and da.allclose(
-                y_diff, y_res, atol=tolerance
-            )
-            if is_regular:
-                x_res = round_to_fraction(float(x_res), 5, 0.25)
-                y_res = round_to_fraction(float(y_res), 5, 0.25)
-            else:
-                x_res = round_to_fraction(float(np.nanmedian(x_diff, axis=0)), 2, 0.5)
-                y_res = round_to_fraction(float(np.nanmedian(y_diff, axis=0)), 2, 0.5)
-
-        if (
-            tile_size is None
-            and x_coords.chunks is not None
-            and y_coords.chunks is not None
-        ):
-            tile_size = (max(0, *x_coords.chunks[0]), max(0, *y_coords.chunks[0]))
-
-        # Guess j axis direction
-        is_j_axis_up = bool(y_coords[0] < y_coords[-1])
-
+    x_res = x_diff[0]
+    y_res = y_diff[0]
+    is_regular = (
+        da.allclose(x_diff, x_res, atol=tolerance)
+        and da.allclose(y_diff, y_res, atol=tolerance)
+    ).compute()
+    if is_regular:
+        x_res = round_to_fraction(float(x_res), 5, 0.25)
+        y_res = round_to_fraction(float(y_res), 5, 0.25)
     else:
-        # We have 2D x,y coordinates
-        cls = Coords2DGridMapping
+        x_res = round_to_fraction(float(np.nanmedian(x_diff, axis=0)), 5, 0.25)
+        y_res = round_to_fraction(float(np.nanmedian(y_diff, axis=0)), 5, 0.25)
 
-        assert_true(
-            x_coords.shape == y_coords.shape,
-            "shapes of x_coords and y_coords 2D arrays must be equal",
-        )
-        assert_true(
-            x_coords.dims == y_coords.dims,
-            "dimensions of x_coords and y_coords 2D arrays must be equal",
-        )
+    if (
+        tile_size is None
+        and x_coords.chunks is not None
+        and y_coords.chunks is not None
+    ):
+        tile_size = (max(0, *x_coords.chunks[0]), max(0, *y_coords.chunks[0]))
 
-        y_dim, x_dim = x_coords.dims
+    # Guess j axis direction
+    is_j_axis_up = bool(y_coords[0] < y_coords[-1])
 
-        height, width = x_coords.shape
-        size = width, height
-
-        x = da.asarray(x_coords)
-        y = da.asarray(y_coords)
-
-        x_x_diff = _abs_no_nan(da.diff(x[0, : x.chunksize[1]]))
-        x_y_diff = _abs_no_nan(da.diff(x[: x.chunksize[0], 0]))
-        y_x_diff = _abs_no_nan(da.diff(y[0, : x.chunksize[0]]))
-        y_y_diff = _abs_no_nan(da.diff(y[: x.chunksize[1], 0]))
-
-        if not is_lon_360 and crs.is_geographic:
-            is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) or da.any(
-                da.max(x_y_diff) > 180
-            )
-            if is_anti_meridian_crossed:
-                x_coords = to_lon_360(x_coords)
-                x = da.asarray(x_coords)
-                x_x_diff = _abs_no_nan(da.diff(x[0, :]))
-                x_y_diff = _abs_no_nan(da.diff(x[:, 0]))
-                is_lon_360 = True
-
-        if xy_res is not None:
-            x_res, y_res = _normalize_number_pair(xy_res)
+    if xy_bbox is None:
+        x_res_05, y_res_05 = x_res / 2, y_res / 2
+        x_min = x_coords[0].compute().item() - x_res_05
+        x_max = x_coords[-1].compute().item() + x_res_05
+        if is_j_axis_up:
+            y_min = y_coords[0].compute().item() - y_res_05
+            y_max = y_coords[-1].compute().item() + x_res_05
         else:
-            x_res = x_x_diff[0]
-            y_res = y_y_diff[0]
+            y_min = y_coords[-1].compute().item() - y_res_05
+            y_max = y_coords[0].compute().item() + x_res_05
+        xy_bbox = (x_min, y_min, x_max, y_max)
 
-        is_regular = (
-            da.allclose(x_x_diff, x_res, atol=tolerance)
-            and da.allclose(y_y_diff, y_res, atol=tolerance)
-            and da.allclose(x_y_diff, 0, atol=tolerance)
-            and da.allclose(y_x_diff, 0, atol=tolerance)
-        )
+    return Coords1DGridMapping(
+        x_coords=x_coords,
+        y_coords=y_coords,
+        crs=crs,
+        size=(x_coords.size, y_coords.size),
+        tile_size=tile_size,
+        xy_bbox=xy_bbox,
+        xy_res=(x_res, y_res),
+        xy_var_names=xy_var_names,
+        xy_dim_names=(str(x_coords.dims[0]), str(y_coords.dims[0])),
+        is_regular=is_regular,
+        is_lon_360=is_lon_360,
+        is_j_axis_up=is_j_axis_up,
+    )
 
-        if not is_regular and xy_res is None:
-            x_x_diff = _abs_no_nan(da.diff(x, axis=1))
-            x_y_diff = _abs_no_nan(da.diff(x, axis=0))
-            y_x_diff = _abs_no_nan(da.diff(y, axis=1))
-            y_y_diff = _abs_no_nan(da.diff(y, axis=0))
 
-            # Let diff arrays have same shape as original by
-            # doubling last rows and columns.
-            x_x_diff_c = da.concatenate([x_x_diff, x_x_diff[:, -1:]], axis=1)
-            y_x_diff_c = da.concatenate([y_x_diff, y_x_diff[:, -1:]], axis=1)
-            x_y_diff_c = da.concatenate([x_y_diff, x_y_diff[-1:, :]], axis=0)
-            y_y_diff_c = da.concatenate([y_y_diff, y_y_diff[-1:, :]], axis=0)
-            # Find resolution via area
-            x_abs_diff = da.sqrt(da.square(x_x_diff_c) + da.square(x_y_diff_c))
-            y_abs_diff = da.sqrt(da.square(y_x_diff_c) + da.square(y_y_diff_c))
-            if crs.is_geographic:
-                # Convert degrees into meters
-                x_abs_diff_r = da.radians(x_abs_diff)
-                y_abs_diff_r = da.radians(y_abs_diff)
-                x_abs_diff = _ER * da.cos(x_abs_diff_r) * y_abs_diff_r
-                y_abs_diff = _ER * y_abs_diff_r
-            xy_areas = (x_abs_diff * y_abs_diff).flatten()
-            xy_areas = da.where(xy_areas > 0, xy_areas, np.nan)
-            # Get indices of min and max area
-            xy_area_index_min = da.nanargmin(xy_areas)
-            xy_area_index_max = da.nanargmax(xy_areas)
-            # Convert area to edge length
-            xy_res_min = math.sqrt(xy_areas[xy_area_index_min])
-            xy_res_max = math.sqrt(xy_areas[xy_area_index_max])
-            # Empirically weight min more than max
-            xy_res = 0.7 * xy_res_min + 0.3 * xy_res_max
-            if crs.is_geographic:
-                # Convert meters back into degrees
-                # print(f'xy_res in meters: {xy_res}')
-                xy_res = math.degrees(xy_res / _ER)
-                # print(f'xy_res in degrees: {xy_res}')
-            # Because this is an estimation, we can round to a nice number
-            xy_res = round_to_fraction(xy_res, digits=1, resolution=0.5)
-            x_res, y_res = float(xy_res), float(xy_res)
+def new_2d_grid_mapping_from_coords(
+    x_coords: xr.DataArray,
+    y_coords: xr.DataArray,
+    crs: str | pyproj.crs.CRS,
+    xy_var_names: tuple[str, str],
+    *,
+    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] = None,
+    tile_size: int | tuple[int, int] = None,
+    tolerance: float = DEFAULT_TOLERANCE,
+) -> Coords2DGridMapping:
 
-        if tile_size is None and x_coords.chunks is not None:
-            j_chunks, i_chunks = x_coords.chunks
-            tile_size = max(0, *i_chunks), max(0, *j_chunks)
+    assert_true(
+        x_coords.shape == y_coords.shape,
+        "shapes of x_coords and y_coords 2D arrays must be equal",
+    )
+    assert_true(
+        x_coords.dims == y_coords.dims,
+        "dimensions of x_coords and y_coords 2D arrays must be equal",
+    )
 
-        if tile_size is not None:
-            tile_width, tile_height = tile_size
-            x_coords = x_coords.chunk(
-                {
-                    x_coords.dims[0]: tile_height,
-                    x_coords.dims[1]: tile_width,
-                }
-            )
-            y_coords = y_coords.chunk(
-                {
-                    y_coords.dims[0]: tile_height,
-                    y_coords.dims[1]: tile_width,
-                }
-            )
+    height, width = x_coords.shape
 
-        # Guess j axis direction
-        is_j_axis_up = da.all(
-            y_coords[0, : y.chunksize[1]] < y_coords[-1, : y.chunksize[1]]
-        )
+    x00 = x_coords[0, 0].compute().item()
+    x01 = x_coords[0, -1].compute().item()
+    x10 = x_coords[-1, 0].compute().item()
+    x11 = x_coords[-1, -1].compute().item()
+    y00 = y_coords[0, 0].compute().item()
+    y01 = y_coords[0, -1].compute().item()
+    y10 = y_coords[-1, 0].compute().item()
+    y11 = y_coords[-1, -1].compute().item()
 
+    is_j_axis_up = y00 < y10
+    is_lon_360 = None
+    if crs.is_geographic:
+        is_lon_360 = bool(max(x00, x01, x10, x11) > 180)
+    if max(x00, x10) > min(x01, x11):
+        x_coords = to_lon_360(x_coords)
+        x00 = x_coords[0, 0].compute().item()
+        x01 = x_coords[0, -1].compute().item()
+        x10 = x_coords[-1, 0].compute().item()
+        x11 = x_coords[-1, -1].compute().item()
+        is_lon_360 = True
+
+    x_res = np.mean([(x01 - x00) / (width - 1), (x11 - x10) / (width - 1)])
+    y_res = np.mean([abs(y10 - y00) / (height - 1), abs(y01 - y11) / (height - 1)])
     assert_true(
         x_res > 0 and y_res > 0,
         "internal error: x_res and y_res could not be determined",
         exception_type=RuntimeError,
     )
 
+    is_regular = np.allclose(
+        x_coords[0, 1].compute().item() - x00, x_res, atol=tolerance
+    ) and np.allclose(abs(y_coords[1, 0].compute().item() - y00), y_res, atol=tolerance)
+
+    if tile_size is None and x_coords.chunks is not None:
+        j_chunks, i_chunks = x_coords.chunks
+        tile_size = max(0, *i_chunks), max(0, *j_chunks)
+
+    if tile_size is not None:
+        tile_width, tile_height = tile_size
+        x_coords = x_coords.chunk(
+            {x_coords.dims[0]: tile_height, x_coords.dims[1]: tile_width}
+        )
+        y_coords = y_coords.chunk(
+            {y_coords.dims[0]: tile_height, y_coords.dims[1]: tile_width}
+        )
+
     x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
     if xy_bbox is None:
         x_res_05, y_res_05 = x_res / 2, y_res / 2
-        if np.any(x_coords[..., 0] > x_coords[..., -1]):
-            x_min = _to_int_or_float(x_coords[..., -1].min() + x_res_05)
-            x_max = _to_int_or_float(x_coords[..., 0].max() - x_res_05)
-        else:
-            x_min = _to_int_or_float(x_coords[..., 0].min() - x_res_05)
-            x_max = _to_int_or_float(x_coords[..., -1].max() + x_res_05)
+        x_min = min(x00, x10) - x_res_05
+        x_max = max(x01, x11) + x_res_05
         if is_j_axis_up:
-            y_min = _to_int_or_float(float(y_coords[0, ...].min()) - y_res_05)
-            y_max = _to_int_or_float(float(y_coords[-1, ...].max()) + y_res_05)
+            y_min = min(y00, y01) - y_res_05
+            y_max = max(y10, y11) + x_res_05
         else:
-            y_min = _to_int_or_float(float(y_coords[-1, ...].min()) - y_res_05)
-            y_max = _to_int_or_float(float(y_coords[0, ...].max()) + y_res_05)
+            y_min = min(y10, y11) - y_res_05
+            y_max = max(y00, y01) + x_res_05
         xy_bbox = (x_min, y_min, x_max, y_max)
 
-    if cls is Coords1DGridMapping and is_regular:
-        from .regular import RegularGridMapping
-
-        cls = RegularGridMapping
-
-    return cls(
+    return Coords2DGridMapping(
         x_coords=x_coords,
         y_coords=y_coords,
         crs=crs,
-        size=size,
+        size=(width, height),
         tile_size=tile_size,
         xy_bbox=xy_bbox,
         xy_res=(x_res, y_res),
         xy_var_names=xy_var_names,
-        xy_dim_names=(str(x_dim), str(y_dim)),
+        xy_dim_names=(str(x_coords.dims[1]), str(x_coords.dims[0])),
         is_regular=is_regular,
         is_lon_360=is_lon_360,
         is_j_axis_up=is_j_axis_up,
