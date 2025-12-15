@@ -1,4 +1,4 @@
-## Changes in 0.2.3 (under development)
+## Changes in 0.2.3
 
 - In `xcube_resampling.resample_in_time`, the method suffix in the output data variable
   names is now added only when the `agg_methods` or `interp_methods` parameters are
