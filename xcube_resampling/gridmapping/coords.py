@@ -262,13 +262,14 @@ def new_2d_grid_mapping_from_coords(
         x11 = x_coords[-1, -1].compute().item()
         is_lon_360 = True
 
-    x_res = np.mean([(x01 - x00) / (width - 1), (x11 - x10) / (width - 1)])
-    y_res = np.mean([abs(y10 - y00) / (height - 1), abs(y01 - y11) / (height - 1)])
+    x_res = (np.mean([x00, x10]) - np.mean([x11, x01])) / (width - 1)
+    y_res = (np.mean([y00, y01]) - np.mean([y11, y10])) / (height - 1)
     assert_true(
         x_res > 0 and y_res > 0,
         "internal error: x_res and y_res could not be determined",
         exception_type=RuntimeError,
     )
+    x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
 
     is_regular = np.allclose(
         x_coords[0, 1].compute().item() - x00, x_res, atol=tolerance
@@ -287,7 +288,6 @@ def new_2d_grid_mapping_from_coords(
             {y_coords.dims[0]: tile_height, y_coords.dims[1]: tile_width}
         )
 
-    x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
     if xy_bbox is None:
         x_res_05, y_res_05 = x_res / 2, y_res / 2
         x_min = min(x00, x10) - x_res_05
