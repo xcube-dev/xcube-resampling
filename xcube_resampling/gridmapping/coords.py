@@ -21,6 +21,7 @@
 
 import abc
 
+import dask
 import dask.array as da
 import numpy as np
 import pyproj
@@ -35,7 +36,6 @@ from .helpers import (
     _default_xy_var_names,
     _normalize_crs,
     _normalize_int_pair,
-    _to_int_or_float,
     from_lon_360,
     round_to_fraction,
     to_lon_360,
@@ -119,7 +119,7 @@ def new_grid_mapping_from_coords(
 
     tile_size = _normalize_int_pair(tile_size, default=None)
 
-    if x_coords.ndim == 1 and x_coords.ndim == 1:
+    if x_coords.ndim == 1 and y_coords.ndim == 1:
         gm = new_1d_grid_mapping_from_coords(
             x_coords,
             y_coords,
@@ -163,9 +163,9 @@ def new_1d_grid_mapping_from_coords(
         is_lon_360 = bool(da.any(x_coords > 180))
     y_diff = np.diff(y_coords)
     x_diff = np.diff(x_coords)
-    if np.any(np.nanmax(x_diff) > 180) and not is_lon_360 and crs.is_geographic:
+    if np.any(np.nanmax(abs(x_diff)) > 180) and not is_lon_360 and crs.is_geographic:
         x_coords = to_lon_360(x_coords)
-        x_diff = _abs_no_zero(x_coords.diff(dim=x_coords.dims[0]))
+        x_diff = np.diff(x_coords)
         is_lon_360 = True
 
     x_res = x_diff[0]
@@ -175,11 +175,11 @@ def new_1d_grid_mapping_from_coords(
         and da.allclose(y_diff, y_res, atol=tolerance)
     ).compute()
     if is_regular:
-        x_res = round_to_fraction(float(x_res), 5, 0.25)
-        y_res = round_to_fraction(float(y_res), 5, 0.25)
+        x_res = round_to_fraction(float(x_res), 5, 0.1)
+        y_res = round_to_fraction(abs(float(y_res)), 5, 0.1)
     else:
-        x_res = round_to_fraction(float(np.nanmedian(x_diff, axis=0)), 5, 0.25)
-        y_res = round_to_fraction(float(np.nanmedian(y_diff, axis=0)), 5, 0.25)
+        x_res = round_to_fraction(float(np.nanmedian(x_diff, axis=0)), 5, 0.1)
+        y_res = round_to_fraction(abs(float(np.nanmedian(y_diff, axis=0))), 5, 0.1)
 
     if (
         tile_size is None
@@ -192,16 +192,14 @@ def new_1d_grid_mapping_from_coords(
     is_j_axis_up = bool(y_coords[0] < y_coords[-1])
 
     if xy_bbox is None:
-        x_res_05, y_res_05 = x_res / 2, y_res / 2
-        x_min = x_coords[0].compute().item() - x_res_05
-        x_max = x_coords[-1].compute().item() + x_res_05
-        if is_j_axis_up:
-            y_min = y_coords[0].compute().item() - y_res_05
-            y_max = y_coords[-1].compute().item() + x_res_05
-        else:
-            y_min = y_coords[-1].compute().item() - y_res_05
-            y_max = y_coords[0].compute().item() + x_res_05
-        xy_bbox = (x_min, y_min, x_max, y_max)
+        (x_vals, y_vals) = dask.compute(x_coords[[0, -1]], y_coords[[0, -1]])
+        x_min, x_max = x_vals.values
+        y_min, y_max = y_vals.values
+        if not is_j_axis_up:
+            y_min, y_max = y_max, y_min
+        x_pad = x_res / 2
+        y_pad = y_res / 2
+        xy_bbox = (x_min - x_pad, y_min - y_pad, x_max + x_pad, y_max + y_pad)
 
     return Coords1DGridMapping(
         x_coords=x_coords,
@@ -240,15 +238,23 @@ def new_2d_grid_mapping_from_coords(
     )
 
     height, width = x_coords.shape
-
-    x00 = x_coords[0, 0].compute().item()
-    x01 = x_coords[0, -1].compute().item()
-    x10 = x_coords[-1, 0].compute().item()
-    x11 = x_coords[-1, -1].compute().item()
-    y00 = y_coords[0, 0].compute().item()
-    y01 = y_coords[0, -1].compute().item()
-    y10 = y_coords[-1, 0].compute().item()
-    y11 = y_coords[-1, -1].compute().item()
+    ydim, xdim = x_coords.dims
+    x_da, y_da = dask.compute(
+        x_coords.isel({ydim: [0, -1], xdim: [0, 1, -1]}),
+        y_coords.isel({ydim: [0, 1, -1], xdim: [0, -1]}),
+    )
+    x_vals = x_da.values
+    y_vals = y_da.values
+    x00 = x_vals[0, 0]
+    x00_diff = x_vals[0, 1] - x_vals[0, 0]
+    x01 = x_vals[0, 2]
+    x10 = x_vals[1, 0]
+    x11 = x_vals[1, 2]
+    y00 = y_vals[0, 0]
+    y01 = y_vals[0, 1]
+    y00_diff = abs(y_vals[0, 0] - y_vals[1, 0])
+    y10 = y_vals[2, 0]
+    y11 = y_vals[2, 1]
 
     is_j_axis_up = y00 < y10
     is_lon_360 = None
@@ -256,10 +262,13 @@ def new_2d_grid_mapping_from_coords(
         is_lon_360 = bool(max(x00, x01, x10, x11) > 180)
     if max(x00, x10) > min(x01, x11):
         x_coords = to_lon_360(x_coords)
-        x00 = x_coords[0, 0].compute().item()
-        x01 = x_coords[0, -1].compute().item()
-        x10 = x_coords[-1, 0].compute().item()
-        x11 = x_coords[-1, -1].compute().item()
+        x_da = x_coords.isel({ydim: [0, 1, -1], xdim: [0, -1]}).compute()
+        x_vals = x_da.values
+        x00 = x_vals[0, 0]
+        x00_diff = x_vals[1, 0] - x_vals[0, 0]
+        x01 = x_vals[0, 1]
+        x10 = x_vals[2, 0]
+        x11 = x_vals[2, 1]
         is_lon_360 = True
 
     x_res = abs(np.mean([x00, x10]) - np.mean([x11, x01])) / (width - 1)
@@ -269,11 +278,16 @@ def new_2d_grid_mapping_from_coords(
         "internal error: x_res and y_res could not be determined",
         exception_type=RuntimeError,
     )
-    x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
-
-    is_regular = np.allclose(
-        x_coords[0, 1].compute().item() - x00, x_res, atol=tolerance
-    ) and np.allclose(abs(y_coords[1, 0].compute().item() - y00), y_res, atol=tolerance)
+    is_regular = (
+        np.isclose(x00_diff, x_res, atol=tolerance)
+        and np.isclose(x00, x10, atol=tolerance)
+        and np.isclose(x01, x11, atol=tolerance)
+        and np.isclose(y00_diff, y_res, atol=tolerance)
+        and np.isclose(y00, y01, atol=tolerance)
+        and np.isclose(y10, y11, atol=tolerance)
+    )
+    x_res = round_to_fraction(x_res, 5, 0.1)
+    y_res = round_to_fraction(y_res, 5, 0.1)
 
     if tile_size is None and x_coords.chunks is not None:
         j_chunks, i_chunks = x_coords.chunks
@@ -294,10 +308,10 @@ def new_2d_grid_mapping_from_coords(
         x_max = max(x01, x11) + x_res_05
         if is_j_axis_up:
             y_min = min(y00, y01) - y_res_05
-            y_max = max(y10, y11) + x_res_05
+            y_max = max(y10, y11) + y_res_05
         else:
             y_min = min(y10, y11) - y_res_05
-            y_max = max(y00, y01) + x_res_05
+            y_max = max(y00, y01) + y_res_05
         xy_bbox = (x_min, y_min, x_max, y_max)
 
     return Coords2DGridMapping(
