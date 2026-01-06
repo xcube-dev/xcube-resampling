@@ -262,8 +262,8 @@ def new_2d_grid_mapping_from_coords(
         x11 = x_coords[-1, -1].compute().item()
         is_lon_360 = True
 
-    x_res = (np.mean([x00, x10]) - np.mean([x11, x01])) / (width - 1)
-    y_res = (np.mean([y00, y01]) - np.mean([y11, y10])) / (height - 1)
+    x_res = abs(np.mean([x00, x10]) - np.mean([x11, x01])) / (width - 1)
+    y_res = abs(np.mean([y00, y01]) - np.mean([y11, y10])) / (height - 1)
     assert_true(
         x_res > 0 and y_res > 0,
         "internal error: x_res and y_res could not be determined",
