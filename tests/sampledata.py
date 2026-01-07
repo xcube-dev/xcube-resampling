@@ -528,13 +528,14 @@ def create_cci_lccs_class_var(flag_values_as_list=False):
         var.attrs["flag_values"] = list(map(int, flag_values.split(", ")))
     return var
 
+
 def create_nx8x6_dataset_with_regular_coords(days: int):
     ds = create_8x6_dataset_with_regular_coords()
     refl_base = ds.refl.values.copy()
     ndvi_base = ds.ndvi.values.copy()
     nlat, nlon = refl_base.shape
     day_range = np.arange(0, days + 1)
-    amplitude = np.arange(-days/2, days/2)
+    amplitude = np.arange(-days / 2, days / 2)
     time = pd.date_range("2025-08-01", periods=days)
 
     refl_array_3d = np.zeros((days, nlat, nlon), dtype=float)
@@ -547,8 +548,10 @@ def create_nx8x6_dataset_with_regular_coords(days: int):
         ndvi_array_3d[d] = ndvi_base + a
 
     ds_3d = xr.Dataset(
-        data_vars=dict(refl=(("time", "lat", "lon"), refl_array_3d),
-                       ndvi=(("time", "lat", "lon"), ndvi_array_3d)),
+        data_vars=dict(
+            refl=(("time", "lat", "lon"), refl_array_3d),
+            ndvi=(("time", "lat", "lon"), ndvi_array_3d),
+        ),
         coords=dict(time=time, lat=ds.lat, lon=ds.lon),
     )
 

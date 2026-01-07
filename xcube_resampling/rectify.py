@@ -32,12 +32,12 @@ from .constants import (
     LOG,
     SCALE_LIMIT,
     UV_DELTA,
-    SpatialAggMethods,
     FillValues,
     FloatInt,
+    PreventNaNPropagations,
+    SpatialAggMethods,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    PreventNaNPropagations,
 )
 from .dask import compute_array_from_func
 from .gridmapping import GridMapping

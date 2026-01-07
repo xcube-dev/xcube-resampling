@@ -32,5 +32,5 @@ __all__ = [
     "affine_transform_dataset",
     "rectify_dataset",
     "reproject_dataset",
-    "resample_in_time"
+    "resample_in_time",
 ]

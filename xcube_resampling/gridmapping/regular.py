@@ -26,6 +26,8 @@ import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube_resampling.constants import FloatInt
+
 from .assertions import assert_true
 from .base import GridMapping
 from .helpers import (
@@ -36,7 +38,6 @@ from .helpers import (
     _normalize_number_pair,
     _to_int_or_float,
 )
-from xcube_resampling.constants import FloatInt
 
 
 class RegularGridMapping(GridMapping):

@@ -20,11 +20,10 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from collections.abc import Sequence
 import copy
 import math
 import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 import dask.array as da

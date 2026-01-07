@@ -27,11 +27,11 @@ import xarray as xr
 
 from tests.sampledata import create_nx8x6_dataset_with_regular_coords
 from xcube_resampling.temporal import (
-    resample_in_time,
-    _guess_resampling_operation,
     _get_agg_method_kwargs,
-    _get_temporal_interp_method,
     _get_temporal_agg_method,
+    _get_temporal_interp_method,
+    _guess_resampling_operation,
+    resample_in_time,
 )
 
 

@@ -20,18 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 from collections.abc import Hashable
-from typing import Iterable, Literal, Sequence, Mapping
+from typing import Iterable, Literal, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 from .constants import (
-    TemporalInterpMethods,
-    TemporalAggMethods,
-    TemporalAggMethod,
-    TemporalInterpMethod,
     LOG,
+    TemporalAggMethod,
+    TemporalAggMethods,
+    TemporalInterpMethod,
+    TemporalInterpMethods,
 )
 from .utils import _select_variables
 

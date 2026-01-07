@@ -30,12 +30,12 @@ import xarray as xr
 from .affine import affine_transform_dataset
 from .constants import (
     SCALE_LIMIT,
-    SpatialAggMethods,
     FillValues,
     FloatInt,
+    PreventNaNPropagations,
+    SpatialAggMethods,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 from .utils import (

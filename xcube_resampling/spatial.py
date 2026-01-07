@@ -26,10 +26,10 @@ import xarray as xr
 from .affine import affine_transform_dataset
 from .constants import (
     LOG,
-    SpatialAggMethods,
     FillValues,
-    SpatialInterpMethods,
     PreventNaNPropagations,
+    SpatialAggMethods,
+    SpatialInterpMethods,
 )
 from .gridmapping import GridMapping
 from .rectify import rectify_dataset
