@@ -1,6 +1,9 @@
 ## Changes in 0.2.4 (under development)
 
-
+- Improved performance when creating `GridMapping` from 2D coordinates.
+  Parameter estimation now uses only corner points instead of the full set of
+  coordinates, significantly reducing runtime for large datasets.
+ 
 
 ## Changes in 0.2.3
 

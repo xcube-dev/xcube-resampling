@@ -36,6 +36,7 @@ from .helpers import (
     _default_xy_var_names,
     _normalize_crs,
     _normalize_int_pair,
+    _to_int_or_float,
     from_lon_360,
     round_to_fraction,
     to_lon_360,
@@ -199,7 +200,11 @@ def new_1d_grid_mapping_from_coords(
             y_min, y_max = y_max, y_min
         x_pad = x_res / 2
         y_pad = y_res / 2
-        xy_bbox = (x_min - x_pad, y_min - y_pad, x_max + x_pad, y_max + y_pad)
+        x_min = _to_int_or_float(x_min - x_pad)
+        y_min = _to_int_or_float(y_min - y_pad)
+        x_max = _to_int_or_float(x_max + x_pad)
+        y_max = _to_int_or_float(y_max + y_pad)
+        xy_bbox = (x_min, y_min, x_max, y_max)
 
     return Coords1DGridMapping(
         x_coords=x_coords,
@@ -303,15 +308,19 @@ def new_2d_grid_mapping_from_coords(
         )
 
     if xy_bbox is None:
-        x_res_05, y_res_05 = x_res / 2, y_res / 2
-        x_min = min(x00, x10) - x_res_05
-        x_max = max(x01, x11) + x_res_05
+        x_pad, y_pad = x_res / 2, y_res / 2
+        x_min = min(x00, x10)
+        x_max = max(x01, x11)
         if is_j_axis_up:
-            y_min = min(y00, y01) - y_res_05
-            y_max = max(y10, y11) + y_res_05
+            y_min = min(y00, y01)
+            y_max = max(y10, y11)
         else:
-            y_min = min(y10, y11) - y_res_05
-            y_max = max(y00, y01) + y_res_05
+            y_min = min(y10, y11)
+            y_max = max(y00, y01)
+        x_min = _to_int_or_float(x_min - x_pad)
+        y_min = _to_int_or_float(y_min - y_pad)
+        x_max = _to_int_or_float(x_max + x_pad)
+        y_max = _to_int_or_float(y_max + y_pad)
         xy_bbox = (x_min, y_min, x_max, y_max)
 
     return Coords2DGridMapping(
