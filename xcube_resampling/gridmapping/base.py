@@ -439,13 +439,13 @@ class GridMapping(abc.ABC):
         self._assert_regular()
         if self.is_j_axis_up:
             return (
-                (self.x_res, 0.0, self.x_min),
-                (0.0, self.y_res, self.y_min),
+                (self.x_res, 0.0, self.x_min + self.x_res / 2),
+                (0.0, self.y_res, self.y_min + self.y_res / 2),
             )
         else:
             return (
-                (self.x_res, 0.0, self.x_min),
-                (0.0, -self.y_res, self.y_max),
+                (self.x_res, 0.0, self.x_min + self.x_res / 2),
+                (0.0, -self.y_res, self.y_max - self.y_res / 2),
             )
 
     @property
