@@ -120,7 +120,6 @@ class GridMapping(abc.ABC):
                 message=f"y_coords.ndim must be 1 or 2, was {y_coords.ndim}",
             )
 
-        x_min, y_min, x_max, y_max = xy_bbox
         x_res, y_res = _normalize_number_pair(xy_res, name="xy_res")
         assert_true(x_res > 0 and y_res > 0, "invalid xy_res")
 
@@ -128,7 +127,7 @@ class GridMapping(abc.ABC):
 
         self._size = width, height
         self._tile_size = tile_width, tile_height
-        self._xy_bbox = x_min, y_min, x_max, y_max
+        self._xy_bbox = xy_bbox
         self._xy_res = x_res, y_res
         self._crs = crs
         self._xy_var_names = xy_var_names
@@ -360,22 +359,22 @@ class GridMapping(abc.ABC):
     @property
     def x_min(self) -> FloatInt:
         """Minimum x-coordinate in CRS units."""
-        return self._xy_bbox[0]
+        return self._xy_bbox[0] + self.x_res / 2
 
     @property
     def y_min(self) -> FloatInt:
         """Minimum y-coordinate in CRS units."""
-        return self._xy_bbox[1]
+        return self._xy_bbox[1] + self.y_res / 2
 
     @property
     def x_max(self) -> FloatInt:
         """Maximum x-coordinate in CRS units."""
-        return self._xy_bbox[2]
+        return self._xy_bbox[2] - self.x_res / 2
 
     @property
     def y_max(self) -> FloatInt:
         """Maximum y-coordinate in CRS units."""
-        return self._xy_bbox[3]
+        return self._xy_bbox[3] - self.y_res / 2
 
     @property
     def xy_res(self) -> tuple[FloatInt, FloatInt]:
@@ -439,13 +438,13 @@ class GridMapping(abc.ABC):
         self._assert_regular()
         if self.is_j_axis_up:
             return (
-                (self.x_res, 0.0, self.x_min + self.x_res / 2),
-                (0.0, self.y_res, self.y_min + self.y_res / 2),
+                (self.x_res, 0.0, self.x_min),
+                (0.0, self.y_res, self.y_min),
             )
         else:
             return (
-                (self.x_res, 0.0, self.x_min + self.x_res / 2),
-                (0.0, -self.y_res, self.y_max - self.y_res / 2),
+                (self.x_res, 0.0, self.x_min),
+                (0.0, -self.y_res, self.y_max),
             )
 
     @property

@@ -110,22 +110,20 @@ def new_regular_grid_mapping(
 
     x_min = _to_int_or_float(x_min)
     y_min = _to_int_or_float(y_min)
-    x_max = _to_int_or_float(x_min + x_res * width)
-    y_max = _to_int_or_float(y_min + y_res * height)
-
+    x_max = _to_int_or_float(x_min + x_res * (width - 1))
+    y_max = _to_int_or_float(y_min + y_res * (height - 1))
+    xy_bbox = x_min - x_res / 2, y_min - y_res / 2, x_max + x_res / 2, y_max + y_res / 2
     if crs.is_geographic:
-        # TODO: don't do that.
-        #  Instead set NaN in coord vars returned by to_coords()
-        if y_min < -90:
-            raise ValueError("invalid y_min")
-        if y_max > 90:
-            raise ValueError("invalid size, y_min combination")
+        if xy_bbox[1] < -90:
+            raise ValueError("invalid xy_bbox (south)")
+        if xy_bbox[0] > 90:
+            raise ValueError("invalid xy_bbox (north)")
 
     return RegularGridMapping(
         crs=crs,
         size=(width, height),
         tile_size=tile_size or (width, height),
-        xy_bbox=(x_min, y_min, x_max, y_max),
+        xy_bbox=xy_bbox,
         xy_res=(x_res, y_res),
         xy_var_names=_default_xy_var_names(crs),
         xy_dim_names=_default_xy_dim_names(crs),
@@ -145,17 +143,14 @@ def to_regular_grid_mapping(
             return grid_mapping.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
         return grid_mapping
 
-    x_min, y_min, x_max, y_max = grid_mapping.xy_bbox
     x_res, y_res = grid_mapping.xy_res
-    # x_digits = 2 + abs(round(math.log10(x_res)))
-    # y_digits = 2 + abs(round(math.log10(y_res)))
-    # x_min = floor_to_fraction(x_min, x_digits)
-    # y_min = floor_to_fraction(y_min, y_digits)
-    # x_max = ceil_to_fraction(x_max, x_digits)
-    # y_max = ceil_to_fraction(y_max, y_digits)
-    xy_res = min(x_res, y_res) or max(x_res, y_res)
-    width = round((x_max - x_min + xy_res) / xy_res)
-    height = round((y_max - y_min + xy_res) / xy_res)
+    x_min = grid_mapping.xy_bbox[0] + x_res / 2
+    y_min = grid_mapping.xy_bbox[1] + y_res / 2
+    x_max = grid_mapping.xy_bbox[2] - x_res / 2
+    y_max = grid_mapping.xy_bbox[3] - y_res / 2
+
+    width = round((x_max - x_min + x_res) / x_res)
+    height = round((y_max - y_min + y_res) / y_res)
     width = width if width >= 2 else 2
     height = height if height >= 2 else 2
 
@@ -164,7 +159,7 @@ def to_regular_grid_mapping(
     return new_regular_grid_mapping(
         size=(width, height),
         xy_min=(x_min, y_min),
-        xy_res=xy_res,
+        xy_res=(x_res, y_res),
         crs=grid_mapping.crs,
         tile_size=tile_size,
         is_j_axis_up=is_j_axis_up,
@@ -178,27 +173,13 @@ def new_regular_grid_mapping_from_bbox(
     tile_size: int | tuple[int, int] = 1024,
     is_j_axis_up: bool = False,
 ) -> GridMapping:
-    """Creates a regular grid mapping for a given coordinate reference system based on
-    the given bounding box and spatial resolution.
-
-    Args:
-        bbox: Bounding box coordinates in the format [west, south, east, north].
-            The values must be in the given CRS.
-        spatial_res: Spatial resolution of the grid.
-        crs: Coordinate reference system (e.g., "EPSG:4326").
-        tile_size: Chunk size for the grid; if a single int is given,
-            square chunk size is assumed. Defaults to 1024.
-
-    Returns:
-        A regular grid mapping object.
-    """
     if not isinstance(xy_res, tuple):
         xy_res = (xy_res, xy_res)
     x_size = int(np.ceil((bbox[2] - bbox[0]) / xy_res[0]))
     y_size = int(np.ceil(abs(bbox[3] - bbox[1]) / xy_res[1]))
     return new_regular_grid_mapping(
         size=(x_size, y_size),
-        xy_min=(bbox[0], bbox[1]),
+        xy_min=(bbox[0] + xy_res[0] / 2, bbox[1] + xy_res[1] / 2),
         xy_res=xy_res,
         crs=crs,
         tile_size=tile_size,
