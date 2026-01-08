@@ -50,7 +50,7 @@ class RectifyDatasetTest(unittest.TestCase):
             source_ds,
             target_gm=target_gm,
             interp_methods=0,
-            output_indices_names=("indices_lon", "indices_lat")
+            output_indices_names=("indices_lon", "indices_lat"),
         )
 
         np.testing.assert_almost_equal(
@@ -71,9 +71,8 @@ class RectifyDatasetTest(unittest.TestCase):
                 [
                     [nan, nan, nan, nan],
                     [nan, 0.26086957, 0.60869565, nan],
-                    [0., 0.42857143, 0.85714286, nan],
-                    [nan,        1.,  nan,nan],
-
+                    [0.0, 0.42857143, 0.85714286, nan],
+                    [nan, 1.0, nan, nan],
                 ],
                 dtype=target_ds.indices_lon.dtype,
             ),

@@ -13,18 +13,18 @@ from xcube_resampling.constants import (
 
 # noinspection PyProtectedMember
 from xcube_resampling.utils import (
-    _get_spatial_agg_method,
     _get_fill_value,
     _get_grid_mapping_name,
-    _get_spatial_interp_method,
     _get_prevent_nan_propagation,
+    _get_spatial_agg_method,
+    _get_spatial_interp_method,
     _prep_spatial_interp_methods_downscale,
     _select_variables,
     bbox_overlap,
     clip_dataset_by_bbox,
-    resolution_meters_to_degrees,
     get_spatial_coords,
     reproject_bbox,
+    resolution_meters_to_degrees,
 )
 
 

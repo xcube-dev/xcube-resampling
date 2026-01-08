@@ -63,7 +63,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(False, gm.is_j_axis_up)
         self.assertEqual((2, 3, 4), gm.xy_coords.shape)
         self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
-        self.assertEqual((0.8, 0.8), gm.xy_res)
+        self.assertEqual((1.2, 0.85), gm.xy_res)
 
     def test_crs(self):
         ds = xr.Dataset(
@@ -95,7 +95,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual((1189, 1890), gm.size)
         self.assertEqual((512, 512), gm.tile_size)
         self.assertEqual(GEO_CRS, gm.crs)
-        self.assertEqual((0.0025, 0.0025), gm.xy_res)
+        self.assertEqual((0.00447132, 0.00255235), gm.xy_res)
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(False, gm.is_lon_360)
         self.assertEqual(False, gm.is_j_axis_up)
@@ -103,7 +103,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
 
         gm = gm.to_regular()
-        self.assertEqual((2926, 2177), gm.size)
+        self.assertEqual((2867, 2133), gm.size)
 
     def test_from_sentinel_2(self):
         dataset = create_s2plus_dataset()

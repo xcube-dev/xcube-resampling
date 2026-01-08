@@ -22,12 +22,11 @@
 
 import logging
 from collections.abc import Callable, Hashable, Mapping
-from typing import Literal, TypeAlias, Sequence, Annotated
+from typing import Annotated, Literal, Sequence, TypeAlias
 
 import numpy as np
 
 from .coarsen import center, first, last, mean, median, mode, std, var
-
 
 __all__ = [
     "FloatInt",

@@ -30,20 +30,20 @@ from dask_image import ndinterp
 from .constants import (
     AffineTransformMatrix,
     AggFunction,
-    SpatialAggMethods,
     FillValues,
     FloatInt,
+    PreventNaNPropagations,
+    SpatialAggMethods,
     SpatialInterpMethodInt,
     SpatialInterpMethods,
-    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 from .utils import (
     _can_apply_affine_transform,
-    _get_spatial_agg_method,
     _get_fill_value,
-    _get_spatial_interp_method_int,
     _get_prevent_nan_propagation,
+    _get_spatial_agg_method,
+    _get_spatial_interp_method_int,
     _select_variables,
     normalize_grid_mapping,
 )

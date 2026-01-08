@@ -32,12 +32,12 @@ from .constants import (
     LOG,
     SCALE_LIMIT,
     UV_DELTA,
-    SpatialAggMethods,
     FillValues,
     FloatInt,
+    PreventNaNPropagations,
+    SpatialAggMethods,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    PreventNaNPropagations,
 )
 from .dask import compute_array_from_func
 from .gridmapping import GridMapping
@@ -313,6 +313,8 @@ def _downscale_source_dataset(
     agg_methods: SpatialAggMethods | None,
     prevent_nan_propagations: PreventNaNPropagations,
 ) -> (xr.Dataset, GridMapping):
+    if interp_methods in [0, "nearest"]:
+        return source_ds, source_gm
     x_scale = source_gm.x_res / target_gm.x_res
     y_scale = source_gm.y_res / target_gm.y_res
     if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:

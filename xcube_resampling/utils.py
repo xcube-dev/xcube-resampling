@@ -33,14 +33,14 @@ from .constants import (
     FILLVALUE_UINT16,
     INTERP_METHOD_MAPPING,
     LOG,
+    FloatInt,
+    PreventNaNPropagations,
     SpatialAggMethod,
     SpatialAggMethods,
-    FloatInt,
     SpatialInterpMethod,
     SpatialInterpMethodInt,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    PreventNaNPropagations,
 )
 from .gridmapping import GridMapping
 

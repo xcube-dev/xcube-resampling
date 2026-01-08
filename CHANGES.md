@@ -1,3 +1,10 @@
+## Changes in 0.2.4 (under development)
+
+- Improved performance when creating `GridMapping` from 2D coordinates.
+  Parameter estimation now uses only corner points instead of the full set of
+  coordinates, significantly reducing runtime for large datasets.
+ 
+
 ## Changes in 0.2.3
 
 - In `xcube_resampling.resample_in_time`, the method suffix in the output data variable

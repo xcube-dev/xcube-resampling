@@ -118,7 +118,6 @@ def transform_grid_mapping(
         x_coords=xy_coords[0].rename(xy_var_names[0]),
         y_coords=xy_coords[1].rename(xy_var_names[1]),
         crs=target_crs,
-        xy_res=xy_res,
         xy_bbox=xy_bbox,
         tile_size=tile_size,
         tolerance=tolerance,

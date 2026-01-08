@@ -59,7 +59,7 @@ class ResampleInSpaceTest(unittest.TestCase):
             np.array(
                 [
                     [5, 2],
-                    [14, 8],
+                    [10, 7],
                 ],
                 dtype=target_ds.rad.dtype,
             ),
