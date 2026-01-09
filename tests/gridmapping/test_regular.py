@@ -47,20 +47,20 @@ class RegularGridMappingTest(unittest.TestCase):
     def test_invalid_y(self):
         with self.assertRaises(ValueError) as cm:
             GridMapping.regular((1000, 1000), (10, -90.5), 0.01, CRS_WGS84)
-        self.assertEqual("invalid y_min", f"{cm.exception}")
+        self.assertEqual("invalid xy_bbox (south)", f"{cm.exception}")
 
         with self.assertRaises(ValueError) as cm:
             GridMapping.regular((1000, 1000), (10, 53), 0.1, CRS_WGS84)
-        self.assertEqual("invalid size, y_min combination", f"{cm.exception}")
+        self.assertEqual("invalid xy_bbox (north)", f"{cm.exception}")
 
     def test_xy_bbox(self):
         gm = GridMapping.regular((1000, 1000), (10, 53), 0.01, CRS_WGS84)
-        self.assertEqual((10, 53, 20, 63), gm.xy_bbox)
+        np.testing.assert_allclose(gm.xy_bbox, (9.995, 52.995, 19.995, 62.995))
         self.assertEqual(False, gm.is_lon_360)
 
     def test_xy_bbox_anti_meridian(self):
         gm = GridMapping.regular((2000, 1000), (174.0, -30.0), 0.005, CRS_WGS84)
-        self.assertEqual((174.0, -30.0, 184.0, -25.0), gm.xy_bbox)
+        np.testing.assert_allclose(gm.xy_bbox, (173.9975, -30.0025, 183.9975, -25.0025))
         self.assertEqual(True, gm.is_lon_360)
 
     def test_derive(self):
@@ -86,26 +86,26 @@ class RegularGridMappingTest(unittest.TestCase):
         self.assertEqual((2, 4, 8), xy_coords.shape)
         self.assertEqual(((2,), (2, 2), (4, 4)), xy_coords.chunks)
         np.testing.assert_almost_equal(
+            xy_coords.values[0],
             np.array(
                 [
-                    [10.05, 10.15, 10.25, 10.35, 10.45, 10.55, 10.65, 10.75],
-                    [10.05, 10.15, 10.25, 10.35, 10.45, 10.55, 10.65, 10.75],
-                    [10.05, 10.15, 10.25, 10.35, 10.45, 10.55, 10.65, 10.75],
-                    [10.05, 10.15, 10.25, 10.35, 10.45, 10.55, 10.65, 10.75],
+                    [10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7],
+                    [10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7],
+                    [10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7],
+                    [10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7],
                 ]
             ),
-            xy_coords.values[0],
         )
         np.testing.assert_almost_equal(
+            xy_coords.values[1],
             np.array(
                 [
-                    [53.35, 53.35, 53.35, 53.35, 53.35, 53.35, 53.35, 53.35],
-                    [53.25, 53.25, 53.25, 53.25, 53.25, 53.25, 53.25, 53.25],
-                    [53.15, 53.15, 53.15, 53.15, 53.15, 53.15, 53.15, 53.15],
-                    [53.05, 53.05, 53.05, 53.05, 53.05, 53.05, 53.05, 53.05],
+                    [53.3, 53.3, 53.3, 53.3, 53.3, 53.3, 53.3, 53.3],
+                    [53.2, 53.2, 53.2, 53.2, 53.2, 53.2, 53.2, 53.2],
+                    [53.1, 53.1, 53.1, 53.1, 53.1, 53.1, 53.1, 53.1],
+                    [53.0, 53.0, 53.0, 53.0, 53.0, 53.0, 53.0, 53.0],
                 ]
             ),
-            xy_coords.values[1],
         )
 
     def test_xy_names(self):
@@ -153,7 +153,7 @@ class RegularGridMappingTest(unittest.TestCase):
             size=(2000, 1000), xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS
         )
         np.testing.assert_almost_equal(
-            gm.xy_bboxes, np.array([[10.0, 20.0, 210.0, 120.0]], dtype=np.float64)
+            gm.xy_bboxes, np.array([[9.95, 19.95, 209.95, 119.95]], dtype=np.float64)
         )
 
         gm = GridMapping.regular(
@@ -163,14 +163,14 @@ class RegularGridMappingTest(unittest.TestCase):
             gm.xy_bboxes,
             np.array(
                 [
-                    [10.0, 70, 60, 120.0],
-                    [60.0, 70, 110, 120.0],
-                    [110.0, 70, 160, 120.0],
-                    [160.0, 70, 210, 120.0],
-                    [10.0, 20, 60, 70.0],
-                    [60.0, 20, 110, 70.0],
-                    [110.0, 20, 160, 70.0],
-                    [160.0, 20, 210, 70.0],
+                    [9.95, 69.95, 59.95, 119.95],
+                    [59.95, 69.95, 109.95, 119.95],
+                    [109.95, 69.95, 159.95, 119.95],
+                    [159.95, 69.95, 209.95, 119.95],
+                    [9.95, 19.95, 59.95, 69.95],
+                    [59.95, 19.95, 109.95, 69.95],
+                    [109.95, 19.95, 159.95, 69.95],
+                    [159.95, 19.95, 209.95, 69.95],
                 ],
                 dtype=np.float64,
             ),
@@ -181,7 +181,7 @@ class RegularGridMappingTest(unittest.TestCase):
             size=(2000, 1000), xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS
         ).derive(is_j_axis_up=True)
         np.testing.assert_almost_equal(
-            gm.xy_bboxes, np.array([[10.0, 20.0, 210.0, 120.0]], dtype=np.float64)
+            gm.xy_bboxes, np.array([[9.95, 19.95, 209.95, 119.95]], dtype=np.float64)
         )
 
         gm = GridMapping.regular(
@@ -194,14 +194,14 @@ class RegularGridMappingTest(unittest.TestCase):
             gm.xy_bboxes,
             np.array(
                 [
-                    [10.0, 20.0, 60.0, 70.0],
-                    [60.0, 20.0, 110.0, 70.0],
-                    [110.0, 20.0, 160.0, 70.0],
-                    [160.0, 20.0, 210.0, 70.0],
-                    [10.0, 70.0, 60.0, 120.0],
-                    [60.0, 70.0, 110.0, 120.0],
-                    [110.0, 70.0, 160.0, 120.0],
-                    [160.0, 70.0, 210.0, 120.0],
+                    [9.95, 19.95, 59.95, 69.95],
+                    [59.95, 19.95, 109.95, 69.95],
+                    [109.95, 19.95, 159.95, 69.95],
+                    [159.95, 19.95, 209.95, 69.95],
+                    [9.95, 69.95, 59.95, 119.95],
+                    [59.95, 69.95, 109.95, 119.95],
+                    [109.95, 69.95, 159.95, 119.95],
+                    [159.95, 69.95, 209.95, 119.95],
                 ],
                 dtype=np.float64,
             ),
@@ -217,16 +217,16 @@ class RegularGridMappingTest(unittest.TestCase):
             cv,
             (10, 6),
             ("x", "y"),
-            (-2595.0, -2505.0),
-            (1255.0, 1205.0),
+            (-2600.0, -2510.0),
+            (1250.0, 1200.0),
             ("x_bnds", "y_bnds"),
             (
-                (-2600.0, -2590.0),
-                (-2510.0, -2500.0),
+                (-2605.0, -2595.0),
+                (-2515.0, -2505.0),
             ),
             (
-                (1260.0, 1250.0),
-                (1210.0, 1200.0),
+                (1255.0, 1245.0),
+                (1205.0, 1195.0),
             ),
         )
 
@@ -240,16 +240,16 @@ class RegularGridMappingTest(unittest.TestCase):
             cv,
             (10, 6),
             ("x", "y"),
-            (-2595.0, -2505.0),
-            (1205.0, 1255.0),
+            (-2600.0, -2510.0),
+            (1200.0, 1250.0),
             ("x_bnds", "y_bnds"),
             (
-                (-2600.0, -2590.0),
-                (-2510.0, -2500.0),
+                (-2605.0, -2595.0),
+                (-2515.0, -2505.0),
             ),
             (
-                (1200.0, 1210.0),
-                (1250.0, 1260.0),
+                (1195.0, 1205.0),
+                (1245.0, 1255.0),
             ),
         )
 
@@ -263,16 +263,16 @@ class RegularGridMappingTest(unittest.TestCase):
             cv,
             (10, 10),
             ("lon", "lat"),
-            (173.0, -169.0),
-            (72.0, 54.0),
+            (172.0, -170.0),
+            (71.0, 53.0),
             ("lon_bnds", "lat_bnds"),
             (
-                (172.0, 174.0),
-                (-170.0, -168.0),
+                (171.0, 173.0),
+                (-171.0, -169.0),
             ),
             (
-                (73.0, 71.0),
-                (55.0, 53.0),
+                (72.0, 70.0),
+                (54.0, 52.0),
             ),
         )
 

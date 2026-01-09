@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from collections.abc import Hashable
+from collections.abc import Hashable, Sequence
 from fractions import Fraction
 from typing import Any
 
@@ -46,6 +46,10 @@ def _to_int_or_float(x: FloatInt) -> FloatInt:
     xf = float(x)
     xi = round(xf)
     return xi if math.isclose(xi, xf, rel_tol=1e-5) else xf
+
+
+def _round_sequence(bbox: Sequence[FloatInt], ndigits=7) -> Sequence[FloatInt]:
+    return tuple(round(v, ndigits=ndigits) for v in bbox)
 
 
 def _from_affine(matrix: affine.Affine) -> AffineTransformMatrix:

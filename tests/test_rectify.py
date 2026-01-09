@@ -44,7 +44,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
-            size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
+            size=(4, 4), xy_min=(0, 50), xy_res=2, crs=CRS_WGS84
         )
         target_ds = rectify_dataset(
             source_ds,
@@ -98,10 +98,9 @@ class RectifyDatasetTest(unittest.TestCase):
             target_ds.rad.values,
             np.array(
                 [
-                    [nan, nan, nan, nan],
-                    [nan, nan, nan, nan],
-                    [nan, 2.0, nan, nan],
-                    [nan, nan, nan, nan],
+                    [nan, nan, nan],
+                    [nan, 2.0, nan],
+                    [nan, nan, nan],
                 ],
                 dtype=target_ds.rad.dtype,
             ),
@@ -111,7 +110,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
-            size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
+            size=(4, 4), xy_min=(0, 50), xy_res=2, crs=CRS_WGS84
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         self.assertEqual(
@@ -147,7 +146,7 @@ class RectifyDatasetTest(unittest.TestCase):
         )
 
         target_gm = GridMapping.regular(
-            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+            size=(7, 7), xy_min=(0, 50), xy_res=1.0, crs=CRS_WGS84
         )
 
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
@@ -181,7 +180,7 @@ class RectifyDatasetTest(unittest.TestCase):
         )
 
         target_gm = GridMapping.regular(
-            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+            size=(7, 7), xy_min=(0, 50), xy_res=1.0, crs=CRS_WGS84
         )
 
         target_ds = rectify_dataset(
@@ -218,7 +217,7 @@ class RectifyDatasetTest(unittest.TestCase):
         )
 
         target_gm = GridMapping.regular(
-            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+            size=(7, 7), xy_min=(0, 50), xy_res=1.0, crs=CRS_WGS84
         )
 
         target_ds = rectify_dataset(
@@ -261,7 +260,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
-            size=(7, 7), xy_min=(1.5, 50.5), xy_res=1.0, crs=CRS_WGS84
+            size=(7, 7), xy_min=(2, 51), xy_res=1.0, crs=CRS_WGS84
         )
 
         target_ds = rectify_dataset(
@@ -292,7 +291,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
-            size=(13, 13), xy_min=(-0.25, 49.75), xy_res=0.5, crs=CRS_WGS84
+            size=(13, 13), xy_min=(0, 50), xy_res=0.5, crs=CRS_WGS84
         )
 
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
@@ -307,7 +306,7 @@ class RectifyDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular(
             size=(13, 13),
-            xy_min=(-0.25, 49.75),
+            xy_min=(0, 50),
             xy_res=0.5,
             crs=CRS_WGS84,
             is_j_axis_up=True,
@@ -327,7 +326,7 @@ class RectifyDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular(
             size=(13, 13),
-            xy_min=(-0.25, 49.75),
+            xy_min=(0, 50),
             xy_res=0.5,
             crs=CRS_WGS84,
             tile_size=5,
@@ -349,7 +348,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
-            size=(13, 13), xy_min=(-0.25, 49.75), xy_res=0.5, crs=CRS_WGS84, tile_size=7
+            size=(13, 13), xy_min=(0, 50), xy_res=0.5, crs=CRS_WGS84, tile_size=7
         )
 
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
@@ -365,7 +364,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2_dataset_with_irregular_coords()
 
         target_gm = GridMapping.regular(
-            size=(13, 13), xy_min=(-0.25, 49.75), xy_res=0.5, crs=CRS_WGS84, tile_size=5
+            size=(13, 13), xy_min=(0, 50), xy_res=0.5, crs=CRS_WGS84, tile_size=5
         )
 
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
@@ -382,7 +381,7 @@ class RectifyDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular(
             size=(13, 13),
-            xy_min=(-0.25, 49.75),
+            xy_min=(0, 50),
             xy_res=0.5,
             crs=CRS_WGS84,
             tile_size=(3, 13),
@@ -402,7 +401,7 @@ class RectifyDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular(
             size=(13, 13),
-            xy_min=(-0.25, 49.75),
+            xy_min=(0, 50),
             xy_res=0.5,
             crs=CRS_WGS84,
             tile_size=(13, 3),
@@ -420,7 +419,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_2x2_dataset_with_irregular_coords_antimeridian()
 
         target_gm = GridMapping.regular(
-            size=(13, 13), xy_min=(177.75, 49.75), xy_res=0.5, crs=CRS_WGS84
+            size=(13, 13), xy_min=(178, 50), xy_res=0.5, crs=CRS_WGS84
         )
 
         self.assertEqual(True, target_gm.is_lon_360)
@@ -491,9 +490,10 @@ class RectifyDatasetTest(unittest.TestCase):
     def test_rectify_different_crs(self):
         source_ds = create_4x4_dataset_with_irregular_coords()
         target_gm = GridMapping.regular(
-            size=(3, 3), xy_min=(3600000, 3200000), xy_res=100000, crs="epsg:3035"
+            size=(3, 3), xy_min=(3650000, 3250000), xy_res=100000, crs="epsg:3035"
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
+
         np.testing.assert_almost_equal(
             target_ds.x.values, np.array([3650000.0, 3750000.0, 3850000.0])
         )
@@ -512,7 +512,7 @@ class RectifyDatasetTest(unittest.TestCase):
         source_ds = create_4x4_dataset_with_irregular_coords()
         source_ds = source_ds.chunk(dict(y=2, x=2))
         target_gm = GridMapping.regular(
-            size=(3, 3), xy_min=(3600000, 3200000), xy_res=100000, crs="epsg:3035"
+            size=(3, 3), xy_min=(3650000, 3250000), xy_res=100000, crs="epsg:3035"
         )
         target_ds = rectify_dataset(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(

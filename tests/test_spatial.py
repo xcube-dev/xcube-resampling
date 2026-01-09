@@ -25,7 +25,7 @@ class ResampleInSpaceTest(unittest.TestCase):
     def test_affine_transform_dataset(self):
         source_ds = create_8x6_dataset_with_regular_coords()
         source_gm = GridMapping.from_dataset(source_ds)
-        target_gm = GridMapping.regular((3, 3), (50.0, 10.0), 0.1, source_gm.crs)
+        target_gm = GridMapping.regular((3, 3), (50.05, 10.05), 0.1, source_gm.crs)
         target_ds = resample_in_space(
             source_ds,
             target_gm=target_gm,
@@ -51,7 +51,7 @@ class ResampleInSpaceTest(unittest.TestCase):
     def test_rectify_and_downscale_dataset(self):
         source_ds = create_4x4_dataset_with_irregular_coords()
         target_gm = GridMapping.regular(
-            size=(2, 2), xy_min=(-1, 51), xy_res=2, crs=CRS_WGS84
+            size=(2, 2), xy_min=(0, 50), xy_res=2, crs=CRS_WGS84
         )
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
@@ -79,7 +79,7 @@ class ResampleInSpaceTest(unittest.TestCase):
     def test_rectify_and_upscale_dataset(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
         target_gm = GridMapping.regular(
-            size=(4, 4), xy_min=(-1, 49), xy_res=2, crs=CRS_WGS84
+            size=(4, 4), xy_min=(0, 50), xy_res=2, crs=CRS_WGS84
         )
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
@@ -100,7 +100,7 @@ class ResampleInSpaceTest(unittest.TestCase):
 
         # test projected CRS similar resolution
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
+            size=(5, 5), xy_min=(4320120, 3382520), xy_res=80, crs="epsg:3035"
         )
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
@@ -120,7 +120,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         # test projected CRS finer resolution
         # test if subset calculation works as expected
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(4320080, 3382480), xy_res=20, crs="epsg:3035"
+            size=(5, 5), xy_min=(4320090, 3382490), xy_res=20, crs="epsg:3035"
         )
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
@@ -139,7 +139,7 @@ class ResampleInSpaceTest(unittest.TestCase):
 
         # test geographic CRS with similar resolution
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0006, crs=CRS_WGS84
+            size=(5, 5), xy_min=(9.9889, 53.5502), xy_res=0.0006, crs=CRS_WGS84
         )
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(
@@ -159,7 +159,7 @@ class ResampleInSpaceTest(unittest.TestCase):
         # test geographic CRS with 1/2 resolution
         # test if subset calculation works as expected
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0003, crs=CRS_WGS84
+            size=(5, 5), xy_min=(9.98875, 53.55005), xy_res=0.0003, crs=CRS_WGS84
         )
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
         np.testing.assert_almost_equal(

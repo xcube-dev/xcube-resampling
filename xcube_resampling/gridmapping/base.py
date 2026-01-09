@@ -359,22 +359,22 @@ class GridMapping(abc.ABC):
     @property
     def x_min(self) -> FloatInt:
         """Minimum x-coordinate in CRS units."""
-        return self._xy_bbox[0] + self.x_res / 2
+        return round(self._xy_bbox[0] + self.x_res / 2, ndigits=7)
 
     @property
     def y_min(self) -> FloatInt:
         """Minimum y-coordinate in CRS units."""
-        return self._xy_bbox[1] + self.y_res / 2
+        return round(self._xy_bbox[1] + self.y_res / 2, ndigits=7)
 
     @property
     def x_max(self) -> FloatInt:
         """Maximum x-coordinate in CRS units."""
-        return self._xy_bbox[2] - self.x_res / 2
+        return round(self._xy_bbox[2] - self.x_res / 2, ndigits=7)
 
     @property
     def y_max(self) -> FloatInt:
         """Maximum y-coordinate in CRS units."""
-        return self._xy_bbox[3] - self.y_res / 2
+        return round(self._xy_bbox[3] - self.y_res / 2, ndigits=7)
 
     @property
     def xy_res(self) -> tuple[FloatInt, FloatInt]:

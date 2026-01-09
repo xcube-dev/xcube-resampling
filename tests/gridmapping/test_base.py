@@ -369,8 +369,8 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(pyproj.CRS.from_string("EPSG:32633"), transformed_gm.crs)
         self.assertEqual((400, 200), transformed_gm.size)
         self.assertEqual((200, 200), transformed_gm.tile_size)
-        self.assertAlmostEqual(604.05, transformed_gm.xy_res[0])
-        self.assertAlmostEqual(1103.89, transformed_gm.xy_res[1])
+        self.assertAlmostEqual(605.566, transformed_gm.xy_res[0])
+        self.assertAlmostEqual(1109.47, transformed_gm.xy_res[1])
         self.assertEqual(False, transformed_gm.is_j_axis_up)
         self.assertEqual(
             ("transformed_x", "transformed_y"), transformed_gm.xy_var_names
@@ -383,10 +383,10 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((440, 224), transformed_gm_regular.size)
+        self.assertEqual((439, 223), transformed_gm_regular.size)
         self.assertEqual((200, 200), transformed_gm_regular.tile_size)
-        self.assertAlmostEqual(604.05, transformed_gm_regular.xy_res[0])
-        self.assertAlmostEqual(1103.89, transformed_gm_regular.xy_res[1])
+        self.assertAlmostEqual(605.566, transformed_gm_regular.xy_res[0])
+        self.assertAlmostEqual(1109.47, transformed_gm_regular.xy_res[1])
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(("x", "y"), transformed_gm_regular.xy_var_names)
         self.assertEqual(("x", "y"), transformed_gm_regular.xy_dim_names)
@@ -408,7 +408,7 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((1101, 1046), transformed_gm_regular.size)
+        self.assertEqual((1102, 1046), transformed_gm_regular.size)
         self.assertEqual((1000, 1000), transformed_gm_regular.tile_size)
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(False, transformed_gm_regular.is_lon_360)

@@ -37,6 +37,7 @@ from .helpers import (
     _normalize_int_pair,
     _normalize_number_pair,
     _to_int_or_float,
+    _round_sequence,
 )
 
 
@@ -48,24 +49,27 @@ class RegularGridMapping(GridMapping):
 
     def _new_x_coords(self) -> xr.DataArray:
         self._assert_regular()
-        x_res = self.x_res
-        x1, x2 = self.x_min + x_res / 2, self.x_max - x_res / 2
-        x_name, _ = self.xy_dim_names
         return xr.DataArray(
-            da.linspace(x1, x2, self.width, chunks=self.tile_width),
+            da.linspace(self.x_min, self.x_max, self.width, chunks=self.tile_width),
             dims=self.xy_dim_names[0],
         )
 
     def _new_y_coords(self) -> xr.DataArray:
         self._assert_regular()
-        y_res = self.y_res
-        y1, y2 = self.y_min + y_res / 2, self.y_max - y_res / 2
-        if not self.is_j_axis_up:
-            y1, y2 = y2, y1
-        return xr.DataArray(
-            da.linspace(y1, y2, self.height, chunks=self.tile_height),
-            dims=self.xy_dim_names[1],
-        )
+        if self.is_j_axis_up:
+            return xr.DataArray(
+                da.linspace(
+                    self.y_min, self.y_max, self.height, chunks=self.tile_height
+                ),
+                dims=self.xy_dim_names[1],
+            )
+        else:
+            return xr.DataArray(
+                da.linspace(
+                    self.y_max, self.y_min, self.height, chunks=self.tile_height
+                ),
+                dims=self.xy_dim_names[1],
+            )
 
     def _new_xy_coords(self) -> xr.DataArray:
         self._assert_regular()
@@ -113,10 +117,11 @@ def new_regular_grid_mapping(
     x_max = _to_int_or_float(x_min + x_res * (width - 1))
     y_max = _to_int_or_float(y_min + y_res * (height - 1))
     xy_bbox = x_min - x_res / 2, y_min - y_res / 2, x_max + x_res / 2, y_max + y_res / 2
+    xy_bbox = _round_sequence(xy_bbox)
     if crs.is_geographic:
         if xy_bbox[1] < -90:
             raise ValueError("invalid xy_bbox (south)")
-        if xy_bbox[0] > 90:
+        if xy_bbox[3] > 90:
             raise ValueError("invalid xy_bbox (north)")
 
     return RegularGridMapping(
