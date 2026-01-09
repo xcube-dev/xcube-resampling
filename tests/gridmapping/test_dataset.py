@@ -102,6 +102,10 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual((2, 1890, 1189), gm.xy_coords.shape)
         self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
 
+        import pdb
+
+        pdb.set_trace()
+
         gm = gm.to_regular()
         self.assertEqual((2867, 2133), gm.size)
 

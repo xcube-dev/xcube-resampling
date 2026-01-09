@@ -235,7 +235,7 @@ class GridMapping(abc.ABC):
         tile_height = min(new_size[1], tile_height)
         return self.regular(
             new_size,
-            (self.x_min, self.y_min),
+            (self.xy_bbox[0] + new_xy_res[0] / 2, self.xy_bbox[1] + new_xy_res[1] / 2),
             new_xy_res,
             self.crs,
             tile_size=(tile_width, tile_height),
@@ -518,12 +518,27 @@ class GridMapping(abc.ABC):
     @property
     def xy_bboxes(self) -> np.ndarray:
         """The image tiles' bounding boxes in CRS coordinates."""
+        x_pad, y_pad = self.x_res / 2, self.y_res / 2
         if self.is_j_axis_up:
-            xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
+            xy_offset = np.array(
+                [
+                    self.x_min - x_pad,
+                    self.y_min - y_pad,
+                    self.x_min - x_pad,
+                    self.y_min - y_pad,
+                ]
+            )
             xy_scale = np.array([self.x_res, self.y_res, self.x_res, self.y_res])
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
         else:
-            xy_offset = np.array([self.x_min, self.y_max, self.x_min, self.y_max])
+            xy_offset = np.array(
+                [
+                    self.x_min - x_pad,
+                    self.y_max + y_pad,
+                    self.x_min - x_pad,
+                    self.y_max + y_pad,
+                ]
+            )
             xy_scale = np.array([self.x_res, -self.y_res, self.x_res, -self.y_res])
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
             xy_bboxes[:, [1, 3]] = xy_bboxes[:, [3, 1]]

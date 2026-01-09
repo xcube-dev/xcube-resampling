@@ -103,10 +103,10 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(180, gm.tile_height)
         self.assertEqual((0, 0, 720, 360), gm.ij_bbox)
         self.assertEqual((-180.0, -90.0, 180.0, 90.0), gm.xy_bbox)
-        self.assertEqual(-180.0, gm.x_min)
-        self.assertEqual(-90.0, gm.y_min)
-        self.assertEqual(180.0, gm.x_max)
-        self.assertEqual(90.0, gm.y_max)
+        self.assertEqual(-179.75, gm.x_min)
+        self.assertEqual(-89.75, gm.y_min)
+        self.assertEqual(179.75, gm.x_max)
+        self.assertEqual(89.75, gm.y_max)
         self.assertEqual((0.5, 0.5), gm.xy_res)
         self.assertEqual(0.5, gm.x_res)
         self.assertEqual(0.5, gm.y_res)
@@ -118,6 +118,7 @@ class GridMappingTest(unittest.TestCase):
 
         self.assertIsInstance(gm.xy_coords, xr.DataArray)
         np.testing.assert_equal(
+            gm.ij_bboxes,
             np.array(
                 [
                     [0, 0, 360, 180],
@@ -126,9 +127,9 @@ class GridMappingTest(unittest.TestCase):
                     [360, 180, 720, 360],
                 ]
             ),
-            gm.ij_bboxes,
         )
         np.testing.assert_equal(
+            gm.xy_bboxes,
             np.array(
                 [
                     [-180.0, 0.0, 0.0, 90.0],
@@ -137,7 +138,6 @@ class GridMappingTest(unittest.TestCase):
                     [0.0, -90.0, 180.0, 0.0],
                 ]
             ),
-            gm.xy_bboxes,
         )
 
     def test_invalids(self):
@@ -247,16 +247,16 @@ class GridMappingTest(unittest.TestCase):
             )
         )
         self.assertEqual(
-            ((10.0, 0.0, -7600.0), (0.0, 10.0, -5600.0)), gm1.ij_transform_to(gm2)
+            ((10.0, 0.0, -7595.0), (0.0, 10.0, -5595.0)), gm1.ij_transform_to(gm2)
         )
         self.assertEqual(
-            ((10.0, 0.0, -7600.0), (0.0, 10.0, -5600.0)), gm2.ij_transform_from(gm1)
+            ((10.0, -0.0, -7595.0), (-0.0, 10.0, -5595.0)), gm2.ij_transform_from(gm1)
         )
         self.assertEqual(
-            ((0.1, 0.0, 760.0), (0.0, 0.1, 560.0)), gm2.ij_transform_to(gm1)
+            ((0.1, 0.0, 759.5), (0.0, 0.1, 559.5)), gm2.ij_transform_to(gm1)
         )
         self.assertEqual(
-            ((0.1, 0.0, 760.0), (0.0, 0.1, 560.0)), gm1.ij_transform_from(gm2)
+            ((0.1, 0.0, 759.5), (0.0, 0.1, 559.5)), gm1.ij_transform_from(gm2)
         )
 
     def assertMatrixPoint(self, expected_point, matrix, point):
@@ -369,8 +369,8 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(pyproj.CRS.from_string("EPSG:32633"), transformed_gm.crs)
         self.assertEqual((400, 200), transformed_gm.size)
         self.assertEqual((200, 200), transformed_gm.tile_size)
-        self.assertAlmostEqual(605.482, transformed_gm.xy_res[0])
-        self.assertAlmostEqual(1109.46, transformed_gm.xy_res[1])
+        self.assertAlmostEqual(604.05, transformed_gm.xy_res[0])
+        self.assertAlmostEqual(1103.89, transformed_gm.xy_res[1])
         self.assertEqual(False, transformed_gm.is_j_axis_up)
         self.assertEqual(
             ("transformed_x", "transformed_y"), transformed_gm.xy_var_names
@@ -383,10 +383,10 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((440, 410), transformed_gm_regular.size)
+        self.assertEqual((440, 224), transformed_gm_regular.size)
         self.assertEqual((200, 200), transformed_gm_regular.tile_size)
-        self.assertAlmostEqual(605.482, transformed_gm.xy_res[0])
-        self.assertAlmostEqual(1109.46, transformed_gm.xy_res[1])
+        self.assertAlmostEqual(604.05, transformed_gm_regular.xy_res[0])
+        self.assertAlmostEqual(1103.89, transformed_gm_regular.xy_res[1])
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(("x", "y"), transformed_gm_regular.xy_var_names)
         self.assertEqual(("x", "y"), transformed_gm_regular.xy_dim_names)
@@ -408,7 +408,7 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((1103, 1551), transformed_gm_regular.size)
+        self.assertEqual((1101, 1046), transformed_gm_regular.size)
         self.assertEqual((1000, 1000), transformed_gm_regular.tile_size)
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(False, transformed_gm_regular.is_lon_360)
