@@ -150,9 +150,9 @@ class ReprojectDatasetTest(unittest.TestCase):
             target_ds.band_1.values,
             np.array(
                 [
-                    [0, 1, 2],
-                    [5, 6, 7],
-                    [15, 16, 17],
+                    [0, 1, 3],
+                    [5, 6, 8],
+                    [15, 16, 18],
                 ],
                 dtype=target_ds.band_1.dtype,
             ),
@@ -213,10 +213,10 @@ class ReprojectDatasetTest(unittest.TestCase):
         target_ds = reproject_dataset(source_ds, target_gm, interp_methods="triangular")
         self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, 0, 0], 6216.139, places=4
+            target_ds.temperature.values[0, 0, 0], 6216.1396, places=4
         )
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, -1, -1], 2848.5044, places=4
+            target_ds.temperature.values[0, -1, -1], 2848.5012, places=4
         )
         self.assertEqual(
             [2, 5, 5],
@@ -230,10 +230,10 @@ class ReprojectDatasetTest(unittest.TestCase):
         target_ds = reproject_dataset(source_ds, target_gm, interp_methods=1)
         self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, 0, 0], 6216.1391, places=4
+            target_ds.temperature.values[0, 0, 0], 6216.1397, places=4
         )
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, -1, -1], 2848.5045, places=4
+            target_ds.temperature.values[0, -1, -1], 2848.5012, places=4
         )
         self.assertEqual(
             [2, 5, 5],

@@ -126,41 +126,6 @@ def reproject_dataset(
         target_gm.crs, source_gm.crs, always_xy=True
     )
 
-    # import matplotlib.pyplot as plt
-    #
-    # source_xx, source_yy = _transform_gridpoints(transformer, target_gm)
-    # sx = source_xx.ravel()
-    # sy = source_yy.ravel()
-    #
-    # tx, ty = np.meshgrid(
-    #     source_gm.x_coords.values,
-    #     source_gm.y_coords.values,
-    # )
-    # labels = source_ds.band_1.values.ravel()
-    # tx = tx.ravel()
-    # ty = ty.ravel()
-    #
-    # plt.figure(figsize=(6, 6))
-    # plt.scatter(sx, sy, label="target coords")
-    # plt.scatter(tx, ty, label="source coords")
-    #
-    # # Label each source point
-    # for x, y, lbl in zip(tx, ty, labels):
-    #     plt.annotate(
-    #         str(lbl),
-    #         (x, y),
-    #         textcoords="offset points",
-    #         xytext=(3, 3),
-    #         fontsize=8,
-    #     )
-    #
-    # plt.xlabel("x")
-    # plt.ylabel("y")
-    # plt.legend()
-    # plt.axis("equal")
-    # plt.title("Source and Target Coordinates")
-    # plt.show()
-
     # If source has higher resolution than target, downscale first, then reproject
     source_ds, source_gm = _downscale_source_dataset(
         source_ds,
@@ -183,40 +148,6 @@ def reproject_dataset(
 
     # transform grid points from target grid mapping to source grid mapping
     source_xx, source_yy = _transform_gridpoints(transformer, target_gm)
-
-    # import matplotlib.pyplot as plt
-    #
-    # sx = source_xx.ravel()
-    # sy = source_yy.ravel()
-    #
-    # tx, ty = np.meshgrid(
-    #     source_gm.x_coords.values,
-    #     source_gm.y_coords.values,
-    # )
-    # labels = source_ds.band_1.values.ravel()
-    # tx = tx.ravel()
-    # ty = ty.ravel()
-    #
-    # plt.figure(figsize=(6, 6))
-    # plt.scatter(sx, sy, label="target coords")
-    # plt.scatter(tx, ty, label="source coords")
-    #
-    # # Label each source point
-    # for x, y, lbl in zip(tx, ty, labels):
-    #     plt.annotate(
-    #         str(lbl),
-    #         (x, y),
-    #         textcoords="offset points",
-    #         xytext=(3, 3),
-    #         fontsize=8,
-    #     )
-    #
-    # plt.xlabel("x")
-    # plt.ylabel("y")
-    # plt.legend()
-    # plt.axis("equal")
-    # plt.title("Source and Target Coordinates")
-    # plt.show()
 
     # reproject dataset
     x_name, y_name = source_gm.xy_var_names
@@ -434,7 +365,10 @@ def _downscale_source_dataset(
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
         downscale_target_gm = GridMapping.regular(
             size=downscaled_size,
-            xy_min=(source_gm.xy_bbox[0], source_gm.xy_bbox[1]),
+            xy_min=(
+                source_gm.xy_bbox[0] + xres_trans / 2,
+                source_gm.xy_bbox[1] + yres_trans / 2,
+            ),
             xy_res=(xres_trans, yres_trans),
             crs=source_gm.crs,
             tile_size=source_gm.tile_size,
