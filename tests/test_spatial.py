@@ -50,6 +50,8 @@ class ResampleInSpaceTest(unittest.TestCase):
 
     def test_rectify_and_downscale_dataset(self):
         source_ds = create_4x4_dataset_with_irregular_coords()
+
+        # nearest neighbour interpolation
         target_gm = GridMapping.regular(
             size=(2, 2), xy_min=(0, 52), xy_res=2, crs=CRS_WGS84
         )
@@ -64,6 +66,7 @@ class ResampleInSpaceTest(unittest.TestCase):
                 dtype=target_ds.rad.dtype,
             ),
         )
+        # bi-linear interpolation
         target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=1)
         np.testing.assert_almost_equal(
             target_ds.rad.values,
@@ -71,6 +74,22 @@ class ResampleInSpaceTest(unittest.TestCase):
                 [
                     [7.5, 4.5],
                     [12.5, 9.5],
+                ],
+                dtype=target_ds.rad.dtype,
+            ),
+        )
+
+        # shifted target grid
+        target_gm = GridMapping.regular(
+            size=(2, 2), xy_min=(0, 50), xy_res=2, crs=CRS_WGS84
+        )
+        target_ds = resample_in_space(source_ds, target_gm=target_gm, interp_methods=0)
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [
+                    [10, 7],
+                    [nan, nan],
                 ],
                 dtype=target_ds.rad.dtype,
             ),
