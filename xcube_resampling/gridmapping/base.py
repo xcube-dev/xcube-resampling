@@ -630,8 +630,8 @@ class GridMapping(abc.ABC):
 
         da.map_blocks(
             compute_ij_bboxes,
-            x_coords.values,
-            y_coords.values,
+            x_coords.data,
+            y_coords.data,
             xy_bboxes,
             xy_border,
             ij_border,
