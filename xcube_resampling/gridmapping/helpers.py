@@ -48,7 +48,7 @@ def _to_int_or_float(x: FloatInt) -> FloatInt:
     return xi if math.isclose(xi, xf, rel_tol=1e-5) else xf
 
 
-def _round_sequence(bbox: Sequence[FloatInt], ndigits=7) -> Sequence[FloatInt]:
+def _round_sequence(bbox: Sequence[FloatInt], ndigits: int = 7) -> Sequence[FloatInt]:
     return tuple(round(v, ndigits=ndigits) for v in bbox)
 
 
