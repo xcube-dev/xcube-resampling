@@ -31,6 +31,7 @@ from .constants import (
     FILLVALUE_INT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
+    FILLVALUE_UINT32,
     INTERP_METHOD_MAPPING,
     LOG,
     FloatInt,
@@ -491,6 +492,8 @@ def _get_fill_value(
             fill_value = FILLVALUE_UINT8
         elif data_type == np.uint16:
             fill_value = FILLVALUE_UINT16
+        elif data_type == np.uint32:
+            fill_value = FILLVALUE_UINT32
         elif np.issubdtype(data_type, np.integer):
             fill_value = FILLVALUE_INT
         else:
