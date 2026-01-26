@@ -35,7 +35,7 @@ CRS_UTM_32N = pyproj.crs.CRS(32632)
 class TransformTest(unittest.TestCase):
     def test_transform(self):
         gm = GridMapping.regular(
-            size=(3, 3), xy_min=(10, 53), xy_res=0.1, crs=CRS_CRS84
+            size=(3, 3), xy_min=(10.05, 53.05), xy_res=0.1, crs=CRS_CRS84
         )
         gm_t = gm.transform(crs=CRS_UTM_32N)
 
@@ -44,6 +44,7 @@ class TransformTest(unittest.TestCase):
         self.assertEqual(("transformed_x", "transformed_y"), gm_t.xy_var_names)
         self.assertEqual(("lon", "lat"), gm_t.xy_dim_names)
         np.testing.assert_almost_equal(
+            gm_t.xy_coords[0],
             np.array(
                 [
                     [570057.076286, 576728.9360228, 583400.7295284],
@@ -51,9 +52,9 @@ class TransformTest(unittest.TestCase):
                     [570383.3684844, 577086.3083212, 583789.1831954],
                 ]
             ),
-            gm_t.xy_coords[0],
         )
         np.testing.assert_almost_equal(
+            gm_t.xy_coords[1],
             np.array(
                 [
                     [5900595.928991, 5900698.5746648, 5900810.5532744],
@@ -61,7 +62,6 @@ class TransformTest(unittest.TestCase):
                     [5878348.0594403, 5878450.9138481, 5878563.1201969],
                 ]
             ),
-            gm_t.xy_coords[1],
         )
 
     def test_transform_xy_var_names(self):

@@ -103,7 +103,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
 
         gm = gm.to_regular()
-        self.assertEqual((2867, 2133), gm.size)
+        self.assertEqual((1636, 2132), gm.size)
 
     def test_from_sentinel_2(self):
         dataset = create_s2plus_dataset()

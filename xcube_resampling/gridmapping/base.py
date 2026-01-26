@@ -120,7 +120,6 @@ class GridMapping(abc.ABC):
                 message=f"y_coords.ndim must be 1 or 2, was {y_coords.ndim}",
             )
 
-        x_min, y_min, x_max, y_max = xy_bbox
         x_res, y_res = _normalize_number_pair(xy_res, name="xy_res")
         assert_true(x_res > 0 and y_res > 0, "invalid xy_res")
 
@@ -128,7 +127,7 @@ class GridMapping(abc.ABC):
 
         self._size = width, height
         self._tile_size = tile_width, tile_height
-        self._xy_bbox = x_min, y_min, x_max, y_max
+        self._xy_bbox = xy_bbox
         self._xy_res = x_res, y_res
         self._crs = crs
         self._xy_var_names = xy_var_names
@@ -236,7 +235,7 @@ class GridMapping(abc.ABC):
         tile_height = min(new_size[1], tile_height)
         return self.regular(
             new_size,
-            (self.x_min, self.y_min),
+            (self.xy_bbox[0] + new_xy_res[0] / 2, self.xy_bbox[1] + new_xy_res[1] / 2),
             new_xy_res,
             self.crs,
             tile_size=(tile_width, tile_height),
@@ -360,22 +359,22 @@ class GridMapping(abc.ABC):
     @property
     def x_min(self) -> FloatInt:
         """Minimum x-coordinate in CRS units."""
-        return self._xy_bbox[0]
+        return round(self._xy_bbox[0] + self.x_res / 2, ndigits=7)
 
     @property
     def y_min(self) -> FloatInt:
         """Minimum y-coordinate in CRS units."""
-        return self._xy_bbox[1]
+        return round(self._xy_bbox[1] + self.y_res / 2, ndigits=7)
 
     @property
     def x_max(self) -> FloatInt:
         """Maximum x-coordinate in CRS units."""
-        return self._xy_bbox[2]
+        return round(self._xy_bbox[2] - self.x_res / 2, ndigits=7)
 
     @property
     def y_max(self) -> FloatInt:
         """Maximum y-coordinate in CRS units."""
-        return self._xy_bbox[3]
+        return round(self._xy_bbox[3] - self.y_res / 2, ndigits=7)
 
     @property
     def xy_res(self) -> tuple[FloatInt, FloatInt]:
@@ -519,12 +518,27 @@ class GridMapping(abc.ABC):
     @property
     def xy_bboxes(self) -> np.ndarray:
         """The image tiles' bounding boxes in CRS coordinates."""
+        x_pad, y_pad = self.x_res / 2, self.y_res / 2
         if self.is_j_axis_up:
-            xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
+            xy_offset = np.array(
+                [
+                    self.x_min - x_pad,
+                    self.y_min - y_pad,
+                    self.x_min - x_pad,
+                    self.y_min - y_pad,
+                ]
+            )
             xy_scale = np.array([self.x_res, self.y_res, self.x_res, self.y_res])
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
         else:
-            xy_offset = np.array([self.x_min, self.y_max, self.x_min, self.y_max])
+            xy_offset = np.array(
+                [
+                    self.x_min - x_pad,
+                    self.y_max + y_pad,
+                    self.x_min - x_pad,
+                    self.y_max + y_pad,
+                ]
+            )
             xy_scale = np.array([self.x_res, -self.y_res, self.x_res, -self.y_res])
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
             xy_bboxes[:, [1, 3]] = xy_bboxes[:, [3, 1]]

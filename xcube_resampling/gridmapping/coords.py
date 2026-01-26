@@ -39,6 +39,7 @@ from .helpers import (
     _to_int_or_float,
     from_lon_360,
     round_to_fraction,
+    _round_sequence,
     to_lon_360,
 )
 
@@ -204,7 +205,7 @@ def new_1d_grid_mapping_from_coords(
         y_min = _to_int_or_float(y_min - y_pad)
         x_max = _to_int_or_float(x_max + x_pad)
         y_max = _to_int_or_float(y_max + y_pad)
-        xy_bbox = (x_min, y_min, x_max, y_max)
+        xy_bbox = _round_sequence((x_min, y_min, x_max, y_max))
 
     return Coords1DGridMapping(
         x_coords=x_coords,
@@ -321,7 +322,7 @@ def new_2d_grid_mapping_from_coords(
         y_min = _to_int_or_float(y_min - y_pad)
         x_max = _to_int_or_float(x_max + x_pad)
         y_max = _to_int_or_float(y_max + y_pad)
-        xy_bbox = (x_min, y_min, x_max, y_max)
+        xy_bbox = _round_sequence((x_min, y_min, x_max, y_max))
 
     return Coords2DGridMapping(
         x_coords=x_coords,

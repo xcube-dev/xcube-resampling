@@ -354,10 +354,10 @@ def _downscale_source_dataset(
         # clip source dataset to the transformed bounding box defined by
         # target grid mapping, so that affine_transform_dataset is not that heavy
         bbox_trans = (
-            bbox_trans[0] - 2 * source_gm.x_res,
-            bbox_trans[1] - 2 * source_gm.y_res,
-            bbox_trans[2] + 2 * source_gm.x_res,
-            bbox_trans[3] + 2 * source_gm.y_res,
+            bbox_trans[0] - 2 * xres_trans,
+            bbox_trans[1] - 2 * yres_trans,
+            bbox_trans[2] + 2 * xres_trans,
+            bbox_trans[3] + 2 * yres_trans,
         )
         source_ds = clip_dataset_by_bbox(source_ds, bbox_trans, source_gm.xy_dim_names)
         source_gm = GridMapping.from_dataset(source_ds)
@@ -365,7 +365,10 @@ def _downscale_source_dataset(
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
         downscale_target_gm = GridMapping.regular(
             size=downscaled_size,
-            xy_min=(source_gm.xy_bbox[0], source_gm.xy_bbox[1]),
+            xy_min=(
+                source_gm.xy_bbox[0] + xres_trans / 2,
+                source_gm.xy_bbox[1] + yres_trans / 2,
+            ),
             xy_res=(xres_trans, yres_trans),
             crs=source_gm.crs,
             tile_size=source_gm.tile_size,

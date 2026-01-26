@@ -23,7 +23,7 @@ class ReprojectDatasetTest(unittest.TestCase):
 
         # test projected CRS, similar resolution
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
+            size=(5, 5), xy_min=(4320120, 3382520), xy_res=80, crs="epsg:3035"
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
@@ -45,7 +45,7 @@ class ReprojectDatasetTest(unittest.TestCase):
 
         # test projected CRS, similar resolution
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
+            size=(5, 5), xy_min=(4320120, 3382520), xy_res=80, crs="epsg:3035"
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         self.assertEqual(
@@ -79,7 +79,7 @@ class ReprojectDatasetTest(unittest.TestCase):
         source_ds = create_5x5_dataset_regular_utm()
         target_gm = GridMapping.regular(
             size=(5, 5),
-            xy_min=(4320080, 3382480),
+            xy_min=(4320120, 3382520),
             xy_res=80,
             crs="epsg:3035",
             is_j_axis_up=True,
@@ -103,7 +103,7 @@ class ReprojectDatasetTest(unittest.TestCase):
         source_ds = create_5x5_dataset_regular_utm()
         source_ds = source_ds.isel(y=slice(None, None, -1))
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(4320080, 3382480), xy_res=80, crs="epsg:3035"
+            size=(5, 5), xy_min=(4320120, 3382520), xy_res=80, crs="epsg:3035"
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
@@ -123,7 +123,7 @@ class ReprojectDatasetTest(unittest.TestCase):
     def test_reproject_target_gm_finer_res(self):
         source_ds = create_5x5_dataset_regular_utm()
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(4320080, 3382480), xy_res=20, crs="epsg:3035"
+            size=(5, 5), xy_min=(4320090, 3382490), xy_res=20, crs="epsg:3035"
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
@@ -143,16 +143,16 @@ class ReprojectDatasetTest(unittest.TestCase):
     def test_reproject_target_gm_coarser_res(self):
         source_ds = create_5x5_dataset_regular_utm()
         target_gm = GridMapping.regular(
-            size=(3, 3), xy_min=(4320050, 3382500), xy_res=120, crs="epsg:3035"
+            size=(3, 3), xy_min=(4320070, 3382620), xy_res=120, crs="epsg:3035"
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
                 [
-                    [0, 1, 2],
-                    [5, 6, 7],
-                    [15, 16, 17],
+                    [0, 1, 3],
+                    [5, 6, 8],
+                    [15, 16, 18],
                 ],
                 dtype=target_ds.band_1.dtype,
             ),
@@ -161,7 +161,7 @@ class ReprojectDatasetTest(unittest.TestCase):
     def test_reproject_target_gm_geographic_crs(self):
         source_ds = create_5x5_dataset_regular_utm()
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0006, crs=CRS_WGS84
+            size=(5, 5), xy_min=(9.9889, 53.5502), xy_res=0.0006, crs=CRS_WGS84
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
@@ -183,7 +183,7 @@ class ReprojectDatasetTest(unittest.TestCase):
 
         # test geographic CRS with 1/2 resolution
         target_gm = GridMapping.regular(
-            size=(5, 5), xy_min=(9.9886, 53.5499), xy_res=0.0003, crs=CRS_WGS84
+            size=(5, 5), xy_min=(9.98875, 53.55005), xy_res=0.0003, crs=CRS_WGS84
         )
         target_ds = reproject_dataset(source_ds, target_gm)
         np.testing.assert_almost_equal(
@@ -204,7 +204,7 @@ class ReprojectDatasetTest(unittest.TestCase):
         source_ds = create_large_dataset_for_reproject()
         target_gm = GridMapping.regular(
             size=(10, 10),
-            xy_min=(6.0, 48.0),
+            xy_min=(6.1, 48.1),
             xy_res=0.2,
             crs=CRS_WGS84,
             tile_size=(5, 5),
@@ -213,10 +213,10 @@ class ReprojectDatasetTest(unittest.TestCase):
         target_ds = reproject_dataset(source_ds, target_gm, interp_methods="triangular")
         self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, 0, 0], 6353.5796, places=4
+            target_ds.temperature.values[0, 0, 0], 6216.1396, places=4
         )
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, -1, -1], 3007.1174, places=4
+            target_ds.temperature.values[0, -1, -1], 2848.5012, places=4
         )
         self.assertEqual(
             [2, 5, 5],
@@ -230,10 +230,10 @@ class ReprojectDatasetTest(unittest.TestCase):
         target_ds = reproject_dataset(source_ds, target_gm, interp_methods=1)
         self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, 0, 0], 6353.5794, places=4
+            target_ds.temperature.values[0, 0, 0], 6216.1397, places=4
         )
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, -1, -1], 3007.1174, places=4
+            target_ds.temperature.values[0, -1, -1], 2848.5012, places=4
         )
         self.assertEqual(
             [2, 5, 5],

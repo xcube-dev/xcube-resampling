@@ -3,6 +3,10 @@
 - Improved performance when creating `GridMapping` from 2D coordinates.
   Parameter estimation now uses only corner points instead of the full set of
   coordinates, significantly reducing runtime for large datasets.
+- Bug fix in affine transformations.
+  Fixed a half-pixel shift that occurred in `xcube_resampling.affine_transform_dataset`
+  and `xcube_resampling.resample_in_space` when the source and target grid mappings
+  shared the same CRS and were regular.
  
 
 ## Changes in 0.2.3

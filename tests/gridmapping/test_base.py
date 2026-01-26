@@ -42,7 +42,7 @@ class _TestGridMapping(GridMapping):
             tile_size=self.tile_size,
             is_j_axis_up=self.is_j_axis_up,
             xy_res=self.xy_res,
-            xy_min=(self.xy_bbox[0], self.xy_bbox[1]),
+            xy_min=(self.xy_bbox[0] + self.x_res / 2, self.xy_bbox[1] + self.x_res / 2),
             crs=self.crs,
         )
 
@@ -83,8 +83,13 @@ class GridMappingTest(unittest.TestCase):
             except TypeError:
                 x_res, y_res = 2 * (orig_kwargs["xy_res"],)
             x_min, y_min = orig_kwargs.pop("xy_min")
-            x_max, y_max = x_min + x_res * width, y_min + y_res * height
-            orig_kwargs["xy_bbox"] = x_min, y_min, x_max, y_max
+            x_max, y_max = x_min + x_res * (width - 1), y_min + y_res * (height - 1)
+            orig_kwargs["xy_bbox"] = (
+                x_min - x_res / 2,
+                y_min - y_res / 2,
+                x_max + x_res / 2,
+                y_max + y_res / 2,
+            )
         return orig_kwargs
 
     def test_valid(self):
@@ -98,10 +103,10 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(180, gm.tile_height)
         self.assertEqual((0, 0, 720, 360), gm.ij_bbox)
         self.assertEqual((-180.0, -90.0, 180.0, 90.0), gm.xy_bbox)
-        self.assertEqual(-180.0, gm.x_min)
-        self.assertEqual(-90.0, gm.y_min)
-        self.assertEqual(180.0, gm.x_max)
-        self.assertEqual(90.0, gm.y_max)
+        self.assertEqual(-179.75, gm.x_min)
+        self.assertEqual(-89.75, gm.y_min)
+        self.assertEqual(179.75, gm.x_max)
+        self.assertEqual(89.75, gm.y_max)
         self.assertEqual((0.5, 0.5), gm.xy_res)
         self.assertEqual(0.5, gm.x_res)
         self.assertEqual(0.5, gm.y_res)
@@ -113,6 +118,7 @@ class GridMappingTest(unittest.TestCase):
 
         self.assertIsInstance(gm.xy_coords, xr.DataArray)
         np.testing.assert_equal(
+            gm.ij_bboxes,
             np.array(
                 [
                     [0, 0, 360, 180],
@@ -121,9 +127,9 @@ class GridMappingTest(unittest.TestCase):
                     [360, 180, 720, 360],
                 ]
             ),
-            gm.ij_bboxes,
         )
         np.testing.assert_equal(
+            gm.xy_bboxes,
             np.array(
                 [
                     [-180.0, 0.0, 0.0, 90.0],
@@ -132,7 +138,6 @@ class GridMappingTest(unittest.TestCase):
                     [0.0, -90.0, 180.0, 0.0],
                 ]
             ),
-            gm.xy_bboxes,
         )
 
     def test_invalids(self):
@@ -176,58 +181,61 @@ class GridMappingTest(unittest.TestCase):
             **self.kwargs(size=(1200, 1200), xy_min=(0, 0), xy_res=1, crs=NOT_A_GEO_CRS)
         )
         i2crs = image_geom.ij_to_xy_transform
-        self.assertMatrixPoint((0, 0), i2crs, (0, 1200))
-        self.assertMatrixPoint((1024, 0), i2crs, (1024, 1200))
-        self.assertMatrixPoint((0, 1024), i2crs, (0, 1200 - 1024))
-        self.assertMatrixPoint((1024, 1024), i2crs, (1024, 1200 - 1024))
-        self.assertEqual(((1, 0, 0), (0.0, -1, 1200)), i2crs)
+        self.assertMatrixPoint((0, 0), i2crs, (0, 1199))
+        self.assertMatrixPoint((1024, 0), i2crs, (1024, 1199))
+        self.assertMatrixPoint((0, 1024), i2crs, (0, 1199 - 1024))
+        self.assertMatrixPoint((1024, 1024), i2crs, (1024, 1199 - 1024))
+        self.assertEqual(((1, 0, 0), (0.0, -1, 1199)), i2crs)
 
         image_geom = _TestGridMapping(
-            **self.kwargs(size=(1440, 720), xy_min=(-180, -90), xy_res=0.25)
+            **self.kwargs(size=(1440, 720), xy_min=(-179.875, -89.875), xy_res=0.25)
         )
         i2crs = image_geom.ij_to_xy_transform
-        self.assertMatrixPoint((-180, 90), i2crs, (0, 0))
-        self.assertMatrixPoint((0, 0), i2crs, (720, 360))
-        self.assertMatrixPoint((180, -90), i2crs, (1440, 720))
-        self.assertEqual(((0.25, 0.0, -180.0), (0.0, -0.25, 90.0)), i2crs)
+        self.assertMatrixPoint((-179.875, 89.875), i2crs, (0, 0))
+        self.assertMatrixPoint((0.125, -0.125), i2crs, (720, 360))
+        self.assertMatrixPoint((179.875, -89.875), i2crs, (1439, 719))
+        self.assertEqual(((0.25, 0.0, -179.875), (0.0, -0.25, 89.875)), i2crs)
 
         image_geom = _TestGridMapping(
             **self.kwargs(
-                size=(1440, 720), xy_min=(-180, -90), xy_res=0.25, is_j_axis_up=True
+                size=(1440, 720),
+                xy_min=(-179.875, -89.875),
+                xy_res=0.25,
+                is_j_axis_up=True,
             )
         )
         i2crs = image_geom.ij_to_xy_transform
-        self.assertMatrixPoint((-180, -90), i2crs, (0, 0))
-        self.assertMatrixPoint((0, 0), i2crs, (720, 360))
-        self.assertMatrixPoint((180, 90), i2crs, (1440, 720))
-        self.assertEqual(((0.25, 0.0, -180.0), (0.0, 0.25, -90.0)), i2crs)
+        self.assertMatrixPoint((-179.875, -89.875), i2crs, (0, 0))
+        self.assertMatrixPoint((0.125, 0.125), i2crs, (720, 360))
+        self.assertMatrixPoint((179.875, 89.875), i2crs, (1439, 719))
+        self.assertEqual(((0.25, 0.0, -179.875), (0.0, 0.25, -89.875)), i2crs)
 
     def test_xy_to_ij_transform(self):
         image_geom = _TestGridMapping(
             **self.kwargs(size=(1200, 1200), xy_min=(0, 0), xy_res=1, crs=NOT_A_GEO_CRS)
         )
         crs2i = image_geom.xy_to_ij_transform
-        self.assertMatrixPoint((0, 0), crs2i, (0, 1200))
-        self.assertMatrixPoint((1024, 0), crs2i, (1024, 1200))
-        self.assertMatrixPoint((0, 1024), crs2i, (0, 1200 - 1024))
-        self.assertMatrixPoint((1024, 1024), crs2i, (1024, 1200 - 1024))
-        self.assertEqual(((1, 0, 0), (0.0, -1, 1200)), crs2i)
+        self.assertMatrixPoint((0, 0), crs2i, (0, 1199))
+        self.assertMatrixPoint((1024, 0), crs2i, (1024, 1199))
+        self.assertMatrixPoint((0, 1024), crs2i, (0, 1199 - 1024))
+        self.assertMatrixPoint((1024, 1024), crs2i, (1024, 1199 - 1024))
+        self.assertEqual(((1, 0, 0), (0.0, -1, 1199)), crs2i)
 
         image_geom = _TestGridMapping(**self.kwargs(size=(1440, 720), xy_res=0.25))
         crs2i = image_geom.xy_to_ij_transform
-        self.assertMatrixPoint((0, 720), crs2i, (-180, -90))
-        self.assertMatrixPoint((720, 360), crs2i, (0, 0))
-        self.assertMatrixPoint((1440, 0), crs2i, (180, 90))
-        self.assertEqual(((4.0, 0.0, 720.0), (0.0, -4.0, 360.0)), crs2i)
+        self.assertMatrixPoint((0, 719), crs2i, (-179.875, -89.875))
+        self.assertMatrixPoint((720, 360), crs2i, (0.125, -0.125))
+        self.assertMatrixPoint((1439, 0), crs2i, (179.875, 89.875))
+        self.assertEqual(((4.0, 0.0, 719.5), (0.0, -4.0, 359.5)), crs2i)
 
         image_geom = _TestGridMapping(
             **self.kwargs(size=(1440, 720), xy_res=0.25, is_j_axis_up=True)
         )
         crs2i = image_geom.xy_to_ij_transform
-        self.assertMatrixPoint((0, 0), crs2i, (-180, -90))
-        self.assertMatrixPoint((720, 360), crs2i, (0, 0))
-        self.assertMatrixPoint((1440, 720), crs2i, (180, 90))
-        self.assertEqual(((4.0, 0.0, 720.0), (0.0, 4.0, 360.0)), crs2i)
+        self.assertMatrixPoint((0, 0), crs2i, (-179.875, -89.875))
+        self.assertMatrixPoint((720, 360), crs2i, (0.125, 0.125))
+        self.assertMatrixPoint((1439, 719), crs2i, (179.875, 89.875))
+        self.assertEqual(((4.0, -0.0, 719.5), (-0.0, 4.0, 359.5)), crs2i)
 
     def test_ij_transform_to_and_from(self):
         gm1 = _TestGridMapping(
@@ -239,16 +247,16 @@ class GridMappingTest(unittest.TestCase):
             )
         )
         self.assertEqual(
-            ((10.0, 0.0, -7600.0), (0.0, 10.0, -5600.0)), gm1.ij_transform_to(gm2)
+            ((10.0, 0.0, -7595.0), (0.0, 10.0, -5595.0)), gm1.ij_transform_to(gm2)
         )
         self.assertEqual(
-            ((10.0, 0.0, -7600.0), (0.0, 10.0, -5600.0)), gm2.ij_transform_from(gm1)
+            ((10.0, -0.0, -7595.0), (-0.0, 10.0, -5595.0)), gm2.ij_transform_from(gm1)
         )
         self.assertEqual(
-            ((0.1, 0.0, 760.0), (0.0, 0.1, 560.0)), gm2.ij_transform_to(gm1)
+            ((0.1, 0.0, 759.5), (0.0, 0.1, 559.5)), gm2.ij_transform_to(gm1)
         )
         self.assertEqual(
-            ((0.1, 0.0, 760.0), (0.0, 0.1, 560.0)), gm1.ij_transform_from(gm2)
+            ((0.1, 0.0, 759.5), (0.0, 0.1, 559.5)), gm1.ij_transform_from(gm2)
         )
 
     def assertMatrixPoint(self, expected_point, matrix, point):
@@ -361,8 +369,8 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(pyproj.CRS.from_string("EPSG:32633"), transformed_gm.crs)
         self.assertEqual((400, 200), transformed_gm.size)
         self.assertEqual((200, 200), transformed_gm.tile_size)
-        self.assertAlmostEqual(605.482, transformed_gm.xy_res[0])
-        self.assertAlmostEqual(1109.46, transformed_gm.xy_res[1])
+        self.assertAlmostEqual(605.566, transformed_gm.xy_res[0])
+        self.assertAlmostEqual(1109.47, transformed_gm.xy_res[1])
         self.assertEqual(False, transformed_gm.is_j_axis_up)
         self.assertEqual(
             ("transformed_x", "transformed_y"), transformed_gm.xy_var_names
@@ -375,10 +383,10 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((440, 410), transformed_gm_regular.size)
+        self.assertEqual((439, 223), transformed_gm_regular.size)
         self.assertEqual((200, 200), transformed_gm_regular.tile_size)
-        self.assertAlmostEqual(605.482, transformed_gm.xy_res[0])
-        self.assertAlmostEqual(1109.46, transformed_gm.xy_res[1])
+        self.assertAlmostEqual(605.566, transformed_gm_regular.xy_res[0])
+        self.assertAlmostEqual(1109.47, transformed_gm_regular.xy_res[1])
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(("x", "y"), transformed_gm_regular.xy_var_names)
         self.assertEqual(("x", "y"), transformed_gm_regular.xy_dim_names)
@@ -400,7 +408,7 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((1103, 1551), transformed_gm_regular.size)
+        self.assertEqual((1102, 1046), transformed_gm_regular.size)
         self.assertEqual((1000, 1000), transformed_gm_regular.tile_size)
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(False, transformed_gm_regular.is_lon_360)
