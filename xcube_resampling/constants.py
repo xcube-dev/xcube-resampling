@@ -161,6 +161,9 @@ FILLVALUE_UINT8 = 255
 FILLVALUE_UINT16 = 65535
 """Default fill value for uint16 arrays."""
 
+FILLVALUE_UINT32 = 4294967295
+"""Default fill value for uint32 arrays."""
+
 FILLVALUE_INT = -1
 """Default fill value for integer arrays."""
 
