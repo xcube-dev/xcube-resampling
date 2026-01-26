@@ -1,3 +1,7 @@
+## Changes in 0.2.5 (under development)
+
+
+
 ## Changes in 0.2.4
 
 - Improved performance when creating `GridMapping` from 2D coordinates.

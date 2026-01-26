@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from tests.sampledata import create_nx8x6_dataset_with_regular_coords
 from xcube_resampling.temporal import (
     _get_agg_method_kwargs,
     _get_temporal_agg_method,
@@ -33,6 +32,8 @@ from xcube_resampling.temporal import (
     _guess_resampling_operation,
     resample_in_time,
 )
+
+from .sampledata import create_nx8x6_dataset_with_regular_coords
 
 
 class ResampleInTimeTest(unittest.TestCase):
@@ -140,7 +141,7 @@ class ResampleInTimeTest(unittest.TestCase):
 
     def test_resample_in_time_nearest_interpolation(self):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
-        resampled_cube = resample_in_time(input_cube, "6H", interp_methods="nearest")
+        resampled_cube = resample_in_time(input_cube, "6h", interp_methods="nearest")
         self.assertIn("time", resampled_cube)
         self.assertIn("refl", resampled_cube)
         self.assertIn("ndvi", resampled_cube)
@@ -152,7 +153,7 @@ class ResampleInTimeTest(unittest.TestCase):
 
     def test_resample_in_time_linear_interpolation(self):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
-        resampled_cube = resample_in_time(input_cube, "6H", interp_methods="linear")
+        resampled_cube = resample_in_time(input_cube, "6h", interp_methods="linear")
         self.assertIn("time", resampled_cube)
         self.assertIn("refl", resampled_cube)
         self.assertIn("ndvi", resampled_cube)
@@ -167,7 +168,7 @@ class ResampleInTimeTest(unittest.TestCase):
     def test_resample_in_time_list_interpolation(self):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         resampled_cube = resample_in_time(
-            input_cube, "6H", interp_methods=["linear", "nearest"]
+            input_cube, "6h", interp_methods=["linear", "nearest"]
         )
         self.assertIn("time", resampled_cube)
         self.assertIn("refl_linear", resampled_cube)
@@ -185,7 +186,7 @@ class ResampleInTimeTest(unittest.TestCase):
     def test_resample_in_time_variable_selection(self):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         resampled_cube = resample_in_time(
-            input_cube, "6H", interp_methods="linear", variables="refl"
+            input_cube, "6h", interp_methods="linear", variables="refl"
         )
         self.assertIn("time", resampled_cube)
         self.assertIn("refl", resampled_cube)
@@ -199,7 +200,7 @@ class ResampleInTimeTest(unittest.TestCase):
         )
 
         resampled_cube = resample_in_time(
-            input_cube, "6H", interp_methods="linear", variables="ndvi"
+            input_cube, "6h", interp_methods="linear", variables="ndvi"
         )
         self.assertIn("time", resampled_cube)
         self.assertNotIn("refl", resampled_cube)
@@ -216,7 +217,7 @@ class ResampleInTimeTest(unittest.TestCase):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         resampled_cube = resample_in_time(
             input_cube,
-            "6H",
+            "6h",
             interp_methods={"refl": "linear", "ndvi": "nearest"},
         )
         self.assertIn("refl_linear", resampled_cube)
@@ -316,13 +317,13 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual(result, "agg")
 
     def test_regular_time_series_upsample_returns_interp(self):
-        result = _guess_resampling_operation(self.ds_regular, "12H")
+        result = _guess_resampling_operation(self.ds_regular, "12h")
         self.assertEqual(result, "interp")
 
     def test_resample_in_time_invalid_method(self):
         input_cube = create_nx8x6_dataset_with_regular_coords(4)
         with self.assertRaises(ValueError):
-            resample_in_time(input_cube, "6H", interp_methods=["nonlinear", "nearest"])
+            resample_in_time(input_cube, "6h", interp_methods=["nonlinear", "nearest"])
 
     def test_get_agg_method_kwargs(self):
         expected = {"tolerance": "1h"}
@@ -342,7 +343,7 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual(expected, result)
 
         with self.assertRaises(ValueError):
-            _get_agg_method_kwargs("bla", "6H")
+            _get_agg_method_kwargs("bla", "6h")
 
     def test_get_temporal_interp_method(self):
         expected = ["nearest"]
