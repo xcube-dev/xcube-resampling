@@ -21,6 +21,7 @@
 
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
@@ -42,6 +43,7 @@ from .constants import (
     SpatialInterpMethodInt,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
+    FillValues,
 )
 from .gridmapping import GridMapping
 
@@ -515,3 +517,157 @@ def _get_fill_value(
         fill_value = assign_defaults(var.dtype)
 
     return fill_value
+
+
+def _sample_array_at_indices(
+    data: np.ndarray,
+    ix: np.ndarray,
+    iy: np.ndarray,
+    interp_method: SpatialInterpMethodStr,
+) -> np.ndarray:
+    """
+    Sample a 3d array at fractional indices (iy, ix).
+    """
+    if interp_method == "nearest":
+        ix_i = np.rint(ix).astype(np.intp)
+        iy_i = np.rint(iy).astype(np.intp)
+        return data[:, iy_i, ix_i]
+
+    ix_floor = np.floor(ix).astype(np.intp)
+    iy_floor = np.floor(iy).astype(np.intp)
+    ix_ceil = np.ceil(ix).astype(np.intp)
+    iy_ceil = np.ceil(iy).astype(np.intp)
+
+    dx = ix - ix_floor
+    dy = iy - iy_floor
+
+    v00 = data[:, iy_floor, ix_floor]
+    v01 = data[:, iy_floor, ix_ceil]
+    v10 = data[:, iy_ceil, ix_floor]
+    v11 = data[:, iy_ceil, ix_ceil]
+
+    if interp_method == "bilinear":
+        u0 = v00 + dx * (v01 - v00)
+        u1 = v10 + dx * (v11 - v10)
+        return u0 + dy * (u1 - u0)
+
+    if interp_method == "triangular":
+        mask = (dx + dy) < 1.0
+        mask3 = mask[np.newaxis, ...]
+
+        out = np.empty(
+            (data.shape[0],) + ix.shape,
+            dtype=data.dtype,
+        )
+
+        out[mask3] = (
+            v00[mask3]
+            + dx[mask3] * (v01[mask3] - v00[mask3])
+            + dy[mask3] * (v10[mask3] - v00[mask3])
+        )
+
+        out[~mask3] = (
+            v11[~mask3]
+            + (1.0 - dx[~mask3]) * (v10[~mask3] - v11[~mask3])
+            + (1.0 - dy[~mask3]) * (v01[~mask3] - v11[~mask3])
+        )
+        return out
+
+    raise NotImplementedError(
+        f"interp_methods must be one of 'nearest', 'bilinear', 'triangular', "
+        f"was '{interp_method}'."
+    )
+
+
+def _create_empty_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    fill_values: FillValues | None = None,
+) -> xr.Dataset:
+    x_name, y_name = source_gm.xy_var_names
+    coords = source_ds.coords.to_dataset()
+    coords = coords.drop_vars((x_name, y_name), errors="ignore")
+    x_name, y_name = target_gm.xy_var_names
+    coords[x_name] = target_gm.x_coords
+    coords[y_name] = target_gm.y_coords
+    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
+    target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
+    for key, data in source_ds.data_vars.items():
+        shape = list(source_ds[key].shape)
+        shape[-1] = target_gm.width
+        shape[-2] = target_gm.height
+        dims = list(source_ds[key].dims)
+        dims[-1] = target_gm.xy_var_names[0]
+        dims[-2] = target_gm.xy_var_names[1]
+        if source_ds[key].ndim == 3:
+            chunks = (
+                source_ds[key].chunks[0][0],
+                target_gm.height,
+                target_gm.width,
+            )
+        else:
+            chunks = (target_gm.height, target_gm.width)
+        target_ds[key] = xr.DataArray(
+            da.full(
+                shape,
+                fill_value=_get_fill_value(fill_values, key, data),
+                chunks=chunks,
+            ),
+            dims=dims,
+            attrs=source_ds[key].attrs,
+        )
+    return target_ds
+
+
+def _clip_if_needed(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    fill_values: FillValues | None,
+    transformer: pyproj.Transformer | None = None,
+) -> tuple[xr.Dataset, GridMapping, bool]:
+    """
+    Clip the source dataset to the target bounding box if overlap is limited.
+    """
+    if transformer is None:
+        target_bbox = target_gm.xy_bbox
+        buffer_x = 2 * source_gm.x_res
+        buffer_y = 2 * source_gm.y_res
+    else:
+        target_bbox = transformer.transform_bounds(*target_gm.xy_bbox)
+        buffer_x = 2 * (target_bbox[2] - target_bbox[0]) / target_gm.width
+        buffer_y = 2 * (target_bbox[3] - target_bbox[1]) / target_gm.height
+
+    overlap = bbox_overlap(source_gm.xy_bbox, target_bbox)
+
+    if overlap < 1e-5:
+        LOG.info(
+            "Target grid mapping does not overlap with the source grid mapping. "
+            "Returning empty target dataset."
+        )
+        empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+        return empty_ds, target_gm, True
+
+    if overlap >= 0.8:
+        return source_ds, source_gm, False
+
+    # Expand target bbox slightly to ensure coverage
+    bbox = [
+        target_bbox[0] - buffer_x,
+        target_bbox[1] - buffer_y,
+        target_bbox[2] + buffer_x,
+        target_bbox[3] + buffer_y,
+    ]
+
+    clipped = clip_dataset_by_bbox(source_ds, bbox)
+
+    if any(clipped.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
+        LOG.warning(
+            "Clipped dataset contains a spatial dimension with size < 2. "
+            "Returning empty target dataset."
+        )
+        empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+        return empty_ds, target_gm, True
+
+    return clipped, GridMapping.from_dataset(clipped), False
