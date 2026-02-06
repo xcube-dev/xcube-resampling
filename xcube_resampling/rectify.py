@@ -19,38 +19,41 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Hashable, Iterable
+from collections.abc import Iterable
+from dataclasses import dataclass
 
 import dask.array as da
 import numba as nb
 import numpy as np
+
 import pyproj
 import xarray as xr
 
-from .affine import resample_dataset
+from .affine import _downscale_source_dataset
 from .constants import (
-    LOG,
-    SCALE_LIMIT,
-    UV_DELTA,
     FillValues,
     FloatInt,
     PreventNaNPropagations,
     SpatialAggMethods,
     SpatialInterpMethods,
+    SpatialInterpMethod,
     SpatialInterpMethodStr,
 )
-from .dask import compute_array_from_func
 from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
     _get_spatial_interp_method_str,
     _is_equal_crs,
-    _prep_spatial_interp_methods_downscale,
+    _sample_array_at_indices,
     _select_variables,
     bbox_overlap,
-    clip_dataset_by_bbox,
     normalize_grid_mapping,
+    _clip_if_needed,
 )
+
+
+FX_MIN = FY_MIN = 1e-3
+FXFY_MAX = 1.0 + 2 * 1e-3
 
 
 def rectify_dataset(
@@ -119,49 +122,22 @@ def rectify_dataset(
 
     Returns:
         A new dataset with spatial variables rectified to a regular grid.
-            Variables not having 2D spatial dimensions are copied as-is. 1D spatial
-            coordinate variables are ignored in the output.
+        Variables not having 2D spatial dimensions are copied as-is. 1D spatial
+        coordinate variables are ignored in the output.
     """
     source_ds = _select_variables(source_ds, variables)
 
-    if source_gm is None:
-        source_gm = GridMapping.from_dataset(source_ds)
+    source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
 
-    if target_gm is None:
-        target_gm = source_gm.to_regular(tile_size=tile_size)
+    target_gm = target_gm or source_gm.to_regular(tile_size=tile_size)
 
-    # transform 2d spatial coordinate of source dataset to target CRS
-    if not _is_equal_crs(source_gm, target_gm):
-        source_ds = _transform_coords(source_ds, source_gm, target_gm)
-        source_gm = GridMapping.from_dataset(source_ds)
-
-    # if the bbox of the target grid mapping overlaps less than 80% with the
-    # bounding box of the source grid mapping, clip the source dataset.
-    overlap = bbox_overlap(source_gm.xy_bbox, target_gm.xy_bbox)
-    if overlap < 1e-5:
-        LOG.info(
-            "Target grid mapping does not overlap with the source grid mapping. "
-            "Target dataset filled with the respective fill value is returned."
-        )
-        return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
-    if overlap < 0.8:
-        bbox = [
-            target_gm.xy_bbox[0] - 2 * source_gm.x_res,
-            target_gm.xy_bbox[1] - 2 * source_gm.y_res,
-            target_gm.xy_bbox[2] + 2 * source_gm.x_res,
-            target_gm.xy_bbox[3] + 2 * source_gm.x_res,
-        ]
-        source_ds = clip_dataset_by_bbox(source_ds, bbox)
-        if any(source_ds.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
-            LOG.warning(
-                "Clipped dataset contains at least dimension with size < 2. "
-                "Target dataset filled with the respective fill value is returned."
-            )
-            return _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
-        source_gm = GridMapping.from_dataset(source_ds)
-
-    # If source has higher resolution than target, downscale first, then rectify
+    source_ds, source_gm = _align_source_crs_to_target(source_ds, source_gm, target_gm)
+    source_ds, source_gm, is_empty = _clip_if_needed(
+        source_ds, source_gm, target_gm, fill_values
+    )
+    if is_empty:
+        return source_ds
     source_ds, source_gm = _downscale_source_dataset(
         source_ds,
         source_gm,
@@ -171,86 +147,539 @@ def rectify_dataset(
         prevent_nan_propagations,
     )
 
-    # calculate source indices in target grid-mapping
-    target_source_ij = _compute_target_source_ij(source_gm, target_gm, UV_DELTA)
+    indexing = compute_source_tile_indexing(source_gm, target_gm)
 
-    # rectify dataset
-    x_name, y_name = source_gm.xy_var_names
+    src_x, src_y = (
+        _reorganize_tiled_array(
+            source_ds[v].data, indexing, _get_fill_value(fill_values, v, source_ds[v])
+        )
+        for v in source_gm.xy_var_names
+    )
+
+    pixel_target_ij = _get_pixel_target_ij(src_x, src_y, target_gm)
+
+    return _assemble_rectified_dataset(
+        source_ds,
+        source_gm,
+        target_gm,
+        indexing,
+        pixel_target_ij,
+        interp_methods,
+        fill_values,
+        output_indices_names,
+    )
+
+
+@dataclass(frozen=True)
+class SourceTileIndexing:
+    ij_bboxes: np.ndarray  # (4, ny_tiles, nx_tiles)
+    pad_width: tuple[tuple[int, int], tuple[int, int]]
+    output_size: tuple[int, int]
+    tile_size: tuple[int, int]
+
+
+def _align_source_crs_to_target(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+) -> tuple[xr.Dataset, GridMapping]:
+    """
+    Ensure source dataset coordinates are in the same CRS as the target grid mapping.
+    """
+    if _is_equal_crs(source_gm, target_gm):
+        return source_ds, source_gm
+
+    source_ds = _transform_coords(source_ds, source_gm, target_gm)
+    source_gm = GridMapping.from_dataset(source_ds)
+    return source_ds, source_gm
+
+
+def _assemble_rectified_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    indexing: SourceTileIndexing,
+    pixel_target_ij: da.Array,
+    interp_methods: SpatialInterpMethods | None,
+    fill_values: FillValues | None,
+    output_indices_names: tuple[str, str] | None,
+) -> xr.Dataset:
+    """
+    Assemble the final rectified dataset on the target grid.
+    """
+    src_x_name, src_y_name = source_gm.xy_var_names
+    tgt_x_name, tgt_y_name = target_gm.xy_var_names
+
     coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name), errors="ignore")
-    x_name, y_name = target_gm.xy_var_names
+    coords = coords.drop_vars((src_x_name, src_y_name), errors="ignore")
+
     target_coords = target_gm.to_coords()
-    coords[x_name] = target_coords[x_name]
-    coords[y_name] = target_coords[y_name]
+    coords[tgt_x_name] = target_coords[tgt_x_name]
+    coords[tgt_y_name] = target_coords[tgt_y_name]
     coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    for var_name, data_array in source_ds.data_vars.items():
-        if data_array.dims[-2:] == yx_dims:
-            assert len(data_array.dims) in (
+    for var_name, da_src in source_ds.data_vars.items():
+        if da_src.dims[-2:] == yx_dims:
+            assert len(da_src.dims) in (
                 2,
                 3,
-            ), f"Data variable {var_name} has {len(data_array.dims)} dimensions."
+            ), f"Data variable {var_name} has {len(da_src.dims)} dimensions."
+            fill_value = _get_fill_value(fill_values, var_name, da_src)
+            interp_method = _get_spatial_interp_method_str(
+                interp_methods, var_name, da_src
+            )
 
-            target_ds[var_name] = _rectify_data_array(
-                data_array,
-                var_name,
+            rectified = _rectify_data_array(
+                da_src.data,
+                indexing,
                 target_gm,
-                target_source_ij,
-                interp_methods,
-                fill_values,
+                pixel_target_ij,
+                interp_method,
+                fill_value,
             )
+            dims = da_src.dims[:-2] + (
+                target_gm.xy_dim_names[1],
+                target_gm.xy_dim_names[0],
+            )
+            target_ds[var_name] = xr.DataArray(rectified, dims=dims, attrs=da_src.attrs)
 
-        elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
-            target_ds[var_name] = data_array
+        elif yx_dims[0] not in da_src.dims and yx_dims[1] not in da_src.dims:
+            # Non-spatial variable → copy as-is
+            target_ds[var_name] = da_src
 
+    # optional pixel index outputs
     if output_indices_names:
-        target_ds[output_indices_names[0]] = ((y_name, x_name), (target_source_ij[0]))
-        target_ds[output_indices_names[1]] = ((y_name, x_name), (target_source_ij[1]))
-
-    return target_ds
-
-
-def _create_empty_dataset(
-    source_ds: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-    fill_values: FillValues | None = None,
-) -> xr.Dataset:
-    x_name, y_name = source_gm.xy_var_names
-    coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name), errors="ignore")
-    x_name, y_name = target_gm.xy_var_names
-    coords[x_name] = target_gm.x_coords
-    coords[y_name] = target_gm.y_coords
-    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
-    target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
-    for key, data in source_ds.data_vars.items():
-        shape = list(source_ds[key].shape)
-        shape[-1] = target_gm.width
-        shape[-2] = target_gm.height
-        dims = list(source_ds[key].dims)
-        dims[-1] = target_gm.xy_var_names[0]
-        dims[-2] = target_gm.xy_var_names[1]
-        if source_ds[key].ndim == 3:
-            chunks = (
-                source_ds[key].chunks[0][0],
-                target_gm.height,
-                target_gm.width,
-            )
-        else:
-            chunks = (target_gm.height, target_gm.width)
-        target_ds[key] = xr.DataArray(
-            da.full(
-                shape,
-                fill_value=_get_fill_value(fill_values, key, data),
-                chunks=chunks,
-            ),
-            dims=dims,
-            attrs=source_ds[key].attrs,
+        target_ds[output_indices_names[0]] = (
+            (tgt_y_name, tgt_x_name),
+            pixel_target_ij[0],
         )
+        target_ds[output_indices_names[1]] = (
+            (tgt_y_name, tgt_x_name),
+            pixel_target_ij[1],
+        )
+
     return target_ds
+
+
+def _get_pixel_target_ij(
+    src_x_coords: da.Array,
+    src_y_coords: da.Array,
+    target_gm: GridMapping,
+) -> da.Array:
+    """
+    Compute fractional source pixel indices for each target grid pixel.
+
+    For each target pixel, this function determines the fractional (i, j)
+    location in the source grid using forward mapping from source grid
+    quadrilaterals to target grid pixels.
+
+    The computation is performed blockwise using Dask. Each block receives:
+    - a 1D slice of target x coordinates
+    - a 1D slice of target y coordinates
+    - a 2D tile of source x/y coordinates
+
+    Args:
+        src_x_coords: Source grid x-coordinates (2D, tiled).
+        src_y_coords: Source grid y-coordinates (2D, tiled).
+        target_gm: Target grid mapping.
+
+    Returns:
+        Dask array of shape (2, target_height, target_width) containing
+        fractional source pixel indices (ix, iy) per target pixel.
+        Missing values are NaN.
+    """
+
+    def _pixel_index_block(
+        tgt_x_block: np.ndarray,
+        tgt_y_block: np.ndarray,
+        src_x_block: np.ndarray,
+        src_y_block: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Compute fractional source indices for a single target tile.
+
+        Args:
+            tgt_x_block: Target x coordinates for this block (shape (1, nx)).
+            tgt_y_block: Target y coordinates for this block (shape (ny, 1)).
+            src_x_block: Source x coordinates (2D tile).
+            src_y_block: Source y coordinates (2D tile).
+
+        Returns:
+            Array of shape (2, ny, nx) with fractional (ix, iy) indices.
+        """
+        target_x = tgt_x_block.squeeze().astype(np.float32)
+        target_y = tgt_y_block.squeeze().astype(np.float32)
+
+        nx_tgt = target_x.size
+        ny_tgt = target_y.size
+
+        idx_frac = np.full((2, ny_tgt, nx_tgt), np.nan, dtype=np.float32)
+
+        ny_src, nx_src = src_x_block.shape
+
+        # Quad origin indices (top-left corner per quad)
+        ix0 = np.repeat(np.arange(nx_src - 1), ny_src - 1)
+        iy0 = np.tile(np.arange(ny_src - 1), nx_src - 1)
+        quad_ij0 = np.stack((ix0, iy0)).astype(np.int32)
+
+        # Quad corner coordinates
+        src_coords = np.stack((src_x_block, src_y_block)).astype(np.float32)
+        quad_corners = np.stack(
+            (
+                src_coords[:, quad_ij0[1], quad_ij0[0]],
+                src_coords[:, quad_ij0[1], quad_ij0[0] + 1],
+                src_coords[:, quad_ij0[1] + 1, quad_ij0[0]],
+                src_coords[:, quad_ij0[1] + 1, quad_ij0[0] + 1],
+            ),
+            axis=1,
+        )
+
+        valid = ~np.any(np.isnan(quad_corners[0]), axis=0)
+        quad_corners = quad_corners[:, :, valid]
+        quad_ij0 = quad_ij0[:, valid]
+
+        if quad_corners.size == 0:
+            return idx_frac
+
+        # Target grid affine parameters (local to block)
+        offset = np.array([target_x[0], target_y[0]], dtype=np.float32)
+        scale = np.array(
+            [target_x[1] - target_x[0], target_y[1] - target_y[0]],
+            dtype=np.float32,
+        )
+
+        offset = offset[:, None, None]
+        scale = scale[:, None, None]
+
+        # Bounding target pixel indices per quad
+        tgt_bbox = np.floor((quad_corners - offset) / scale).astype(np.int32)
+        tgt_bbox = np.vstack((tgt_bbox.min(axis=1), tgt_bbox.max(axis=1)))
+
+        valid = (
+            (tgt_bbox[2] >= 0)
+            & (tgt_bbox[3] >= 0)
+            & (tgt_bbox[0] < nx_tgt)
+            & (tgt_bbox[1] < ny_tgt)
+        )
+
+        tgt_bbox = tgt_bbox[:, valid]
+        quad_corners = quad_corners[:, :, valid]
+        quad_ij0 = quad_ij0[:, valid]
+
+        if tgt_bbox.size == 0:
+            return idx_frac
+
+        tgt_bbox[0:2] = np.maximum(tgt_bbox[0:2], 0)
+        tgt_bbox[2] = np.minimum(tgt_bbox[2], nx_tgt - 1)
+        tgt_bbox[3] = np.minimum(tgt_bbox[3], ny_tgt - 1)
+
+        _fill_pixel_indices_from_quads(
+            quad_corners,
+            tgt_bbox,
+            idx_frac,
+            target_x,
+            target_y,
+            quad_ij0,
+        )
+
+        return idx_frac
+
+    # Build block-aligned target coordinate views
+    tgt_x = target_gm.x_coords.data
+    tgt_y = target_gm.y_coords.data
+
+    tgt_x = da.stack([tgt_x] * len(tgt_y.chunks[0]), axis=0)
+    tgt_y = da.stack([tgt_y] * len(tgt_x.chunks[1]), axis=1)
+
+    return da.map_blocks(
+        _pixel_index_block,
+        tgt_x,
+        tgt_y,
+        src_x_coords,
+        src_y_coords,
+        dtype=np.float32,
+        chunks=(2, tgt_y.chunks[0], tgt_x.chunks[1]),
+    )
+
+
+@nb.njit(nogil=True, cache=True)
+def _fill_pixel_indices_from_quads(
+    quad_corners: np.ndarray,
+    target_bbox: np.ndarray,
+    out_idx_frac: np.ndarray,
+    target_x: np.ndarray,
+    target_y: np.ndarray,
+    quad_ij0: np.ndarray,
+) -> None:
+    """
+    Fill fractional source pixel indices for target pixels covered by source quads.
+
+    For each source quadrilateral, this function iterates over all overlapping
+    target pixels and computes barycentric coordinates using two triangle
+    decompositions.
+
+    Args:
+        quad_corners: Array of quad corner coordinates (shape (2, 4, n_quads)).
+        target_bbox: Target pixel bounding boxes per quad
+            (shape (4, n_quads): x0, y0, x1, y1).
+        out_idx_frac: Output array of fractional indices (2, ny, nx).
+        target_x: Target x coordinate vector for this block.
+        target_y: Target y coordinate vector for this block.
+        quad_ij0: Source pixel top-left indices per quad (2, n_quads).
+    """
+    n_quads = quad_corners.shape[2]
+
+    for q in range(n_quads):
+        x0, y0, x1, y1 = target_bbox[:, q]
+
+        c0 = quad_corners[:, 0, q]
+        c1 = quad_corners[:, 1, q]
+        c2 = quad_corners[:, 2, q]
+        c3 = quad_corners[:, 3, q]
+
+        # Triangle A
+        dx1 = c1[0] - c0[0]
+        dx2 = c2[0] - c0[0]
+        dy1 = c1[1] - c0[1]
+        dy2 = c2[1] - c0[1]
+        det_a = dx1 * dy2 - dx2 * dy1
+
+        # Triangle B
+        dx1b = c3[0] - c2[0]
+        dx2b = c1[0] - c2[0]
+        dy1b = c3[1] - c2[1]
+        dy2b = c1[1] - c2[1]
+        det_b = dx1b * dy2b - dx2b * dy1b
+
+        for i in range(x0, x1 + 1):
+            tx = target_x[i]
+            for j in range(y0, y1 + 1):
+                if not np.isnan(out_idx_frac[0, j, i]):
+                    continue
+
+                ty = target_y[j]
+
+                # Triangle A
+                if det_a != 0.0:
+                    fx = ((tx - c0[0]) * dy2 - (ty - c0[1]) * dx2) / det_a
+                    fy = (dx1 * (ty - c0[1]) - dy1 * (tx - c0[0])) / det_a
+                else:
+                    fx = fy = np.nan
+
+                if not np.isnan(fx) and not (
+                    fx < -FX_MIN and fy < -FY_MIN and fx + fy > FXFY_MAX
+                ):
+                    out_idx_frac[0, j, i] = quad_ij0[0, q] + fx
+                    out_idx_frac[1, j, i] = quad_ij0[1, q] + fy
+                    continue
+
+                # Triangle B
+                if det_b != 0.0:
+                    fx = ((tx - c3[0]) * dy2b - (ty - c3[1]) * dx2b) / det_b
+                    fy = (dx1b * (ty - c3[1]) - dy1b * (tx - c3[0])) / det_b
+                else:
+                    fx = fy = np.nan
+
+                if not np.isnan(fx) and not (
+                    fx < -FX_MIN and fy < -FY_MIN and fx + fy > FXFY_MAX
+                ):
+                    out_idx_frac[0, j, i] = quad_ij0[0, q] + 1.0 - fx
+                    out_idx_frac[1, j, i] = quad_ij0[1, q] + 1.0 - fy
+
+
+def _reorganize_tiled_array(
+    array: da.Array,
+    indexing: SourceTileIndexing,
+    fill_value: FloatInt,
+) -> da.Array:
+    """
+    Reorganize a 2D or 3D array into uniformly sized tiles based on source index bboxes.
+    """
+
+    is_3d = array.ndim == 3
+    if not is_3d:
+        array = array[None, ...]
+
+    pad_width = ((0, 0),) + indexing.pad_width
+    padded = da.pad(array, pad_width, mode="constant", constant_values=fill_value)
+
+    out_shape = (
+        array.shape[0],
+        indexing.output_size[0],
+        indexing.output_size[1],
+    )
+    chunks = (
+        array.chunks[0],
+        indexing.tile_size[0],
+        indexing.tile_size[1],
+    )
+
+    out = da.zeros(out_shape, chunks=chunks, dtype=array.dtype)
+
+    ny, nx = indexing.ij_bboxes.shape[1:]
+    th, tw = indexing.tile_size
+
+    for j in range(ny):
+        for i in range(nx):
+            bbox = indexing.ij_bboxes[:, j, i]
+
+            y0, y1 = j * th, (j + 1) * th
+            x0, x1 = i * tw, (i + 1) * tw
+
+            if bbox[0] == -1:
+                out[:, y0:y1, x0:x1] = da.full(
+                    (array.shape[0], th, tw),
+                    fill_value,
+                    chunks=chunks,
+                    dtype=array.dtype,
+                )
+            else:
+                out[:, y0:y1, x0:x1] = padded[
+                    :,
+                    bbox[1] : bbox[3],
+                    bbox[0] : bbox[2],
+                ]
+
+    return out if is_3d else out[0]
+
+
+def overlapping_bboxes(bbox, target_bboxes):
+    block_i = []
+    block_j = []
+    for i in range(target_bboxes.shape[1]):
+        for j in range(target_bboxes.shape[2]):
+            if bbox_overlap(bbox, target_bboxes[:, i, j]) > 0:
+                block_i.append(i)
+                block_j.append(j)
+    return block_i, block_j
+
+
+def _xy_bbox_block(x_coords: np.ndarray, y_coords: np.ndarray):
+    x_edges = np.concatenate([x_coords[:, 0], x_coords[:, -1]])
+    y_edges = np.concatenate([y_coords[0, :], y_coords[-1, :]])
+    bbox = np.array(
+        [
+            x_edges.min(),
+            y_edges.min(),
+            x_edges.max(),
+            y_edges.max(),
+        ],
+        dtype=np.float32,
+    )
+    return bbox[:, None, None]
+
+
+def _get_xy_bboxes(gm_2d: GridMapping):
+    return da.map_blocks(
+        _xy_bbox_block,
+        gm_2d.x_coords.data,
+        gm_2d.y_coords.data,
+        dtype=np.float32,
+        chunks=(4, 1, 1),
+    )
+
+
+def compute_source_tile_indexing(
+    source_gm: GridMapping, target_gm: GridMapping
+) -> SourceTileIndexing:
+    target_xy_bboxes = target_gm.xy_bboxes
+    source_xy_bboxes = _get_xy_bboxes(source_gm).compute()
+    scr_ij_bboxes = np.full_like(target_xy_bboxes, np.nan)
+
+    tasks = []
+    meta = []
+    for tile_idx, bbox in enumerate(target_xy_bboxes):
+        block_i, block_j = overlapping_bboxes(bbox, source_xy_bboxes)
+        if not block_i:
+            continue
+        i_min = source_gm.tile_height * np.min(block_i)
+        i_max = source_gm.tile_height * (np.max(block_i) + 1)
+        j_min = source_gm.tile_width * np.min(block_j)
+        j_max = source_gm.tile_width * (np.max(block_j) + 1)
+
+        y_coords_sub = source_gm.y_coords[i_min:i_max, j_min:j_max].data
+        x_coords_sub = source_gm.x_coords[i_min:i_max, j_min:j_max].data
+
+        mask = (
+            (x_coords_sub >= bbox[0])
+            & (x_coords_sub <= bbox[2])
+            & (y_coords_sub >= bbox[1])
+            & (y_coords_sub <= bbox[3])
+        )
+        rows = da.any(mask, axis=1)
+        cols = da.any(mask, axis=0)
+        row_idxs = da.arange(rows.shape[0], chunks=rows.chunks)
+        col_idxs = da.arange(cols.shape[0], chunks=cols.chunks)
+        valid_rows = da.where(rows, row_idxs, np.nan)
+        valid_cols = da.where(cols, col_idxs, np.nan)
+
+        tasks.append(
+            (
+                da.nanmin(valid_rows),
+                da.nanmax(valid_rows),
+                da.nanmin(valid_cols),
+                da.nanmax(valid_cols),
+            )
+        )
+        meta.append((tile_idx, i_min, j_min))
+
+    results = da.compute(*tasks)
+    for (rmin, rmax, cmin, cmax), (tile_idx, i_min, j_min) in zip(results, meta):
+        if np.isnan(rmin):
+            continue
+        scr_ij_bboxes[tile_idx, 1] = rmin + i_min - 1
+        scr_ij_bboxes[tile_idx, 3] = rmax + i_min + 1
+        scr_ij_bboxes[tile_idx, 0] = cmin + j_min - 1
+        scr_ij_bboxes[tile_idx, 2] = cmax + j_min + 1
+    target_block_j = int(np.ceil(target_gm.height / target_gm.tile_height))
+    target_block_i = int(np.ceil(target_gm.width / target_gm.tile_width))
+    scr_ij_bboxes = scr_ij_bboxes.reshape(
+        (target_block_j, target_block_i, 4)
+    ).transpose((2, 0, 1))
+
+    # Extend bounding box indices to match the largest bounding box.
+    # This ensures uniform chunk sizes, which are required for da.map_blocks.
+    i_diff = scr_ij_bboxes[2] - scr_ij_bboxes[0]
+    j_diff = scr_ij_bboxes[3] - scr_ij_bboxes[1]
+    i_diff_max = np.nanmax(i_diff) + 1
+    j_diff_max = np.nanmax(j_diff) + 1
+    i_half = (i_diff_max - i_diff) // 2
+    j_half = (j_diff_max - j_diff) // 2
+    scr_ij_bboxes[0] -= i_half
+    scr_ij_bboxes[2] = scr_ij_bboxes[0] + i_diff_max
+    scr_ij_bboxes[1] -= j_half
+    scr_ij_bboxes[3] = scr_ij_bboxes[1] + j_diff_max
+
+    # assign padding if needed
+    i_min = np.nanmin(scr_ij_bboxes[0])
+    i_max = np.nanmax(scr_ij_bboxes[2])
+    j_min = np.nanmin(scr_ij_bboxes[[1, 3]])
+    j_max = np.nanmax(scr_ij_bboxes[[1, 3]])
+    pad_width = (
+        (-min(0, int(j_min)), max(0, int(j_max - source_gm.height))),
+        (-min(0, int(i_min)), max(0, int(i_max - source_gm.width))),
+    )
+    scr_ij_bboxes[[1, 3]] += pad_width[0][0]
+    scr_ij_bboxes[[0, 2]] += pad_width[1][0]
+
+    scr_ij_bboxes = np.where(np.isnan(scr_ij_bboxes), -1, scr_ij_bboxes).astype(
+        np.int32
+    )
+    scr_ij_bboxes = scr_ij_bboxes
+    tile_size = (int(j_diff_max), int(i_diff_max))
+    size = (
+        int(j_diff_max * scr_ij_bboxes.shape[1]),
+        int(i_diff_max * scr_ij_bboxes.shape[2]),
+    )
+
+    return SourceTileIndexing(
+        ij_bboxes=scr_ij_bboxes,
+        pad_width=pad_width,
+        output_size=size,
+        tile_size=tile_size,
+    )
 
 
 def _transform_coords(
@@ -305,545 +734,67 @@ def _transform_coords(
     return source_ds
 
 
-def _downscale_source_dataset(
-    source_ds: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-    interp_methods: SpatialInterpMethods | None,
-    agg_methods: SpatialAggMethods | None,
-    prevent_nan_propagations: PreventNaNPropagations,
-) -> (xr.Dataset, GridMapping):
-    if interp_methods in [0, "nearest"]:
-        return source_ds, source_gm
-    x_scale = source_gm.x_res / target_gm.x_res
-    y_scale = source_gm.y_res / target_gm.y_res
-    if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
-        w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
-        downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
-
-        source_ds = resample_dataset(
-            source_ds,
-            ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),
-            (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
-            downscaled_size,
-            source_gm.tile_size,
-            _prep_spatial_interp_methods_downscale(interp_methods),
-            agg_methods,
-            prevent_nan_propagations,
-        )
-        source_gm = GridMapping.from_dataset(source_ds)
-
-    return source_ds, source_gm
-
-
 def _rectify_data_array(
-    data_array: xr.DataArray,
-    var_name: Hashable,
+    data: da.Array,
+    indexing: SourceTileIndexing,
     target_gm: GridMapping,
-    target_source_ij: da.Array,
-    interp_methods: SpatialInterpMethods | None = None,
-    fill_values: FillValues | None = None,
-) -> xr.DataArray:
-    data_array_expanded = False
-    if len(data_array.dims) == 2:
-        data_array = data_array.expand_dims({"dummy": 1})
-        data_array_expanded = True
-
-    if isinstance(data_array.data, np.ndarray):
-        is_numpy_array = True
-        data_array = data_array.chunk({dim: -1 for dim in data_array.dims})
-    else:
-        is_numpy_array = False
-
-    fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
-
-    # calculate rectification of each chunk along the 1st (non-spatial) dimension.
-    slices_rectified = []
-    dim0_end = 0
-    for chunk_size in data_array.chunks[0]:
-        dim0_start = dim0_end
-        dim0_end = dim0_start + chunk_size
-
-        data_rectified = _compute_var_image(
-            data_array[dim0_start:dim0_end], target_source_ij, fill_value, interp_method
-        )
-        slices_rectified.append(data_rectified)
-    array_rectified = da.concatenate(slices_rectified, axis=0)
-    if is_numpy_array and not target_gm.is_tiled:
-        array_rectified = array_rectified.compute()
-    if data_array_expanded:
-        array_rectified = array_rectified[0, :, :]
-        dims = (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
-    else:
-        dims = (
-            data_array.dims[0],
-            target_gm.xy_dim_names[1],
-            target_gm.xy_dim_names[0],
-        )
-
-    return xr.DataArray(data=array_rectified, dims=dims, attrs=data_array.attrs)
-
-
-def _compute_target_source_ij(
-    src_geo_coding: GridMapping, output_geom: GridMapping, uv_delta: float
-) -> da.Array:
-    """Compute dask.array.Array destination image
-    with source pixel i,j coords from xarray.DataArray x,y sources.
-    """
-    dst_width = output_geom.width
-    dst_height = output_geom.height
-    dst_tile_width = output_geom.tile_width
-    dst_tile_height = output_geom.tile_height
-    dst_var_shape = 2, dst_height, dst_width
-    dst_var_chunks = 2, dst_tile_height, dst_tile_width
-
-    dst_x_min, dst_y_min, dst_x_max, dst_y_max = output_geom.xy_bbox
-    dst_x_res, dst_y_res = output_geom.xy_res
-    dst_is_j_axis_up = output_geom.is_j_axis_up
-
-    # Compute an empirical xy_border as a function of the
-    # number of tiles, because the more tiles we have
-    # the smaller the destination xy-bboxes and the higher
-    # the risk to not find any source ij-bbox for a given xy-bbox.
-    # xy_border will not be larger than half of the
-    # coverage of a tile.
-    num_tiles_x = dst_width / dst_tile_width
-    num_tiles_y = dst_height / dst_tile_height
-    xy_border = min(
-        min(2 * num_tiles_x * output_geom.x_res, 2 * num_tiles_y * output_geom.y_res),
-        min(0.5 * (dst_x_max - dst_x_min), 0.5 * (dst_y_max - dst_y_min)),
-    )
-
-    dst_xy_bboxes = output_geom.xy_bboxes
-    src_ij_bboxes = src_geo_coding.ij_bboxes_from_xy_bboxes(
-        dst_xy_bboxes, xy_border=xy_border, ij_border=1
-    )
-
-    return compute_array_from_func(
-        _compute_target_source_ij_block,
-        dst_var_shape,
-        dst_var_chunks,
-        np.float64,
-        ctx_arg_names=[
-            "dtype",
-            "block_id",
-            "block_shape",
-            "block_slices",
-        ],
-        args=(
-            src_geo_coding.xy_coords,
-            src_ij_bboxes,
-            dst_x_min,
-            dst_y_min,
-            dst_y_max,
-            dst_x_res,
-            dst_y_res,
-            dst_is_j_axis_up,
-            uv_delta,
-        ),
-        name="ij_pixels",
-    )
-
-
-def _compute_target_source_ij_block(
-    dtype: np.dtype,
-    block_id: int,
-    block_shape: tuple[int, int],
-    block_slices: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
-    src_xy_coords: xr.DataArray,
-    src_ij_bboxes: np.ndarray,
-    dst_x_min: float,
-    dst_y_min: float,
-    dst_y_max: float,
-    dst_x_res: float,
-    dst_y_res: float,
-    dst_is_j_axis_up: bool,
-    uv_delta: float,
-) -> np.ndarray:
-    """Compute dask.array.Array destination block with source
-    pixel i,j coords from xarray.DataArray x,y sources.
-    """
-    dst_src_ij_block = np.full(block_shape, np.nan, dtype=dtype)
-    _, (dst_y_slice_start, _), (dst_x_slice_start, _) = block_slices
-    src_ij_bbox = src_ij_bboxes[block_id]
-    src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
-    if src_i_min == -1:
-        return dst_src_ij_block
-    src_xy_values = src_xy_coords[
-        :, src_j_min : src_j_max + 1, src_i_min : src_i_max + 1
-    ].values
-    src_x_values = src_xy_values[0]
-    src_y_values = src_xy_values[1]
-    dst_x_offset = dst_x_min + dst_x_slice_start * dst_x_res
-    if dst_is_j_axis_up:
-        dst_y_offset = dst_y_min + dst_y_slice_start * dst_y_res
-    else:
-        dst_y_offset = dst_y_max - dst_y_slice_start * dst_y_res
-    _compute_target_source_ij_sequential(
-        src_x_values,
-        src_y_values,
-        src_i_min,
-        src_j_min,
-        dst_src_ij_block,
-        dst_x_offset,
-        dst_y_offset,
-        dst_x_res,
-        dst_y_res if dst_is_j_axis_up else -dst_y_res,
-        uv_delta,
-    )
-    return dst_src_ij_block
-
-
-# Extra dask version, because if we use parallel=True
-# and nb.prange, we end up in infinite JIT compilation :(
-@nb.njit(nogil=True, cache=True)
-def _compute_target_source_ij_sequential(
-    src_x_image: np.ndarray,
-    src_y_image: np.ndarray,
-    src_i_min: int,
-    src_j_min: int,
-    dst_src_ij_images: np.ndarray,
-    dst_x_offset: float,
-    dst_y_offset: float,
-    dst_x_scale: float,
-    dst_y_scale: float,
-    uv_delta: float,
-):
-    """Compute numpy.ndarray destination image with source pixel i,j coords
-    from numpy.ndarray x,y sources NOT in parallel mode.
-    """
-    src_height = src_x_image.shape[-2]
-    dst_src_ij_images[:, :, :] = np.nan
-    for src_j0 in range(src_height - 1):
-        _compute_target_source_ij_line(
-            src_j0,
-            src_x_image,
-            src_y_image,
-            src_i_min,
-            src_j_min,
-            dst_src_ij_images,
-            dst_x_offset,
-            dst_y_offset,
-            dst_x_scale,
-            dst_y_scale,
-            uv_delta,
-        )
-
-
-@nb.njit(nogil=True, cache=True)
-def _compute_target_source_ij_line(
-    src_j0: int,
-    src_x_image: np.ndarray,
-    src_y_image: np.ndarray,
-    src_i_min: int,
-    src_j_min: int,
-    dst_src_ij_images: np.ndarray,
-    dst_x_offset: float,
-    dst_y_offset: float,
-    dst_x_scale: float,
-    dst_y_scale: float,
-    uv_delta: float,
-):
-    """Compute numpy.ndarray destination image with source
-    pixel i,j coords from a numpy.ndarray x,y source line.
-    """
-    src_width = src_x_image.shape[-1]
-
-    dst_width = dst_src_ij_images.shape[-1]
-    dst_height = dst_src_ij_images.shape[-2]
-
-    dst_px = np.zeros(4, dtype=src_x_image.dtype)
-    dst_py = np.zeros(4, dtype=src_y_image.dtype)
-
-    u_min = v_min = -uv_delta
-    uv_max = 1.0 + 2 * uv_delta
-
-    for src_i0 in range(src_width - 1):
-        src_i1 = src_i0 + 1
-        src_j1 = src_j0 + 1
-
-        dst_px[0] = dst_p0x = src_x_image[src_j0, src_i0]
-        dst_px[1] = dst_p1x = src_x_image[src_j0, src_i1]
-        dst_px[2] = dst_p2x = src_x_image[src_j1, src_i0]
-        dst_px[3] = dst_p3x = src_x_image[src_j1, src_i1]
-
-        dst_py[0] = dst_p0y = src_y_image[src_j0, src_i0]
-        dst_py[1] = dst_p1y = src_y_image[src_j0, src_i1]
-        dst_py[2] = dst_p2y = src_y_image[src_j1, src_i0]
-        dst_py[3] = dst_p3y = src_y_image[src_j1, src_i1]
-
-        dst_pi = np.floor((dst_px - dst_x_offset) / dst_x_scale).astype(np.int64)
-        dst_pj = np.floor((dst_py - dst_y_offset) / dst_y_scale).astype(np.int64)
-
-        dst_i_min = np.min(dst_pi)
-        dst_i_max = np.max(dst_pi)
-        dst_j_min = np.min(dst_pj)
-        dst_j_max = np.max(dst_pj)
-
-        if (
-            dst_i_max < 0
-            or dst_j_max < 0
-            or dst_i_min >= dst_width
-            or dst_j_min >= dst_height
-        ):
-            continue
-
-        if dst_i_min < 0:
-            dst_i_min = 0
-
-        if dst_i_max >= dst_width:
-            dst_i_max = dst_width - 1
-
-        if dst_j_min < 0:
-            dst_j_min = 0
-
-        if dst_j_max >= dst_height:
-            dst_j_max = dst_height - 1
-
-        # u from p0 right to p1, v from p0 down to p2
-        # noinspection PyTypeChecker
-        det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
-        if np.isnan(det_a):
-            det_a = 0.0
-
-        # u from p3 left to p2, v from p3 up to p1
-        # noinspection PyTypeChecker
-        det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
-        if np.isnan(det_b):
-            det_b = 0.0
-
-        if det_a == 0.0 and det_b == 0.0:
-            # Both the triangles do not exist.
-            continue
-
-        for dst_j in range(dst_j_min, dst_j_max + 1):
-            dst_y = dst_y_offset + (dst_j + 0.5) * dst_y_scale
-            for dst_i in range(dst_i_min, dst_i_max + 1):
-                sentinel = dst_src_ij_images[0, dst_j, dst_i]
-                if not np.isnan(sentinel):
-                    # If we have a source pixel in dst_i, dst_j already,
-                    # there is no need to compute another one.
-                    # One is as good as the other.
-                    continue
-
-                dst_x = dst_x_offset + (dst_i + 0.5) * dst_x_scale
-
-                src_i = src_j = -1
-
-                if det_a != 0.0:
-                    # noinspection PyTypeChecker
-                    u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
-                    # noinspection PyTypeChecker
-                    v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
-                    if u >= u_min and v >= v_min and u + v <= uv_max:
-                        src_i = src_i0 + _fclamp(u, 0.0, 1.0)
-                        src_j = src_j0 + _fclamp(v, 0.0, 1.0)
-                if src_i == -1 and det_b != 0.0:
-                    # noinspection PyTypeChecker
-                    u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
-                    # noinspection PyTypeChecker
-                    v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
-                    if u >= u_min and v >= v_min and u + v <= uv_max:
-                        src_i = src_i1 - _fclamp(u, 0.0, 1.0)
-                        src_j = src_j1 - _fclamp(v, 0.0, 1.0)
-                if src_i != -1:
-                    dst_src_ij_images[0, dst_j, dst_i] = src_i_min + src_i
-                    dst_src_ij_images[1, dst_j, dst_i] = src_j_min + src_j
-
-
-def _compute_var_image(
-    src_var: xr.DataArray,
-    dst_src_ij_images: da.Array,
+    pixel_target_ij: da.Array,
+    interp_method: SpatialInterpMethod,
     fill_value: FloatInt,
-    interp_method: SpatialInterpMethodStr,
 ) -> da.Array:
-    """Extract source pixels from xarray.DataArray source
-    with dask.array.Array data.
-    """
-    # Retrieve the chunk size required for `da.map_blocks`, as the resulting array
-    # will have a different shape.
-    chunksize = src_var.shape[:-2] + tuple(c[0] for c in dst_src_ij_images.chunks[-2:])
-    arr = da.map_blocks(
-        _compute_var_image_block,
-        dst_src_ij_images,
-        src_var,
-        fill_value,
-        interp_method,
-        chunksize,
-        dtype=src_var.dtype,
-        chunks=chunksize,
-    )
-    arr = arr[..., : dst_src_ij_images.shape[-2], : dst_src_ij_images.shape[-1]]
-    return arr
 
+    expanded = data.ndim == 2
+    if expanded:
+        data = data[None, ...]
 
-def _compute_var_image_block(
-    dst_src_ij_images: np.ndarray,
-    src_var_image: xr.DataArray,
-    fill_value: FloatInt,
-    interp_method: SpatialInterpMethodStr,
-    chunksize: tuple[int],
-) -> np.ndarray:
-    """Extract source pixels from np.ndarray source
-    and return a block of a dask array.
-    """
-    dst_width = dst_src_ij_images.shape[-1]
-    dst_height = dst_src_ij_images.shape[-2]
-    dst_shape = src_var_image.shape[:-2] + (dst_height, dst_width)
-    dst_out = np.full(chunksize, fill_value, dtype=src_var_image.dtype)
-    if np.all(np.isnan(dst_src_ij_images[0])):
-        return dst_out
-    dst_values = np.full(dst_shape, fill_value, dtype=src_var_image.dtype)
-    src_bbox = (
-        int(np.nanmin(dst_src_ij_images[0])),
-        int(np.nanmin(dst_src_ij_images[1])),
-        min(int(np.nanmax(dst_src_ij_images[0])) + 2, src_var_image.shape[-1]),
-        min(int(np.nanmax(dst_src_ij_images[1])) + 2, src_var_image.shape[-2]),
-    )
-    src_var_image = src_var_image[
-        ..., src_bbox[1] : src_bbox[3], src_bbox[0] : src_bbox[2]
-    ].values.astype(np.float64)
-    _compute_var_image_sequential(
-        src_var_image, dst_src_ij_images, dst_values, src_bbox, interp_method
-    )
-    dst_out[..., :dst_height, :dst_width] = dst_values
-    return dst_out
+    if isinstance(data, np.ndarray):
+        data = da.asarray(data)
 
+    tiled = _reorganize_tiled_array(data, indexing, fill_value)
 
-# Extra dask version, because if we use parallel=True
-# and nb.prange, we end up in infinite JIT compilation :(
-@nb.njit(nogil=True, cache=True)
-def _compute_var_image_sequential(
-    src_var_image: np.ndarray,
-    dst_src_ij_images: np.ndarray,
-    dst_var_image: np.ndarray,
-    src_bbox: tuple[int, int, int, int],
-    interp_method: SpatialInterpMethodStr,
-):
-    """Extract source pixels from np.ndarray source
-    NOT using numba parallel mode.
-    """
-    dst_height = dst_var_image.shape[-2]
-    for dst_j in range(dst_height):
-        _compute_var_image_for_dest_line(
-            dst_j,
-            src_var_image,
-            dst_src_ij_images,
-            dst_var_image,
-            src_bbox,
-            interp_method,
-        )
+    rectified_chunks = []
+    offset = 0
 
-
-@nb.njit(nogil=True, cache=True)
-def _compute_var_image_for_dest_line(
-    dst_j: int,
-    src_var_image: np.ndarray,
-    dst_src_ij_images: np.ndarray,
-    dst_var_image: np.ndarray,
-    src_bbox: tuple[int, int, int, int],
-    interp_method: SpatialInterpMethodStr,
-):
-    """Extract source pixels from *src_values* np.ndarray
-    and write into dst_values np.ndarray.
-    """
-    src_width = src_var_image.shape[-1]
-    src_height = src_var_image.shape[-2]
-    dst_width = dst_var_image.shape[-1]
-    src_i_min = 0
-    src_j_min = 0
-    src_i_max = src_width - 1
-    src_j_max = src_height - 1
-    for dst_i in range(dst_width):
-        src_i_f = dst_src_ij_images[0, dst_j, dst_i] - src_bbox[0]
-        src_j_f = dst_src_ij_images[1, dst_j, dst_i] - src_bbox[1]
-        if np.isnan(src_i_f) or np.isnan(src_j_f):
-            continue
-        # Note int() is 2x faster than math.floor() and
-        # should yield the same results for only positive i,j.
-        src_i0 = int(src_i_f)
-        src_j0 = int(src_j_f)
-        u = src_i_f - src_i0
-        v = src_j_f - src_j0
-        if interp_method == "nearest":
-            if u > 0.5:
-                src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
-            if v > 0.5:
-                src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
-            dst_var_value = src_var_image[..., src_j0, src_i0]
-        elif interp_method == "triangular":
-            src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
-            src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
-            value_01 = src_var_image[..., src_j0, src_i1]
-            value_10 = src_var_image[..., src_j1, src_i0]
-            if u + v < 1.0:
-                # Closest triangle
-                value_00 = src_var_image[..., src_j0, src_i0]
-                dst_var_value = (
-                    value_00 + u * (value_01 - value_00) + v * (value_10 - value_00)
-                )
-            else:
-                # Opposite triangle
-                value_11 = src_var_image[..., src_j1, src_i1]
-                dst_var_value = (
-                    value_11
-                    + (1.0 - u) * (value_10 - value_11)
-                    + (1.0 - v) * (value_01 - value_11)
-                )
-        elif interp_method == "bilinear":
-            src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
-            src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
-            value_00 = src_var_image[..., src_j0, src_i0]
-            value_01 = src_var_image[..., src_j0, src_i1]
-            value_10 = src_var_image[..., src_j1, src_i0]
-            value_11 = src_var_image[..., src_j1, src_i1]
-            value_u0 = value_00 + u * (value_01 - value_00)
-            value_u1 = value_10 + u * (value_11 - value_10)
-            dst_var_value = value_u0 + v * (value_u1 - value_u0)
-        else:
-            raise NotImplementedError(
-                f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', "
-                f"'triangular', was '{interp_method}'."
+    for chunk in data.chunks[0]:
+        rectified_chunks.append(
+            da.map_blocks(
+                _rectify_block,
+                pixel_target_ij,
+                tiled[offset : offset + chunk],
+                interp_method=interp_method,
+                fill_value=fill_value,
+                dtype=data.dtype,
+                chunks=(chunk, *pixel_target_ij.chunks[1:]),
             )
+        )
+        offset += chunk
 
-        dst_var_image[..., dst_j, dst_i] = dst_var_value
+    result = da.concatenate(rectified_chunks, axis=0)
 
+    if expanded:
+        result = result[0]
 
-@nb.njit(
-    "float64(float64, float64, float64, float64, float64, float64)",
-    nogil=True,
-    inline="always",
-)
-def _fdet(
-    px0: float, py0: float, px1: float, py1: float, px2: float, py2: float
-) -> float:
-    return (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
+    if isinstance(data, np.ndarray) and not target_gm.is_tiled:
+        result = result.compute()
 
-
-@nb.njit(
-    "float64(float64, float64, float64, float64, float64, float64)",
-    nogil=True,
-    inline="always",
-)
-def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) -> float:
-    return (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
+    return result
 
 
-@nb.njit(
-    "float64(float64, float64, float64, float64, float64, float64)",
-    nogil=True,
-    inline="always",
-)
-def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
-    return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
+def _rectify_block(
+    pixel_target_ij: np.ndarray,
+    data_array: np.ndarray,
+    interp_method: SpatialInterpMethodStr,
+    fill_value: FloatInt,
+) -> np.ndarray:
+    ix, iy = pixel_target_ij
 
+    out_shape = (data_array.shape[0],) + iy.shape
+    data_rectified = np.full(out_shape, fill_value, dtype=data_array.dtype)
 
-@nb.njit("float64(float64, float64, float64)", nogil=True, inline="always")
-def _fclamp(x: float, x_min: float, x_max: float) -> float:
-    return x_min if x < x_min else (x_max if x > x_max else x)
+    valid = ~np.isnan(ix)
+    if not np.any(valid):
+        return data_rectified
 
-
-@nb.njit("int64(int64, int64, int64)", nogil=True, inline="always")
-def _iclamp(x: int, x_min: int, x_max: int) -> int:
-    return x_min if x < x_min else (x_max if x > x_max else x)
+    sampled = _sample_array_at_indices(data_array, ix[valid], iy[valid], interp_method)
+    data_rectified[:, valid] = sampled
+    return data_rectified

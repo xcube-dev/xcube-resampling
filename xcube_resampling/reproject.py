@@ -27,9 +27,8 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from .affine import affine_transform_dataset
+from .affine import _downscale_source_dataset
 from .constants import (
-    SCALE_LIMIT,
     FillValues,
     FloatInt,
     PreventNaNPropagations,
@@ -41,10 +40,10 @@ from .gridmapping import GridMapping
 from .utils import (
     _get_fill_value,
     _get_spatial_interp_method_str,
-    _prep_spatial_interp_methods_downscale,
+    _sample_array_at_indices,
     _select_variables,
-    clip_dataset_by_bbox,
     normalize_grid_mapping,
+    _clip_if_needed,
 )
 
 
@@ -110,31 +109,35 @@ def reproject_dataset(
             grid. Variables without 2D spatial dimensions are copied as-is.
             1D spatial coordinate variables are ignored in the output.
     """
+    source_ds = _select_variables(source_ds, variables)
 
-    if source_gm is None:
-        source_gm = GridMapping.from_dataset(source_ds)
+    source_gm = source_gm or GridMapping.from_dataset(source_ds)
+    source_ds = normalize_grid_mapping(source_ds, source_gm)
+
     if source_gm.is_j_axis_up:
         v_var = source_gm.xy_var_names[1]
         source_ds = source_ds.isel({v_var: slice(None, None, -1)})
         source_gm = GridMapping.from_dataset(source_ds)
 
-    source_ds = normalize_grid_mapping(source_ds, source_gm)
-
-    source_ds = _select_variables(source_ds, variables)
-
     transformer = pyproj.Transformer.from_crs(
         target_gm.crs, source_gm.crs, always_xy=True
     )
+
+    source_ds, source_gm, is_empty = _clip_if_needed(
+        source_ds, source_gm, target_gm, fill_values, transformer=transformer
+    )
+    if is_empty:
+        return source_ds
 
     # If source has higher resolution than target, downscale first, then reproject
     source_ds, source_gm = _downscale_source_dataset(
         source_ds,
         source_gm,
         target_gm,
-        transformer,
         interp_methods,
         agg_methods,
         prevent_nan_propagations,
+        transformer=transformer,
     )
 
     # For each bounding box in the target grid mapping:
@@ -279,111 +282,7 @@ def _reproject_block(
     ix = (source_xx - x_coord[0]) / scr_x_res
     iy = (source_yy - y_coord[0]) / -scr_y_res
 
-    if interp_method == "nearest":
-        ix = np.rint(ix).astype(np.int16)
-        iy = np.rint(iy).astype(np.int16)
-        data_reprojected = scr_data[:, iy, ix]
-    elif interp_method == "triangular":
-        ix_ceil = np.ceil(ix).astype(np.int16)
-        ix_floor = np.floor(ix).astype(np.int16)
-        iy_ceil = np.ceil(iy).astype(np.int16)
-        iy_floor = np.floor(iy).astype(np.int16)
-        diff_ix = ix - ix_floor
-        diff_iy = iy - iy_floor
-        value_00 = scr_data[:, iy_floor, ix_floor]
-        value_01 = scr_data[:, iy_floor, ix_ceil]
-        value_10 = scr_data[:, iy_ceil, ix_floor]
-        value_11 = scr_data[:, iy_ceil, ix_ceil]
-        mask = diff_ix + diff_iy < 1.0
-        mask_3d = np.repeat(mask[np.newaxis, :, :], scr_data.shape[0], axis=0)
-        diff_ix = np.repeat(diff_ix[np.newaxis, :, :], scr_data.shape[0], axis=0)
-        diff_iy = np.repeat(diff_iy[np.newaxis, :, :], scr_data.shape[0], axis=0)
-        data_reprojected = np.zeros(
-            (scr_data.shape[0], iy.shape[0], iy.shape[1]), dtype=scr_data.dtype
-        )
-        # Closest triangle
-        data_reprojected[mask_3d] = (
-            value_00[mask_3d]
-            + diff_ix[mask_3d] * (value_01[mask_3d] - value_00[mask_3d])
-            + diff_iy[mask_3d] * (value_10[mask_3d] - value_00[mask_3d])
-        )
-        # Opposite triangle
-        data_reprojected[~mask_3d] = (
-            value_11[~mask_3d]
-            + (1.0 - diff_ix[~mask_3d]) * (value_10[~mask_3d] - value_11[~mask_3d])
-            + (1.0 - diff_iy[~mask_3d]) * (value_01[~mask_3d] - value_11[~mask_3d])
-        )
-    elif interp_method == "bilinear":
-        ix_ceil = np.ceil(ix).astype(np.int16)
-        ix_floor = np.floor(ix).astype(np.int16)
-        iy_ceil = np.ceil(iy).astype(np.int16)
-        iy_floor = np.floor(iy).astype(np.int16)
-        diff_ix = ix - ix_floor
-        diff_iy = iy - iy_floor
-        value_00 = scr_data[:, iy_floor, ix_floor]
-        value_01 = scr_data[:, iy_floor, ix_ceil]
-        value_10 = scr_data[:, iy_ceil, ix_floor]
-        value_11 = scr_data[:, iy_ceil, ix_ceil]
-        value_u0 = value_00 + diff_ix * (value_01 - value_00)
-        value_u1 = value_10 + diff_ix * (value_11 - value_10)
-        data_reprojected = value_u0 + diff_iy * (value_u1 - value_u0)
-    else:
-        raise NotImplementedError(
-            f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular', "
-            f"was '{interp_method}'."
-        )
-
-    return data_reprojected
-
-
-def _downscale_source_dataset(
-    source_ds: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-    transformer: pyproj.Transformer,
-    interp_methods: SpatialInterpMethods | None,
-    agg_methods: SpatialAggMethods | None,
-    prevent_nan_propagations: PreventNaNPropagations,
-) -> (xr.Dataset, GridMapping):
-    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
-    xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
-    yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
-    x_scale = source_gm.x_res / xres_trans
-    y_scale = source_gm.y_res / yres_trans
-    if x_scale < SCALE_LIMIT or y_scale < SCALE_LIMIT:
-        # clip source dataset to the transformed bounding box defined by
-        # target grid mapping, so that affine_transform_dataset is not that heavy
-        bbox_trans = (
-            bbox_trans[0] - 2 * xres_trans,
-            bbox_trans[1] - 2 * yres_trans,
-            bbox_trans[2] + 2 * xres_trans,
-            bbox_trans[3] + 2 * yres_trans,
-        )
-        source_ds = clip_dataset_by_bbox(source_ds, bbox_trans, source_gm.xy_dim_names)
-        source_gm = GridMapping.from_dataset(source_ds)
-        w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
-        downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
-        downscale_target_gm = GridMapping.regular(
-            size=downscaled_size,
-            xy_min=(
-                source_gm.xy_bbox[0] + xres_trans / 2,
-                source_gm.xy_bbox[1] + yres_trans / 2,
-            ),
-            xy_res=(xres_trans, yres_trans),
-            crs=source_gm.crs,
-            tile_size=source_gm.tile_size,
-        )
-        source_ds = affine_transform_dataset(
-            source_ds,
-            downscale_target_gm,
-            source_gm=source_gm,
-            interp_methods=_prep_spatial_interp_methods_downscale(interp_methods),
-            agg_methods=agg_methods,
-            prevent_nan_propagations=prevent_nan_propagations,
-        )
-        source_gm = GridMapping.from_dataset(source_ds)
-
-    return source_ds, source_gm
+    return _sample_array_at_indices(scr_data, ix, iy, interp_method)
 
 
 def _get_scr_bboxes_indices(
