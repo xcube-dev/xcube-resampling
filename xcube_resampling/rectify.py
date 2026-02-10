@@ -19,38 +19,40 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import os
 from collections.abc import Iterable
-from dataclasses import dataclass
 
 import dask.array as da
 import numba as nb
 import numpy as np
-
-import pyproj
 import xarray as xr
 
-from .affine import _downscale_source_dataset
+from .affine import resample_dataset
 from .constants import (
+    SCALE_LIMIT,
     FillValues,
     FloatInt,
     PreventNaNPropagations,
     SpatialAggMethods,
-    SpatialInterpMethods,
     SpatialInterpMethod,
+    SpatialInterpMethods,
     SpatialInterpMethodStr,
 )
 from .gridmapping import GridMapping
 from .utils import (
+    SourceTileIndexing,
+    _clip_if_needed,
     _get_fill_value,
     _get_spatial_interp_method_str,
     _is_equal_crs,
+    _map_to_source_indices,
+    _prep_spatial_interp_methods_downscale,
+    _reorganize_tiled_array,
     _sample_array_at_indices,
     _select_variables,
     bbox_overlap,
     normalize_grid_mapping,
-    _clip_if_needed,
 )
-
 
 FX_MIN = FY_MIN = 1e-3
 FXFY_MAX = 1.0 + 2 * 1e-3
@@ -138,6 +140,8 @@ def rectify_dataset(
     )
     if is_empty:
         return source_ds
+
+    # If source has higher resolution than target, downscale first, then reproject
     source_ds, source_gm = _downscale_source_dataset(
         source_ds,
         source_gm,
@@ -147,15 +151,22 @@ def rectify_dataset(
         prevent_nan_propagations,
     )
 
-    indexing = compute_source_tile_indexing(source_gm, target_gm)
-
-    src_x, src_y = (
-        _reorganize_tiled_array(
-            source_ds[v].data, indexing, _get_fill_value(fill_values, v, source_ds[v])
-        )
-        for v in source_gm.xy_var_names
+    # get fractional location each target pixel in source grid mapping
+    indexing = _compute_source_tile_indexing(source_gm, target_gm)
+    src_x = _reorganize_tiled_array(
+        da.asarray(source_gm.x_coords.data),
+        indexing,
+        _get_fill_value(
+            fill_values, source_gm.xy_var_names[0], source_ds[source_gm.xy_var_names[0]]
+        ),
     )
-
+    src_y = _reorganize_tiled_array(
+        da.asarray(source_gm.y_coords.data),
+        indexing,
+        _get_fill_value(
+            fill_values, source_gm.xy_var_names[1], source_ds[source_gm.xy_var_names[1]]
+        ),
+    )
     pixel_target_ij = _get_pixel_target_ij(src_x, src_y, target_gm)
 
     return _assemble_rectified_dataset(
@@ -168,30 +179,6 @@ def rectify_dataset(
         fill_values,
         output_indices_names,
     )
-
-
-@dataclass(frozen=True)
-class SourceTileIndexing:
-    ij_bboxes: np.ndarray  # (4, ny_tiles, nx_tiles)
-    pad_width: tuple[tuple[int, int], tuple[int, int]]
-    output_size: tuple[int, int]
-    tile_size: tuple[int, int]
-
-
-def _align_source_crs_to_target(
-    source_ds: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-) -> tuple[xr.Dataset, GridMapping]:
-    """
-    Ensure source dataset coordinates are in the same CRS as the target grid mapping.
-    """
-    if _is_equal_crs(source_gm, target_gm):
-        return source_ds, source_gm
-
-    source_ds = _transform_coords(source_ds, source_gm, target_gm)
-    source_gm = GridMapping.from_dataset(source_ds)
-    return source_ds, source_gm
 
 
 def _assemble_rectified_dataset(
@@ -234,8 +221,8 @@ def _assemble_rectified_dataset(
             rectified = _rectify_data_array(
                 da_src.data,
                 indexing,
-                target_gm,
                 pixel_target_ij,
+                target_gm,
                 interp_method,
                 fill_value,
             )
@@ -249,18 +236,76 @@ def _assemble_rectified_dataset(
             # Non-spatial variable → copy as-is
             target_ds[var_name] = da_src
 
-    # optional pixel index outputs
+    # optional source pixel index outputs
     if output_indices_names:
+        output_indices = _map_to_source_indices(pixel_target_ij, indexing)
         target_ds[output_indices_names[0]] = (
             (tgt_y_name, tgt_x_name),
-            pixel_target_ij[0],
+            output_indices[0],
         )
         target_ds[output_indices_names[1]] = (
             (tgt_y_name, tgt_x_name),
-            pixel_target_ij[1],
+            output_indices[1],
         )
 
     return target_ds
+
+
+def _align_source_crs_to_target(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+) -> tuple[xr.Dataset, GridMapping]:
+    """
+    Ensure source dataset coordinates are in the same CRS as the target grid mapping.
+    """
+    if _is_equal_crs(source_gm, target_gm):
+        return source_ds, source_gm
+
+    source_gm_transformed = source_gm.transform(target_gm.crs)
+    source_ds = source_ds.drop_vars(source_gm.xy_var_names)
+    source_ds = source_ds.assign_coords(
+        {
+            "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
+            "transformed_x": source_gm_transformed.x_coords,
+            "transformed_y": source_gm_transformed.y_coords,
+        }
+    )
+    source_gm = GridMapping.from_dataset(source_ds)
+    return source_ds, source_gm
+
+
+def _downscale_source_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    interp_methods: SpatialInterpMethods | None,
+    agg_methods: SpatialAggMethods | None,
+    prevent_nan_propagations: PreventNaNPropagations,
+) -> (xr.Dataset, GridMapping):
+    if interp_methods in [0, "nearest"]:
+        return source_ds, source_gm
+
+    x_scale = source_gm.x_res / target_gm.x_res
+    y_scale = source_gm.y_res / target_gm.y_res
+    if x_scale >= SCALE_LIMIT and y_scale >= SCALE_LIMIT:
+        return source_ds, source_gm
+
+    w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
+    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+    source_ds = resample_dataset(
+        source_ds,
+        ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),
+        (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
+        downscaled_size,
+        source_gm.tile_size,
+        _prep_spatial_interp_methods_downscale(interp_methods),
+        agg_methods,
+        prevent_nan_propagations,
+    )
+    source_gm = GridMapping.from_dataset(source_ds)
+
+    return source_ds, source_gm
 
 
 def _get_pixel_target_ij(
@@ -296,21 +341,11 @@ def _get_pixel_target_ij(
         tgt_y_block: np.ndarray,
         src_x_block: np.ndarray,
         src_y_block: np.ndarray,
+        scale: np.ndarray,
     ) -> np.ndarray:
-        """
-        Compute fractional source indices for a single target tile.
-
-        Args:
-            tgt_x_block: Target x coordinates for this block (shape (1, nx)).
-            tgt_y_block: Target y coordinates for this block (shape (ny, 1)).
-            src_x_block: Source x coordinates (2D tile).
-            src_y_block: Source y coordinates (2D tile).
-
-        Returns:
-            Array of shape (2, ny, nx) with fractional (ix, iy) indices.
-        """
-        target_x = tgt_x_block.squeeze().astype(np.float32)
-        target_y = tgt_y_block.squeeze().astype(np.float32)
+        """Compute fractional source indices for a single target tile."""
+        target_x = tgt_x_block[0, :].astype(np.float32)
+        target_y = tgt_y_block[:, 0].astype(np.float32)
 
         nx_tgt = target_x.size
         ny_tgt = target_y.size
@@ -343,18 +378,11 @@ def _get_pixel_target_ij(
         if quad_corners.size == 0:
             return idx_frac
 
-        # Target grid affine parameters (local to block)
-        offset = np.array([target_x[0], target_y[0]], dtype=np.float32)
-        scale = np.array(
-            [target_x[1] - target_x[0], target_y[1] - target_y[0]],
-            dtype=np.float32,
-        )
-
-        offset = offset[:, None, None]
-        scale = scale[:, None, None]
-
         # Bounding target pixel indices per quad
-        tgt_bbox = np.floor((quad_corners - offset) / scale).astype(np.int32)
+        offset = np.array([target_x[0], target_y[0]], dtype=np.float32)
+        tgt_bbox = np.floor(
+            (quad_corners - offset[:, None, None]) / scale[:, None, None]
+        ).astype(np.int32)
         tgt_bbox = np.vstack((tgt_bbox.min(axis=1), tgt_bbox.max(axis=1)))
 
         valid = (
@@ -389,7 +417,7 @@ def _get_pixel_target_ij(
     # Build block-aligned target coordinate views
     tgt_x = target_gm.x_coords.data
     tgt_y = target_gm.y_coords.data
-
+    scale = np.array([tgt_x[1] - tgt_x[0], tgt_y[1] - tgt_y[0]], dtype=np.float32)
     tgt_x = da.stack([tgt_x] * len(tgt_y.chunks[0]), axis=0)
     tgt_y = da.stack([tgt_y] * len(tgt_x.chunks[1]), axis=1)
 
@@ -399,12 +427,20 @@ def _get_pixel_target_ij(
         tgt_y,
         src_x_coords,
         src_y_coords,
+        scale,
         dtype=np.float32,
         chunks=(2, tgt_y.chunks[0], tgt_x.chunks[1]),
     )
 
 
-@nb.njit(nogil=True, cache=True)
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "").lower() in ("1", "true", "yes")
+
+
+@nb.njit(
+    nogil=True,
+    cache=not _env_flag("XCUBE_NUMBA_CACHE_DISABLE"),
+)
 def _fill_pixel_indices_from_quads(
     quad_corners: np.ndarray,
     target_bbox: np.ndarray,
@@ -413,21 +449,11 @@ def _fill_pixel_indices_from_quads(
     target_y: np.ndarray,
     quad_ij0: np.ndarray,
 ) -> None:
-    """
-    Fill fractional source pixel indices for target pixels covered by source quads.
+    """Fill fractional source pixel indices for target pixels covered by source quads.
 
     For each source quadrilateral, this function iterates over all overlapping
     target pixels and computes barycentric coordinates using two triangle
     decompositions.
-
-    Args:
-        quad_corners: Array of quad corner coordinates (shape (2, 4, n_quads)).
-        target_bbox: Target pixel bounding boxes per quad
-            (shape (4, n_quads): x0, y0, x1, y1).
-        out_idx_frac: Output array of fractional indices (2, ny, nx).
-        target_x: Target x coordinate vector for this block.
-        target_y: Target y coordinate vector for this block.
-        quad_ij0: Source pixel top-left indices per quad (2, n_quads).
     """
     n_quads = quad_corners.shape[2]
 
@@ -447,10 +473,10 @@ def _fill_pixel_indices_from_quads(
         det_a = dx1 * dy2 - dx2 * dy1
 
         # Triangle B
-        dx1b = c3[0] - c2[0]
-        dx2b = c1[0] - c2[0]
-        dy1b = c3[1] - c2[1]
-        dy2b = c1[1] - c2[1]
+        dx1b = c2[0] - c3[0]
+        dx2b = c1[0] - c3[0]
+        dy1b = c2[1] - c3[1]
+        dy2b = c1[1] - c3[1]
         det_b = dx1b * dy2b - dx2b * dy1b
 
         for i in range(x0, x1 + 1):
@@ -467,9 +493,8 @@ def _fill_pixel_indices_from_quads(
                     fy = (dx1 * (ty - c0[1]) - dy1 * (tx - c0[0])) / det_a
                 else:
                     fx = fy = np.nan
-
-                if not np.isnan(fx) and not (
-                    fx < -FX_MIN and fy < -FY_MIN and fx + fy > FXFY_MAX
+                if not np.isnan(fx) and (
+                    fx >= -FX_MIN and fy >= -FY_MIN and fx + fy <= FXFY_MAX
                 ):
                     out_idx_frac[0, j, i] = quad_ij0[0, q] + fx
                     out_idx_frac[1, j, i] = quad_ij0[1, q] + fy
@@ -481,68 +506,11 @@ def _fill_pixel_indices_from_quads(
                     fy = (dx1b * (ty - c3[1]) - dy1b * (tx - c3[0])) / det_b
                 else:
                     fx = fy = np.nan
-
-                if not np.isnan(fx) and not (
-                    fx < -FX_MIN and fy < -FY_MIN and fx + fy > FXFY_MAX
+                if not np.isnan(fx) and (
+                    fx >= -FX_MIN and fy >= -FY_MIN and fx + fy <= FXFY_MAX
                 ):
                     out_idx_frac[0, j, i] = quad_ij0[0, q] + 1.0 - fx
                     out_idx_frac[1, j, i] = quad_ij0[1, q] + 1.0 - fy
-
-
-def _reorganize_tiled_array(
-    array: da.Array,
-    indexing: SourceTileIndexing,
-    fill_value: FloatInt,
-) -> da.Array:
-    """
-    Reorganize a 2D or 3D array into uniformly sized tiles based on source index bboxes.
-    """
-
-    is_3d = array.ndim == 3
-    if not is_3d:
-        array = array[None, ...]
-
-    pad_width = ((0, 0),) + indexing.pad_width
-    padded = da.pad(array, pad_width, mode="constant", constant_values=fill_value)
-
-    out_shape = (
-        array.shape[0],
-        indexing.output_size[0],
-        indexing.output_size[1],
-    )
-    chunks = (
-        array.chunks[0],
-        indexing.tile_size[0],
-        indexing.tile_size[1],
-    )
-
-    out = da.zeros(out_shape, chunks=chunks, dtype=array.dtype)
-
-    ny, nx = indexing.ij_bboxes.shape[1:]
-    th, tw = indexing.tile_size
-
-    for j in range(ny):
-        for i in range(nx):
-            bbox = indexing.ij_bboxes[:, j, i]
-
-            y0, y1 = j * th, (j + 1) * th
-            x0, x1 = i * tw, (i + 1) * tw
-
-            if bbox[0] == -1:
-                out[:, y0:y1, x0:x1] = da.full(
-                    (array.shape[0], th, tw),
-                    fill_value,
-                    chunks=chunks,
-                    dtype=array.dtype,
-                )
-            else:
-                out[:, y0:y1, x0:x1] = padded[
-                    :,
-                    bbox[1] : bbox[3],
-                    bbox[0] : bbox[2],
-                ]
-
-    return out if is_3d else out[0]
 
 
 def overlapping_bboxes(bbox, target_bboxes):
@@ -581,10 +549,16 @@ def _get_xy_bboxes(gm_2d: GridMapping):
     )
 
 
-def compute_source_tile_indexing(
+def _compute_source_tile_indexing(
     source_gm: GridMapping, target_gm: GridMapping
 ) -> SourceTileIndexing:
     target_xy_bboxes = target_gm.xy_bboxes
+    # add buffer to each tile
+    target_xy_bboxes[:, 0] -= source_gm.x_res
+    target_xy_bboxes[:, 2] += source_gm.x_res
+    target_xy_bboxes[:, 1] -= source_gm.y_res
+    target_xy_bboxes[:, 3] += source_gm.y_res
+
     source_xy_bboxes = _get_xy_bboxes(source_gm).compute()
     scr_ij_bboxes = np.full_like(target_xy_bboxes, np.nan)
 
@@ -667,7 +641,6 @@ def compute_source_tile_indexing(
     scr_ij_bboxes = np.where(np.isnan(scr_ij_bboxes), -1, scr_ij_bboxes).astype(
         np.int32
     )
-    scr_ij_bboxes = scr_ij_bboxes
     tile_size = (int(j_diff_max), int(i_diff_max))
     size = (
         int(j_diff_max * scr_ij_bboxes.shape[1]),
@@ -682,63 +655,11 @@ def compute_source_tile_indexing(
     )
 
 
-def _transform_coords(
-    source_ds: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-) -> xr.Dataset:
-    source_xx = source_gm.x_coords.data
-    source_yy = source_gm.y_coords.data
-    if isinstance(source_xx, np.ndarray):
-        is_numpy_array = True
-        source_xx = da.asarray(source_xx)
-        source_yy = da.asarray(source_yy)
-    else:
-        is_numpy_array = False
-
-    transformer_forward = pyproj.Transformer.from_crs(
-        source_gm.crs, target_gm.crs, always_xy=True
-    )
-
-    # get transformed coordinates
-    # noinspection PyShadowingNames
-    def transform_block(source_xx: np.ndarray, source_yy: np.ndarray):
-        target_xx, target_yy = transformer_forward.transform(source_xx, source_yy)
-        return np.stack([target_xx, target_yy])
-
-    target_xx_yy = da.map_blocks(
-        transform_block,
-        source_xx,
-        source_yy,
-        dtype=np.float32,
-        chunks=(2, source_yy.chunks[0][0], source_yy.chunks[1][0]),
-    )
-    target_xx_yy = target_xx_yy[:, : source_gm.height, : source_gm.width]
-    source_ds = source_ds.drop_vars(source_gm.xy_var_names)
-    yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    yx_var_names = (
-        ("lon", "lat")
-        if target_gm.crs.is_geographic
-        else ("transformed_x", "transformed_y")
-    )
-    if is_numpy_array:
-        target_xx_yy = target_xx_yy.compute()
-    source_ds = source_ds.assign_coords(
-        {
-            "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
-            yx_var_names[0]: (yx_dims, target_xx_yy[0]),
-            yx_var_names[1]: (yx_dims, target_xx_yy[1]),
-        }
-    )
-
-    return source_ds
-
-
 def _rectify_data_array(
     data: da.Array,
     indexing: SourceTileIndexing,
-    target_gm: GridMapping,
     pixel_target_ij: da.Array,
+    target_gm: GridMapping,
     interp_method: SpatialInterpMethod,
     fill_value: FloatInt,
 ) -> da.Array:
@@ -747,7 +668,9 @@ def _rectify_data_array(
     if expanded:
         data = data[None, ...]
 
+    is_numpy_array = False
     if isinstance(data, np.ndarray):
+        is_numpy_array = True
         data = da.asarray(data)
 
     tiled = _reorganize_tiled_array(data, indexing, fill_value)
@@ -774,7 +697,7 @@ def _rectify_data_array(
     if expanded:
         result = result[0]
 
-    if isinstance(data, np.ndarray) and not target_gm.is_tiled:
+    if is_numpy_array and not target_gm.is_tiled:
         result = result.compute()
 
     return result

@@ -1,5 +1,9 @@
-## Changes in 0.2.5 (under development)
+## Changes in 0.3.0 (under development)
 
+- `xcube_resampling.rectify_dataset` works now fully lazy and is scalable.
+- Methods `test_ij_bbox_from_xy_bbox` and `test_ij_bboxes_from_xy_bboxes` in `xcube_resampling.gridmapping.GridMapping` has been removed; note
+  that both methods have been only used in `xcube_resampling.rectify_dataset`; thus updated methods
+  are now in  xcube_resampling.rectify._compute_source_tile_indexing`.
 
 
 ## Changes in 0.2.4

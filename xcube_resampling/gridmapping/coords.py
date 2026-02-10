@@ -36,10 +36,10 @@ from .helpers import (
     _default_xy_var_names,
     _normalize_crs,
     _normalize_int_pair,
+    _round_sequence,
     _to_int_or_float,
     from_lon_360,
     round_to_fraction,
-    _round_sequence,
     to_lon_360,
 )
 
@@ -194,7 +194,7 @@ def new_1d_grid_mapping_from_coords(
     is_j_axis_up = bool(y_coords[0] < y_coords[-1])
 
     if xy_bbox is None:
-        (x_vals, y_vals) = dask.compute(x_coords[[0, -1]], y_coords[[0, -1]])
+        x_vals, y_vals = dask.compute(x_coords[[0, -1]], y_coords[[0, -1]])
         x_min, x_max = x_vals.values
         y_min, y_max = y_vals.values
         if not is_j_axis_up:
@@ -338,16 +338,6 @@ def new_2d_grid_mapping_from_coords(
         is_lon_360=is_lon_360,
         is_j_axis_up=is_j_axis_up,
     )
-
-
-def _abs_no_zero(array: xr.DataArray | da.Array | np.ndarray):
-    array = da.fabs(array)
-    return da.where(da.isclose(array, 0), np.nan, array)
-
-
-def _abs_no_nan(array: da.Array | np.ndarray):
-    array = da.fabs(array)
-    return da.where(da.logical_or(da.isnan(array), da.isclose(array, 0)), 0, array)
 
 
 def grid_mapping_to_coords(

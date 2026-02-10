@@ -32,8 +32,6 @@ import pyproj
 import xarray as xr
 
 from xcube_resampling.constants import AffineTransformMatrix, FloatInt
-from xcube_resampling.dask import get_block_iterators, get_chunk_sizes
-
 from .assertions import assert_given, assert_instance, assert_true
 from .helpers import (
     _assert_valid_xy_coords,
@@ -500,19 +498,23 @@ class GridMapping(abc.ABC):
     @property
     def ij_bboxes(self) -> np.ndarray:
         """The image tiles' bounding boxes in image pixel coordinates."""
-        chunk_sizes = get_chunk_sizes(
-            (self.height, self.width), (self.tile_height, self.tile_width)
-        )
-        _, _, block_slices = get_block_iterators(chunk_sizes)
-        block_slices = tuple(block_slices)
-        n = len(block_slices)
-        ij_bboxes = np.ndarray((n, 4), dtype=np.int64)
-        for i in range(n):
-            y_slice, x_slice = block_slices[i]
-            ij_bboxes[i, 0] = x_slice.start
-            ij_bboxes[i, 1] = y_slice.start
-            ij_bboxes[i, 2] = x_slice.stop
-            ij_bboxes[i, 3] = y_slice.stop
+        h, w = self.height, self.width
+        th, tw = self.tile_height, self.tile_width
+
+        y_starts = range(0, h, th)
+        x_starts = range(0, w, tw)
+
+        n = len(y_starts) * len(x_starts)
+        ij_bboxes = np.empty((n, 4), dtype=np.int64)
+
+        k = 0
+        for y0 in y_starts:
+            y1 = min(y0 + th, h)
+            for x0 in x_starts:
+                x1 = min(x0 + tw, w)
+                ij_bboxes[k] = (x0, y0, x1, y1)
+                k += 1
+
         return ij_bboxes
 
     @property
@@ -543,102 +545,6 @@ class GridMapping(abc.ABC):
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
             xy_bboxes[:, [1, 3]] = xy_bboxes[:, [3, 1]]
         return xy_bboxes
-
-    def ij_bbox_from_xy_bbox(
-        self,
-        xy_bbox: tuple[float, float, float, float],
-        xy_border: float = 0.0,
-        ij_border: int = 0,
-    ) -> tuple[int, int, int, int]:
-        """Compute bounding box in i,j pixel coordinates given a
-        bounding box *xy_bbox* in x,y coordinates.
-
-        Args:
-            xy_bbox: Box (x_min, y_min, x_max, y_max) given in the same
-                CS as x and y.
-            xy_border: If non-zero, grows the bounding box *xy_bbox*
-                before using it for comparisons. Defaults to 0.
-            ij_border: If non-zero, grows the returned i,j bounding box
-                and clips it to size. Defaults to 0.
-
-        Returns:
-            Bounding box in (i_min, j_min, i_max, j_max) in pixel
-            coordinates. Returns ``(-1, -1, -1, -1)`` if *xy_bbox* isn't
-            intersecting any of the x,y coordinates.
-        """
-        xy_bboxes = np.array([xy_bbox], dtype=np.float64)
-        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        self.ij_bboxes_from_xy_bboxes(
-            xy_bboxes, xy_border=xy_border, ij_border=ij_border, ij_bboxes=ij_bboxes
-        )
-        # noinspection PyTypeChecker
-        return tuple(map(int, ij_bboxes[0]))
-
-    def ij_bboxes_from_xy_bboxes(
-        self,
-        xy_bboxes: np.ndarray,
-        xy_border: float = 0.0,
-        ij_border: int = 0,
-        ij_bboxes: np.ndarray = None,
-    ) -> np.ndarray:
-        """Compute bounding boxes in pixel coordinates given bounding boxes
-        *xy_bboxes* [[x_min, y_min, x_max, y_max], ...] in x,y coordinates.
-
-        The returned array in i,j pixel coordinates
-        has the same shape as *xy_bboxes*. The value ranges in the
-        returned array [[i_min, j_min, i_max, j_max], ..]] are:
-
-        * i_min from 0 to width-1, i_max from 1 to width;
-        * j_min from 0 to height-1, j_max from 1 to height;
-
-        so the i,j pixel coordinates can be used as array index slices.
-
-        Args:
-            xy_bboxes: Numpy array of x,y bounding boxes [[x_min, y_min,
-                x_max, y_max], ...] given in the same CS as x and y.
-            xy_border: If non-zero, grows the bounding box *xy_bbox*
-                before using it for comparisons. Defaults to 0.
-            ij_border: If non-zero, grows the returned i,j bounding box
-                and clips it to size. Defaults to 0.
-            ij_bboxes: Numpy array of pixel i,j bounding boxes [[x_min,
-                y_min, x_max, y_max], ...]. If given, must have same
-                shape as *xy_bboxes*.
-
-        Returns:
-            Bounding boxes in [[i_min, j_min, i_max, j_max], ..]] in
-            pixel coordinates.
-        """
-        if ij_bboxes is None:
-            ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        else:
-            ij_bboxes[:, :] = -1
-        xy_coords = self.xy_coords
-        return self._compute_ij_bboxes_dask(
-            xy_coords[0], xy_coords[1], xy_bboxes, xy_border, ij_border, ij_bboxes
-        )
-
-    def _compute_ij_bboxes_dask(
-        self,
-        x_coords: xr.DataArray,
-        y_coords: xr.DataArray,
-        xy_bboxes: np.ndarray,
-        xy_border: float,
-        ij_border: int,
-        ij_bboxes: np.ndarray,
-    ):
-        from .bboxes import compute_ij_bboxes
-
-        da.map_blocks(
-            compute_ij_bboxes,
-            x_coords.values,
-            y_coords.values,
-            xy_bboxes,
-            xy_border,
-            ij_border,
-            ij_bboxes,
-            dtype=ij_bboxes.dtype,
-        ).compute()
-        return ij_bboxes
 
     def to_coords(
         self,
@@ -680,7 +586,6 @@ class GridMapping(abc.ABC):
         self,
         crs: str | pyproj.crs.CRS,
         *,
-        xy_res: FloatInt | tuple[FloatInt, FloatInt] = None,
         tile_size: int | tuple[int, int] = None,
         xy_var_names: tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
@@ -690,9 +595,6 @@ class GridMapping(abc.ABC):
 
         Args:
             crs: The new spatial coordinate reference system.
-            xy_res: Optional resolution in x- and y-directions.
-                If given, speeds up the method by avoiding time-consuming
-                spatial resolution estimation.
             tile_size: Optional new tile size.
             xy_var_names: Optional new coordinate names.
             tolerance: Absolute tolerance used when comparing
@@ -707,7 +609,6 @@ class GridMapping(abc.ABC):
         return transform_grid_mapping(
             self,
             crs,
-            xy_res=xy_res,
             tile_size=tile_size,
             xy_var_names=xy_var_names,
             tolerance=tolerance,

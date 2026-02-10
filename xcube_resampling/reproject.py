@@ -27,10 +27,10 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from .affine import _downscale_source_dataset
+from .affine import affine_transform_dataset
 from .constants import (
+    SCALE_LIMIT,
     FillValues,
-    FloatInt,
     PreventNaNPropagations,
     SpatialAggMethods,
     SpatialInterpMethods,
@@ -38,12 +38,15 @@ from .constants import (
 )
 from .gridmapping import GridMapping
 from .utils import (
+    SourceTileIndexing,
+    _clip_if_needed,
     _get_fill_value,
     _get_spatial_interp_method_str,
+    _prep_spatial_interp_methods_downscale,
+    _reorganize_tiled_array,
     _sample_array_at_indices,
     _select_variables,
     normalize_grid_mapping,
-    _clip_if_needed,
 )
 
 
@@ -134,25 +137,56 @@ def reproject_dataset(
         source_ds,
         source_gm,
         target_gm,
+        transformer,
         interp_methods,
         agg_methods,
         prevent_nan_propagations,
-        transformer=transformer,
     )
 
     # For each bounding box in the target grid mapping:
     # - determine the indices of the bbox in the source dataset
-    # - extract the corresponding coordinates for each bbox in the source dataset
     # - compute the pad_width to handle areas requested by target_gm that exceed the
     #   bounds of source_gm.
-    scr_ij_bboxes, x_coords, y_coords, pad_width = _get_scr_bboxes_indices(
+    # - extract the corresponding coordinates for each bbox in the source dataset
+
+    indexing, x_coords, y_coords = _get_scr_bboxes_indices(
         transformer, source_gm, target_gm
     )
 
     # transform grid points from target grid mapping to source grid mapping
-    source_xx, source_yy = _transform_gridpoints(transformer, target_gm)
+    source_gm_transformed = target_gm.transform(source_gm.crs)
+    source_xx = source_gm_transformed.x_coords.data
+    source_yy = source_gm_transformed.y_coords.data
 
     # reproject dataset
+    target_ds = _assemble_reprojected_dataset(
+        source_ds,
+        source_gm,
+        target_gm,
+        source_xx,
+        source_yy,
+        x_coords,
+        y_coords,
+        indexing,
+        interp_methods,
+        fill_values,
+    )
+
+    return target_ds
+
+
+def _assemble_reprojected_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    source_xx: da.Array,
+    source_yy: da.Array,
+    x_coords: da.Array,
+    y_coords: da.Array,
+    indexing: SourceTileIndexing,
+    interp_methods: SpatialInterpMethods | None = None,
+    fill_values: FillValues | None = None,
+):
     x_name, y_name = source_gm.xy_var_names
     coords = source_ds.coords.to_dataset()
     coords = coords.drop_vars((x_name, y_name), errors="ignore")
@@ -179,8 +213,7 @@ def reproject_dataset(
                 source_yy,
                 x_coords,
                 y_coords,
-                scr_ij_bboxes,
-                pad_width,
+                indexing,
                 interp_methods,
                 fill_values,
             )
@@ -188,6 +221,51 @@ def reproject_dataset(
             target_ds[var_name] = data_array
 
     return target_ds
+
+
+def _downscale_source_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    transformer: pyproj.Transformer,
+    interp_methods: SpatialInterpMethods | None,
+    agg_methods: SpatialAggMethods | None,
+    prevent_nan_propagations: PreventNaNPropagations,
+) -> (xr.Dataset, GridMapping):
+    if interp_methods in [0, "nearest"]:
+        return source_ds, source_gm
+
+    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
+    xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
+    yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
+    x_scale = source_gm.x_res / xres_trans
+    y_scale = source_gm.y_res / yres_trans
+    if x_scale >= SCALE_LIMIT and y_scale >= SCALE_LIMIT:
+        return source_ds, source_gm
+
+    w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
+    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+    downscale_target_gm = GridMapping.regular(
+        size=downscaled_size,
+        xy_min=(
+            source_gm.xy_bbox[0] + xres_trans / 2,
+            source_gm.xy_bbox[1] + yres_trans / 2,
+        ),
+        xy_res=(xres_trans, yres_trans),
+        crs=source_gm.crs,
+        tile_size=source_gm.tile_size,
+    )
+    source_ds = affine_transform_dataset(
+        source_ds,
+        downscale_target_gm,
+        source_gm=source_gm,
+        interp_methods=_prep_spatial_interp_methods_downscale(interp_methods),
+        agg_methods=agg_methods,
+        prevent_nan_propagations=prevent_nan_propagations,
+    )
+    source_gm = GridMapping.from_dataset(source_ds)
+
+    return source_ds, source_gm
 
 
 def _reproject_data_array(
@@ -199,8 +277,7 @@ def _reproject_data_array(
     source_yy: da.Array,
     x_coords: da.Array,
     y_coords: da.Array,
-    scr_ij_bboxes: np.ndarray,
-    pad_width: tuple[tuple[int]],
+    indexing: SourceTileIndexing,
     interp_methods: SpatialInterpMethods | None = None,
     fill_values: FillValues | None = None,
 ) -> xr.DataArray:
@@ -220,14 +297,7 @@ def _reproject_data_array(
     # chunks of source_xx and source_yy
     fill_value = _get_fill_value(fill_values, var_name, data_array)
     interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
-    scr_data = _reorganize_data_array_slice(
-        array,
-        x_coords,
-        y_coords,
-        scr_ij_bboxes,
-        pad_width,
-        fill_value,
-    )
+    scr_data = _reorganize_tiled_array(array, indexing, fill_value)
     slices_reprojected = []
     # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
     dim0_end = 0
@@ -289,7 +359,7 @@ def _get_scr_bboxes_indices(
     transformer: pyproj.Transformer,
     source_gm: GridMapping,
     target_gm: GridMapping,
-) -> (np.ndarray, da.Array, da.Array, tuple[tuple[int]]):
+) -> (SourceTileIndexing, da.Array, da.Array):
     num_tiles_x = math.ceil(target_gm.width / target_gm.tile_width)
     num_tiles_y = math.ceil(target_gm.height / target_gm.tile_height)
 
@@ -356,7 +426,6 @@ def _get_scr_bboxes_indices(
     y_coords = da.from_array(y_coords, chunks=(-1, 1, 1))
 
     pad_width = (
-        (0, 0),
         (
             -min(0, int(j_min)),
             max(0, int(j_max - source_gm.height)),
@@ -366,68 +435,14 @@ def _get_scr_bboxes_indices(
             max(0, int(i_max - source_gm.width)),
         ),
     )
-    scr_ij_bboxes[[1, 3]] += pad_width[1][0]
-    scr_ij_bboxes[[0, 2]] += pad_width[2][0]
+    scr_ij_bboxes[[1, 3]] += pad_width[0][0]
+    scr_ij_bboxes[[0, 2]] += pad_width[1][0]
 
-    return scr_ij_bboxes, x_coords, y_coords, pad_width
-
-
-def _transform_gridpoints(
-    transformer: pyproj.Transformer, target_gm: GridMapping
-) -> (da.Array, da.Array):
-    # get meshed coordinates
-    target_x = da.from_array(target_gm.x_coords.values, chunks=target_gm.tile_width)
-    target_y = da.from_array(target_gm.y_coords.values, chunks=target_gm.tile_height)
-    target_xx, target_yy = da.meshgrid(target_x, target_y)
-
-    # get transformed coordinates
-    # noinspection PyShadowingNames
-    def transform_block(target_xx: np.ndarray, target_yy: np.ndarray):
-        trans_xx, trans_yy = transformer.transform(target_xx, target_yy)
-        return np.stack([trans_xx, trans_yy])
-
-    source_xx_yy = da.map_blocks(
-        transform_block,
-        target_xx,
-        target_yy,
-        dtype=np.float32,
-        chunks=(2, target_yy.chunks[0][0], target_yy.chunks[1][0]),
+    indexing = SourceTileIndexing(
+        ij_bboxes=scr_ij_bboxes,
+        pad_width=pad_width,
+        output_size=(y_coords.shape[0] * num_tiles_y, x_coords.shape[0] * num_tiles_x),
+        tile_size=(y_coords.shape[0], x_coords.shape[0]),
     )
-    source_xx = source_xx_yy[0]
-    source_yy = source_xx_yy[1]
 
-    return source_xx, source_yy
-
-
-def _reorganize_data_array_slice(
-    array: da.Array,
-    x_coords: da.Array,
-    y_coords: da.Array,
-    scr_ij_bboxes: np.ndarray,
-    pad_width: tuple[tuple[int]],
-    fill_value: FloatInt,
-) -> da.Array:
-    data_out = da.zeros(
-        (
-            array.shape[0],
-            y_coords.shape[0] * scr_ij_bboxes.shape[1],
-            x_coords.shape[0] * scr_ij_bboxes.shape[2],
-        ),
-        chunks=(array.chunks[0][0], y_coords.shape[0], x_coords.shape[0]),
-        dtype=array.dtype,
-    )
-    data_in = da.pad(array, pad_width, mode="constant", constant_values=fill_value)
-    for i in range(scr_ij_bboxes.shape[2]):
-        for j in range(scr_ij_bboxes.shape[1]):
-            scr_ij_bbox = scr_ij_bboxes[:, j, i]
-            data_out[
-                :,
-                j * y_coords.shape[0] : (j + 1) * y_coords.shape[0],
-                i * x_coords.shape[0] : (i + 1) * x_coords.shape[0],
-            ] = data_in[
-                :,
-                scr_ij_bbox[1] : scr_ij_bbox[3],
-                scr_ij_bbox[0] : scr_ij_bbox[2],
-            ]
-
-    return data_out
+    return indexing, x_coords, y_coords
