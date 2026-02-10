@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
 import dask.array as da
 import numpy as np
@@ -35,6 +36,7 @@ from .constants import (
     FILLVALUE_UINT32,
     INTERP_METHOD_MAPPING,
     LOG,
+    FillValues,
     FloatInt,
     PreventNaNPropagations,
     SpatialAggMethod,
@@ -43,7 +45,6 @@ from .constants import (
     SpatialInterpMethodInt,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
-    FillValues,
 )
 from .gridmapping import GridMapping
 
@@ -529,8 +530,8 @@ def _sample_array_at_indices(
     Sample a 3d array at fractional indices (iy, ix).
     """
     if interp_method == "nearest":
-        ix_i = np.rint(ix).astype(np.intp)
-        iy_i = np.rint(iy).astype(np.intp)
+        ix_i = np.ceil(ix - 0.5).astype(np.intp)
+        iy_i = np.ceil(iy - 0.5).astype(np.intp)
         return data[:, iy_i, ix_i]
 
     ix_floor = np.floor(ix).astype(np.intp)
@@ -552,29 +553,16 @@ def _sample_array_at_indices(
         return u0 + dy * (u1 - u0)
 
     if interp_method == "triangular":
-        mask = (dx + dy) < 1.0
-        mask3 = mask[np.newaxis, ...]
+        dx3 = dx[np.newaxis, ...]
+        dy3 = dy[np.newaxis, ...]
 
-        out = np.empty(
-            (data.shape[0],) + ix.shape,
-            dtype=data.dtype,
-        )
-
-        out[mask3] = (
-            v00[mask3]
-            + dx[mask3] * (v01[mask3] - v00[mask3])
-            + dy[mask3] * (v10[mask3] - v00[mask3])
-        )
-
-        out[~mask3] = (
-            v11[~mask3]
-            + (1.0 - dx[~mask3]) * (v10[~mask3] - v11[~mask3])
-            + (1.0 - dy[~mask3]) * (v01[~mask3] - v11[~mask3])
-        )
-        return out
+        tri1 = v00 + dx3 * (v01 - v00) + dy3 * (v10 - v00)
+        tri2 = v11 + (1 - dx3) * (v10 - v11) + (1 - dy3) * (v01 - v11)
+        mask3 = (dx + dy < 1.0)[np.newaxis, ...]
+        return np.where(mask3, tri1, tri2)
 
     raise NotImplementedError(
-        f"interp_methods must be one of 'nearest', 'bilinear', 'triangular', "
+        f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular', "
         f"was '{interp_method}'."
     )
 
@@ -640,7 +628,6 @@ def _clip_if_needed(
         buffer_y = 2 * (target_bbox[3] - target_bbox[1]) / target_gm.height
 
     overlap = bbox_overlap(source_gm.xy_bbox, target_bbox)
-
     if overlap < 1e-5:
         LOG.info(
             "Target grid mapping does not overlap with the source grid mapping. "
@@ -648,7 +635,6 @@ def _clip_if_needed(
         )
         empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
         return empty_ds, target_gm, True
-
     if overlap >= 0.8:
         return source_ds, source_gm, False
 
@@ -659,15 +645,94 @@ def _clip_if_needed(
         target_bbox[2] + buffer_x,
         target_bbox[3] + buffer_y,
     ]
-
     clipped = clip_dataset_by_bbox(source_ds, bbox)
 
-    if any(clipped.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
-        LOG.warning(
-            "Clipped dataset contains a spatial dimension with size < 2. "
-            "Returning empty target dataset."
-        )
-        empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
-        return empty_ds, target_gm, True
-
     return clipped, GridMapping.from_dataset(clipped), False
+
+
+@dataclass(frozen=True)
+class SourceTileIndexing:
+    ij_bboxes: np.ndarray  # (4, ny_tiles, nx_tiles)
+    pad_width: tuple[tuple[int, int], tuple[int, int]]
+    output_size: tuple[int, int]
+    tile_size: tuple[int, int]
+
+
+def _reorganize_tiled_array(
+    array: da.Array,
+    indexing: SourceTileIndexing,
+    fill_value: FloatInt,
+) -> da.Array:
+    """
+    Reorganize a 2D or 3D array into uniformly sized tiles based on source index bboxes.
+    """
+
+    is_3d = array.ndim == 3
+    if not is_3d:
+        array = array[None, ...]
+
+    pad_width = ((0, 0),) + indexing.pad_width
+    padded = da.pad(array, pad_width, mode="constant", constant_values=fill_value)
+
+    out_shape = (
+        array.shape[0],
+        indexing.output_size[0],
+        indexing.output_size[1],
+    )
+    chunks = (
+        array.chunks[0],
+        indexing.tile_size[0],
+        indexing.tile_size[1],
+    )
+
+    out = da.zeros(out_shape, chunks=chunks, dtype=array.dtype)
+
+    ny, nx = indexing.ij_bboxes.shape[1:]
+    th, tw = indexing.tile_size
+
+    for j in range(ny):
+        for i in range(nx):
+            bbox = indexing.ij_bboxes[:, j, i]
+
+            y0, y1 = j * th, (j + 1) * th
+            x0, x1 = i * tw, (i + 1) * tw
+
+            if bbox[0] == -1:
+                out[:, y0:y1, x0:x1] = da.full(
+                    (array.shape[0], th, tw),
+                    fill_value,
+                    chunks=chunks,
+                    dtype=array.dtype,
+                )
+            else:
+                out[:, y0:y1, x0:x1] = padded[
+                    :,
+                    bbox[1] : bbox[3],
+                    bbox[0] : bbox[2],
+                ]
+
+    return out if is_3d else out[0]
+
+
+def _map_to_source_indices(pixel_target_ij, indexing):
+    """Convert tile-local fractional source pixel indices to original source indices.
+
+    Applies per-tile source index offsets and removes padding introduced during
+    tiling, returning fractional (ix, iy) indices in the original source grid.
+    """
+    offsets_x = da.zeros_like(pixel_target_ij[0])
+    offsets_y = da.zeros_like(pixel_target_ij[1])
+
+    ny, nx = indexing.ij_bboxes.shape[1:]
+    th, tw = indexing.tile_size
+
+    for j in range(ny):
+        for i in range(nx):
+            bbox = indexing.ij_bboxes[:, j, i]
+            offsets_x[th * j : th * (j + 1), tw * i : tw * (i + 1)] = bbox[0]
+            offsets_y[th * j : th * (j + 1), tw * i : tw * (i + 1)] = bbox[1]
+
+    offsets_x -= indexing.pad_width[1][0]
+    offsets_y -= indexing.pad_width[0][0]
+
+    return da.stack([pixel_target_ij[0] + offsets_x, pixel_target_ij[1] + offsets_y])

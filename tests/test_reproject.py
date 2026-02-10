@@ -213,7 +213,7 @@ class ReprojectDatasetTest(unittest.TestCase):
         target_ds = reproject_dataset(source_ds, target_gm, interp_methods="triangular")
         self.assertCountEqual(["temperature", "onedim_data"], list(target_ds.data_vars))
         self.assertAlmostEqual(
-            target_ds.temperature.values[0, 0, 0], 6216.1396, places=4
+            target_ds.temperature.values[0, 0, 0], 6216.1397, places=4
         )
         self.assertAlmostEqual(
             target_ds.temperature.values[0, -1, -1], 2848.5012, places=4
@@ -254,4 +254,15 @@ class ReprojectDatasetTest(unittest.TestCase):
         self.assertIn(
             "interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular'",
             str(cm.exception),
+        )
+
+    def test_reproject_outside_return_empty_ds(self):
+        source_ds = create_5x5_dataset_regular_utm()
+        target_gm = GridMapping.regular(
+            size=(5, 5), xy_min=(4320550, 3382920), xy_res=80, crs="epsg:3035"
+        )
+        target_ds = reproject_dataset(source_ds, target_gm)
+        np.testing.assert_almost_equal(
+            target_ds.band_1.values,
+            np.full((5, 5), -1, dtype=target_ds.band_1.dtype),
         )

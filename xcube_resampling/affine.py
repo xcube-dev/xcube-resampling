@@ -26,7 +26,6 @@ import dask.array as da
 import numpy as np
 import xarray as xr
 from dask_image import ndinterp
-import pyproj
 
 from .constants import (
     AffineTransformMatrix,
@@ -34,7 +33,6 @@ from .constants import (
     FillValues,
     FloatInt,
     PreventNaNPropagations,
-    SCALE_LIMIT,
     SpatialAggMethods,
     SpatialInterpMethodInt,
     SpatialInterpMethods,
@@ -46,7 +44,6 @@ from .utils import (
     _get_prevent_nan_propagation,
     _get_spatial_agg_method,
     _get_spatial_interp_method_int,
-    _prep_spatial_interp_methods_downscale,
     _select_variables,
     normalize_grid_mapping,
 )
@@ -246,49 +243,6 @@ def resample_dataset(
     return xr.Dataset(data_vars=data_vars, coords=coords, attrs=dataset.attrs)
 
 
-def _downscale_source_dataset(
-    source_ds: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-    interp_methods: SpatialInterpMethods | None,
-    agg_methods: SpatialAggMethods | None,
-    prevent_nan_propagations: PreventNaNPropagations,
-    transformer: pyproj.Transformer | None = None,
-) -> (xr.Dataset, GridMapping):
-    if interp_methods in [0, "nearest"]:
-        return source_ds, source_gm
-
-    if transformer is None:
-        target_xres = target_gm.x_res
-        target_yres = target_gm.y_res
-    else:
-        target_bbox = transformer.transform_bounds(*target_gm.xy_bbox)
-        target_xres = (target_bbox[2] - target_bbox[0]) / target_gm.width
-        target_yres = (target_bbox[3] - target_bbox[1]) / target_gm.height
-
-    x_scale = source_gm.x_res / target_xres
-    y_scale = source_gm.y_res / target_yres
-    if x_scale >= SCALE_LIMIT and y_scale >= SCALE_LIMIT:
-        return source_ds, source_gm
-
-    w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
-    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
-
-    source_ds = resample_dataset(
-        source_ds,
-        ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),
-        (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
-        downscaled_size,
-        source_gm.tile_size,
-        _prep_spatial_interp_methods_downscale(interp_methods),
-        agg_methods,
-        prevent_nan_propagations,
-    )
-    source_gm = GridMapping.from_dataset(source_ds)
-
-    return source_ds, source_gm
-
-
 def _resample_array(
     array: da.Array,
     affine_matrix: AffineTransformMatrix,
@@ -333,7 +287,7 @@ def _downscale(
     prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
+    (i_scale, _, i_off), (_, j_scale, j_off) = affine_matrix
     j_divisor = math.ceil(abs(j_scale))
     i_divisor = math.ceil(abs(i_scale))
     affine_matrix = (
@@ -371,7 +325,7 @@ def _upscale(
     prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
+    (i_scale, _, i_off), (_, j_scale, j_off) = affine_matrix
     offset = (array.ndim - 2) * (0,) + (j_off, i_off)
     scale = (array.ndim - 2) * (1,) + (j_scale, i_scale)
     matrix = np.diag(scale)

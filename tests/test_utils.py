@@ -9,10 +9,13 @@ from xcube_resampling.constants import (
     FILLVALUE_INT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
+    FILLVALUE_UINT32,
 )
+from xcube_resampling.gridmapping import GridMapping
 
 # noinspection PyProtectedMember
 from xcube_resampling.utils import (
+    _create_empty_dataset,
     _get_fill_value,
     _get_grid_mapping_name,
     _get_prevent_nan_propagation,
@@ -26,6 +29,8 @@ from xcube_resampling.utils import (
     reproject_bbox,
     resolution_meters_to_degrees,
 )
+
+from .sampledata import create_2x4x4_dataset_with_irregular_coords
 
 
 class TestUtils(unittest.TestCase):
@@ -257,6 +262,7 @@ class TestUtils(unittest.TestCase):
     def test_get_fill_value(self):
         uint8_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint8), dims=["x"])
         uint16_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint16), dims=["x"])
+        uint32_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint32), dims=["x"])
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
         float_var = xr.DataArray(
             np.array([1.0, 2.0, 3.0], dtype=np.float32), dims=["x"]
@@ -287,6 +293,7 @@ class TestUtils(unittest.TestCase):
         # defaults
         self.assertEqual(_get_fill_value(None, "var", uint8_var), FILLVALUE_UINT8)
         self.assertEqual(_get_fill_value(None, "var", uint16_var), FILLVALUE_UINT16)
+        self.assertEqual(_get_fill_value(None, "var", uint32_var), FILLVALUE_UINT32)
         self.assertEqual(_get_fill_value(None, "var", int_var), FILLVALUE_INT)
         self.assertTrue(np.isnan(_get_fill_value(None, "var", float_var)))
 
@@ -382,12 +389,12 @@ class TestUtils(unittest.TestCase):
         self.assertAlmostEqual(1.0, lon_deg, places=6)
 
         # 222640 m ≈ 2 degrees latitude
-        (lon_deg, lat_deg) = resolution_meters_to_degrees((111320, 222640), 0)
+        lon_deg, lat_deg = resolution_meters_to_degrees((111320, 222640), 0)
         self.assertAlmostEqual(2.0, lat_deg, places=6)
         self.assertAlmostEqual(1.0, lon_deg, places=6)
 
         # At 60 degrees latitude, longitude degrees shrink by cos(60°) = 0.5
-        (lon_deg, lat_deg) = resolution_meters_to_degrees(111320, 60)
+        lon_deg, lat_deg = resolution_meters_to_degrees(111320, 60)
         self.assertAlmostEqual(1.0, lat_deg, places=6)
         self.assertAlmostEqual(1.0 / 0.5, lon_deg, places=6)  # 2 degrees
 
@@ -474,3 +481,18 @@ class TestClipDatasetByBBox(unittest.TestCase):
         )
         # should result in zero-sized dimensions
         self.assertTrue(any(size == 0 for size in clipped.sizes.values()))
+
+    def test_create_empty_dataset_3d(self):
+        source_ds = create_2x4x4_dataset_with_irregular_coords()
+        source_ds = source_ds.chunk(dict(y=2, x=2))
+        source_gm = GridMapping.from_dataset(source_ds)
+        target_gm = GridMapping.regular(
+            size=(3, 3), xy_min=(0.0, 0.0), xy_res=0.1, crs="epsg:4326"
+        )
+        target_ds = _create_empty_dataset(source_ds, source_gm, target_gm)
+        self.assertCountEqual(["rad"], target_ds.data_vars)
+        self.assertCountEqual(("time", "lat", "lon"), target_ds["rad"].dims)
+        self.assertCountEqual((2, 3, 3), target_ds["rad"].shape)
+        np.testing.assert_array_equal(
+            np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
+        )
