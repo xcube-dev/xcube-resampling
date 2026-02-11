@@ -620,15 +620,17 @@ def _clip_if_needed(
     """
     if transformer is None:
         target_bbox = target_gm.xy_bbox
-        buffer_x = 2 * source_gm.x_res
-        buffer_y = 2 * source_gm.y_res
+        buffer_x = 2 * max(source_gm.x_res, target_gm.x_res)
+        buffer_y = 2 * max(source_gm.y_res, target_gm.y_res)
     else:
         target_bbox = transformer.transform_bounds(*target_gm.xy_bbox)
-        buffer_x = 2 * (target_bbox[2] - target_bbox[0]) / target_gm.width
-        buffer_y = 2 * (target_bbox[3] - target_bbox[1]) / target_gm.height
+        target_x_res = (target_bbox[2] - target_bbox[0]) / target_gm.width
+        target_y_res = (target_bbox[3] - target_bbox[1]) / target_gm.height
+        buffer_x = 2 * max(source_gm.x_res, target_x_res)
+        buffer_y = 2 * max(source_gm.y_res, target_y_res)
 
     overlap = bbox_overlap(source_gm.xy_bbox, target_bbox)
-    if overlap < 1e-5:
+    if overlap == 0.0:
         LOG.info(
             "Target grid mapping does not overlap with the source grid mapping. "
             "Returning empty target dataset."
@@ -646,6 +648,14 @@ def _clip_if_needed(
         target_bbox[3] + buffer_y,
     ]
     clipped = clip_dataset_by_bbox(source_ds, bbox)
+
+    if any(clipped.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
+        LOG.warning(
+            "Clipped dataset contains a spatial dimension with size < 2. "
+            "Returning empty target dataset."
+        )
+        empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+        return empty_ds, target_gm, True
 
     return clipped, GridMapping.from_dataset(clipped), False
 
