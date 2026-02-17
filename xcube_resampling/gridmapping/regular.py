@@ -52,6 +52,7 @@ class RegularGridMapping(GridMapping):
         return xr.DataArray(
             da.linspace(self.x_min, self.x_max, self.width, chunks=self.tile_width),
             dims=self.xy_dim_names[0],
+            name=self.xy_var_names[0],
         )
 
     def _new_y_coords(self) -> xr.DataArray:
@@ -62,6 +63,7 @@ class RegularGridMapping(GridMapping):
                     self.y_min, self.y_max, self.height, chunks=self.tile_height
                 ),
                 dims=self.xy_dim_names[1],
+                name=self.xy_var_names[1],
             )
         else:
             return xr.DataArray(
@@ -69,6 +71,7 @@ class RegularGridMapping(GridMapping):
                     self.y_max, self.y_min, self.height, chunks=self.tile_height
                 ),
                 dims=self.xy_dim_names[1],
+                name=self.xy_var_names[1],
             )
 
     def _new_xy_coords(self) -> xr.DataArray:

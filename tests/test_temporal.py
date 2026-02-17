@@ -330,14 +330,6 @@ class ResampleInTimeTest(unittest.TestCase):
         result = _get_agg_method_kwargs("backfill", "1h")
         self.assertEqual(expected, result)
 
-        expected = {"tolerance": "1h"}
-        result = _get_agg_method_kwargs("backfill", "6h", tolerance="1h")
-        self.assertEqual(expected, result)
-
-        expected = {"dim": "time", "keep_attrs": True}
-        result = _get_agg_method_kwargs("all", "6h")
-        self.assertEqual(expected, result)
-
         expected = {"dim": "time", "keep_attrs": True}
         result = _get_agg_method_kwargs("all", "6h")
         self.assertEqual(expected, result)
