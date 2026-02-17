@@ -5,11 +5,6 @@
   `xcube_resampling.resample_in_time`.
 - Fixed incorrect time coverage metadata in dataset attributes after calling
   `xcube_resampling.resample_in_time`.
-- `xcube_resampling.rectify_dataset` works now fully lazy and is scalable.
-- Methods `test_ij_bbox_from_xy_bbox` and `test_ij_bboxes_from_xy_bboxes` in
-`xcube_resampling.gridmapping.GridMapping` has been removed; note
-  that both methods have been only used in `xcube_resampling.rectify_dataset`;
-  thus updated methods are now in `xcube_resampling.rectify._compute_source_tile_indexing`.
 - `xcube_resampling.rectify_dataset` is now fully lazy and scalable.
 - Removed methods `test_ij_bbox_from_xy_bbox` and `test_ij_bboxes_from_xy_bboxes` from
   `xcube_resampling.gridmapping.GridMapping`. These methods were only used by
