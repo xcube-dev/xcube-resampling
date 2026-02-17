@@ -744,7 +744,7 @@ def _transpose_dims(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
     """
     Ensure the dataset has spatial dims in the order (y, x) at the end.
     """
-    x_name, y_name = gm.xy_var_names
+    x_name, y_name = gm.xy_dim_names
     for var_name, var in ds.data_vars.items():
         if ds[var_name].dims[-2:] != (y_name, x_name):
             leading_dims = tuple(d for d in var.dims if d not in (y_name, x_name))
