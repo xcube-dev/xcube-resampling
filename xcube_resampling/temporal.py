@@ -59,7 +59,7 @@ def resample_in_time(
         source_ds: Input xarray Dataset containing a `time` dimension.
         frequency: Target temporal frequency, following
             [Pandas offset aliases](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases).
-            Format `<count><period>`, where `<period>`
+            Format `<count><offset>`, where `<offset>`
             may be one of 's', 'min', 'h', 'D', 'W', 'MS', 'ME', 'QS', 'QE' 'YS', 'YE'.
         variables: Optional. Names of variables to resample. If None, all
             data variables are processed, which have a time coordinate.
