@@ -58,8 +58,9 @@ def resample_in_time(
     Args:
         source_ds: Input xarray Dataset containing a `time` dimension.
         frequency: Target temporal frequency, following
-            Pandas period aliases. Format `<count><period>`, where `<period>`
-            may be one of 's', 'min', 'h', 'D', 'W', 'M', 'Q', 'Y'.
+            [Pandas offset aliases](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases).
+            Format `<count><period>`, where `<period>`
+            may be one of 's', 'min', 'h', 'D', 'W', 'MS', 'ME', 'QS', 'QE' 'YS', 'YE'.
         variables: Optional. Names of variables to resample. If None, all
             data variables are processed, which have a time coordinate.
         interp_methods: Optional interpolation method(s) for upsampling. Can be:
@@ -87,8 +88,9 @@ def resample_in_time(
         offset: Optional offset to adjust resampled time labels. Uses the
             same syntax as frequency.
         tolerance: Optional maximum allowed distance for selective downsampling
-            methods (e.g., `'backfill'`, `'ffill'`, `'nearest'`). Defaults to the
-            resampling frequency.
+            methods (e.g., `'backfill'`, `'ffill'`, `'nearest'`), following
+            [Pandas period aliases](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#period-aliases).
+            Format `<count><period>`. Defaults to None.
 
     Returns:
         A new xarray Dataset resampled along the time dimension.
@@ -139,9 +141,8 @@ def resample_in_time(
         )
         return source_ds
 
-    # TODO: add time_bnds to resampled_ds
-    time_coverage_start = "%s" % source_ds.time[0]
-    time_coverage_end = "%s" % source_ds.time[-1]
+    time_coverage_start = pd.Timestamp(source_ds.time[0].item()).isoformat()
+    time_coverage_end = pd.Timestamp(source_ds.time[-1].item()).isoformat()
 
     target_ds.attrs.update(
         time_coverage_start=time_coverage_start,
@@ -176,7 +177,7 @@ def _apply_aggregation(
                 method_args = [p / 100.0]
                 method_postfix = f"p{p}"
                 method = "quantile"
-            method_kwargs = _get_agg_method_kwargs(method, frequency, tolerance)
+            method_kwargs = _get_agg_method_kwargs(method, tolerance)
             func = getattr(resampler, method)
             if agg_methods is None or isinstance(agg_methods, str):
                 var_name_out = var_name
@@ -213,11 +214,10 @@ def _apply_interpolation(
 
 def _get_agg_method_kwargs(
     agg_method: str,
-    frequency: str,
     tolerance: str | None = None,
 ) -> dict:
     if agg_method in {"backfill", "bfill", "ffill", "nearest", "pad"}:
-        kwargs = {"tolerance": tolerance or frequency}
+        kwargs = {"tolerance": tolerance}
     elif agg_method in {"all", "any", "count"}:
         kwargs = {"dim": "time", "keep_attrs": True}
     elif agg_method in {

@@ -1,5 +1,10 @@
 ## Changes in 0.2.5 (under development)
 
+- Fixed an issue when retrieving coordinate names from regular grid mappings.
+- Improved documentation for the `frequency` and `tolerance` arguments of
+  `xcube_resampling.resample_in_time`.
+- Fixed incorrect time coverage metadata in dataset attributes after calling
+  `xcube_resampling.resample_in_time`.
 
 
 ## Changes in 0.2.4
