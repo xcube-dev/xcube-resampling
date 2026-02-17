@@ -30,9 +30,11 @@ import xarray as xr
 from .affine import affine_transform_dataset
 from .constants import (
     SCALE_LIMIT,
+    FloatInt,
     FillValues,
     PreventNaNPropagations,
     SpatialAggMethods,
+    SpatialInterpMethod,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
 )
@@ -47,6 +49,7 @@ from .utils import (
     _reorganize_tiled_array,
     _sample_array_at_indices,
     _select_variables,
+    _transpose_dims,
     normalize_grid_mapping,
 )
 
@@ -117,6 +120,7 @@ def reproject_dataset(
 
     source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
+    source_ds = _transpose_dims(source_ds, source_gm)
 
     if source_gm.is_j_axis_up:
         v_var = source_gm.xy_var_names[1]
@@ -203,16 +207,14 @@ def _assemble_reprojected_dataset(
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
-    for var_name, data_array in source_ds.items():
-        if data_array.dims[-2:] == yx_dims:
-            assert len(data_array.dims) in (
-                2,
-                3,
-            ), f"Data variable {var_name} has {len(data_array.dims)} dimensions."
-
+    for var_name, da_src in source_ds.items():
+        if da_src.dims[-2:] == yx_dims:
+            fill_value = _get_fill_value(fill_values, var_name, da_src)
+            interp_method = _get_spatial_interp_method_str(
+                interp_methods, var_name, da_src
+            )
             target_ds[var_name] = _reproject_data_array(
-                data_array,
-                var_name,
+                da_src,
                 source_gm,
                 target_gm,
                 source_xx,
@@ -220,11 +222,11 @@ def _assemble_reprojected_dataset(
                 x_coords,
                 y_coords,
                 indexing,
-                interp_methods,
-                fill_values,
+                interp_method,
+                fill_value,
             )
-        elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
-            target_ds[var_name] = data_array
+        elif yx_dims[0] not in da_src.dims and yx_dims[1] not in da_src.dims:
+            target_ds[var_name] = da_src
 
     return target_ds
 
@@ -276,7 +278,6 @@ def _downscale_source_dataset(
 
 def _reproject_data_array(
     data_array: xr.DataArray,
-    var_name: Hashable,
     source_gm: GridMapping,
     target_gm: GridMapping,
     source_xx: da.Array,
@@ -284,13 +285,9 @@ def _reproject_data_array(
     x_coords: da.Array,
     y_coords: da.Array,
     indexing: SourceTileIndexing,
-    interp_methods: SpatialInterpMethods | None = None,
-    fill_values: FillValues | None = None,
+    interp_method: SpatialInterpMethod,
+    fill_value: FloatInt,
 ) -> xr.DataArray:
-    data_array_expanded = False
-    if len(data_array.dims) == 2:
-        data_array = data_array.expand_dims({"dummy": 1})
-        data_array_expanded = True
 
     if isinstance(data_array.data, np.ndarray):
         is_numpy_array = True
@@ -299,50 +296,45 @@ def _reproject_data_array(
         is_numpy_array = False
         array = data_array.data
 
-    # reorganize data array slice to align with the
-    # chunks of source_xx and source_yy
-    fill_value = _get_fill_value(fill_values, var_name, data_array)
-    interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
-    src_data = _reorganize_tiled_array(array, indexing, fill_value)
-    slices_reprojected = []
-    # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
-    dim0_end = 0
-    for chunk_size in array.chunks[0]:
-        dim0_start = dim0_end
-        dim0_end = dim0_start + chunk_size
+    # collapse non-spatial dims
+    non_spatial_dims = data_array.dims[:-2]
+    orig_shape = array.shape
+    n_leading = int(np.prod(orig_shape[:-2])) if len(orig_shape) > 2 else 1
+    array_flat = array.reshape((n_leading, orig_shape[-2], orig_shape[-1]))
 
-        data_reprojected = da.map_blocks(
-            _reproject_block,
-            source_xx,
-            source_yy,
-            src_data[dim0_start:dim0_end],
-            x_coords,
-            y_coords,
-            dtype=data_array.dtype,
-            chunks=(
-                src_data[dim0_start:dim0_end].shape[0],
-                source_yy.chunks[0][0],
-                source_yy.chunks[1][0],
-            ),
-            src_x_res=source_gm.x_res,
-            src_y_res=source_gm.y_res,
-            interp_method=interp_method,
+    # reorganize data array slice to align with the chunks of source_xx and source_yy
+    tiled = _reorganize_tiled_array(array_flat, indexing, fill_value)
+
+    reprojected_chunks = []
+    offset = 0
+    for chunk in tiled.chunks[0]:
+        reprojected_chunks.append(
+            da.map_blocks(
+                _reproject_block,
+                source_xx,
+                source_yy,
+                tiled[offset : offset + chunk],
+                x_coords,
+                y_coords,
+                dtype=tiled.dtype,
+                chunks=(chunk, *source_yy.chunks[1:]),
+                scr_x_res=source_gm.x_res,
+                scr_y_res=source_gm.y_res,
+                interp_method=interp_method,
+            )
         )
-        data_reprojected = data_reprojected[:, : target_gm.height, : target_gm.width]
-        slices_reprojected.append(data_reprojected)
-    array_reprojected = da.concatenate(slices_reprojected, axis=0)
+        offset += chunk
+    result = da.concatenate(reprojected_chunks, axis=0)
+
+    # restore original non-spatial shape
+    new_shape = orig_shape[:-2] + (target_gm.height, target_gm.width)
+    result = result.reshape(new_shape)
+    dims = non_spatial_dims + (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
+
     if is_numpy_array:
-        array_reprojected = array_reprojected.compute()
-    if data_array_expanded:
-        array_reprojected = array_reprojected[0, :, :]
-        dims = (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
-    else:
-        dims = (
-            data_array.dims[0],
-            target_gm.xy_dim_names[1],
-            target_gm.xy_dim_names[0],
-        )
-    return xr.DataArray(data=array_reprojected, dims=dims, attrs=data_array.attrs)
+        result = result.compute()
+
+    return xr.DataArray(data=result, dims=dims, attrs=data_array.attrs)
 
 
 def _reproject_block(

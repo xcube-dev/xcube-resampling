@@ -52,6 +52,7 @@ from .utils import (
     _reorganize_tiled_array,
     _sample_array_at_indices,
     _select_variables,
+    _transpose_dims,
     bbox_overlap,
     normalize_grid_mapping,
 )
@@ -134,6 +135,7 @@ def rectify_dataset(
 
     source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
+    source_ds = _transpose_dims(source_ds, source_gm)
 
     target_gm = target_gm or source_gm.to_regular(tile_size=tile_size)
 
@@ -214,31 +216,19 @@ def _assemble_rectified_dataset(
     yx_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
     for var_name, da_src in source_ds.data_vars.items():
         if da_src.dims[-2:] == yx_dims:
-            assert len(da_src.dims) in (
-                2,
-                3,
-            ), f"Data variable {var_name} has {len(da_src.dims)} dimensions."
             fill_value = _get_fill_value(fill_values, var_name, da_src)
             interp_method = _get_spatial_interp_method_str(
                 interp_methods, var_name, da_src
             )
-
-            rectified = _rectify_data_array(
-                da_src.data,
+            target_ds[var_name] = _rectify_data_array(
+                da_src,
                 indexing,
                 pixel_target_ij,
                 target_gm,
                 interp_method,
                 fill_value,
             )
-            dims = da_src.dims[:-2] + (
-                target_gm.xy_dim_names[1],
-                target_gm.xy_dim_names[0],
-            )
-            target_ds[var_name] = xr.DataArray(rectified, dims=dims, attrs=da_src.attrs)
-
         elif yx_dims[0] not in da_src.dims and yx_dims[1] not in da_src.dims:
-            # Non-spatial variable → copy as-is
             target_ds[var_name] = da_src
 
     # optional source pixel index outputs
@@ -661,29 +651,33 @@ def _compute_source_tile_indexing(
 
 
 def _rectify_data_array(
-    data: da.Array,
+    data_array: xr.DataArray,
     indexing: SourceTileIndexing,
     pixel_target_ij: da.Array,
     target_gm: GridMapping,
     interp_method: SpatialInterpMethod,
     fill_value: FloatInt,
-) -> da.Array:
+) -> xr.DataArray:
 
-    expanded = data.ndim == 2
-    if expanded:
-        data = data[None, ...]
-
-    is_numpy_array = False
-    if isinstance(data, np.ndarray):
+    if isinstance(data_array.data, np.ndarray):
         is_numpy_array = True
-        data = da.asarray(data)
+        array = da.asarray(data_array.data)
+    else:
+        is_numpy_array = False
+        array = data_array.data
 
-    tiled = _reorganize_tiled_array(data, indexing, fill_value)
+    # collapse non-spatial dims
+    non_spatial_dims = data_array.dims[:-2]
+    orig_shape = array.shape
+    n_leading = int(np.prod(orig_shape[:-2])) if len(orig_shape) > 2 else 1
+    array_flat = array.reshape((n_leading, orig_shape[-2], orig_shape[-1]))
+
+    # reorganize data array slice to align with the chunks of pixel_target_ij
+    tiled = _reorganize_tiled_array(array_flat, indexing, fill_value)
 
     rectified_chunks = []
     offset = 0
-
-    for chunk in data.chunks[0]:
+    for chunk in tiled.chunks[0]:
         rectified_chunks.append(
             da.map_blocks(
                 _rectify_block,
@@ -691,21 +685,22 @@ def _rectify_data_array(
                 tiled[offset : offset + chunk],
                 interp_method=interp_method,
                 fill_value=fill_value,
-                dtype=data.dtype,
+                dtype=tiled.dtype,
                 chunks=(chunk, *pixel_target_ij.chunks[1:]),
             )
         )
         offset += chunk
-
     result = da.concatenate(rectified_chunks, axis=0)
 
-    if expanded:
-        result = result[0]
+    # restore original non-spatial shape
+    new_shape = orig_shape[:-2] + (target_gm.height, target_gm.width)
+    result = result.reshape(new_shape)
+    dims = non_spatial_dims + (target_gm.xy_dim_names[1], target_gm.xy_dim_names[0])
 
     if is_numpy_array and not target_gm.is_tiled:
         result = result.compute()
 
-    return result
+    return xr.DataArray(data=result, dims=dims, attrs=data_array.attrs)
 
 
 def _rectify_block(

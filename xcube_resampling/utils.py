@@ -684,22 +684,14 @@ def _reorganize_tiled_array(
     pad_width = ((0, 0),) + indexing.pad_width
     padded = da.pad(array, pad_width, mode="constant", constant_values=fill_value)
 
-    out_shape = (
-        array.shape[0],
-        indexing.output_size[0],
-        indexing.output_size[1],
-    )
-    chunks = (
-        array.chunks[0],
-        indexing.tile_size[0],
-        indexing.tile_size[1],
-    )
-
-    out = da.zeros(out_shape, chunks=chunks, dtype=array.dtype)
-
     ny, nx = indexing.ij_bboxes.shape[1:]
+    h, w = indexing.output_size
     th, tw = indexing.tile_size
 
+    out_shape = (array.shape[0], h, w)
+    chunks = (array.chunks[0], th, tw)
+
+    out = da.zeros(out_shape, chunks=chunks, dtype=array.dtype)
     for j in range(ny):
         for i in range(nx):
             bbox = indexing.ij_bboxes[:, j, i]
@@ -746,3 +738,18 @@ def _map_to_source_indices(pixel_target_ij, indexing):
     offsets_y -= indexing.pad_width[0][0]
 
     return da.stack([pixel_target_ij[0] + offsets_x, pixel_target_ij[1] + offsets_y])
+
+
+def _transpose_dims(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
+    """
+    Ensure the dataset has spatial dims in the order (y, x) at the end.
+    """
+    x_name, y_name = gm.xy_var_names
+    for var_name, var in ds.data_vars.items():
+        if ds[var_name].dims[-2:] != (y_name, x_name):
+            leading_dims = tuple(d for d in var.dims if d not in (y_name, x_name))
+            new_dims = leading_dims + (y_name, x_name)
+            LOG.info(f"Dataset transposed from {var.dims} to {new_dims}.")
+            ds[var_name] = var.transpose(*new_dims)
+
+    return ds
