@@ -746,10 +746,11 @@ def _transpose_dims(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
     """
     x_name, y_name = gm.xy_dim_names
     for var_name, var in ds.data_vars.items():
-        if ds[var_name].dims[-2:] != (y_name, x_name):
-            leading_dims = tuple(d for d in var.dims if d not in (y_name, x_name))
-            new_dims = leading_dims + (y_name, x_name)
-            LOG.info(f"Dataset transposed from {var.dims} to {new_dims}.")
-            ds[var_name] = var.transpose(*new_dims)
+        if y_name in var.dims and x_name in var.dims:
+            if var.dims[-2:] != (y_name, x_name):
+                leading_dims = tuple(d for d in var.dims if d not in (y_name, x_name))
+                new_dims = leading_dims + (y_name, x_name)
+                LOG.info(f"Dataset transposed from {var.dims} to {new_dims}.")
+                ds[var_name] = var.transpose(*new_dims)
 
     return ds

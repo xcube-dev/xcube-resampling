@@ -317,7 +317,7 @@ def _reproject_data_array(
                 x_coords,
                 y_coords,
                 dtype=tiled.dtype,
-                chunks=(chunk, *source_yy.chunks[1:]),
+                chunks=(chunk, *source_yy.chunks),
                 scr_x_res=source_gm.x_res,
                 scr_y_res=source_gm.y_res,
                 interp_method=interp_method,
