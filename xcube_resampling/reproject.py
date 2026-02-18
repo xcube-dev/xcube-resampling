@@ -149,7 +149,7 @@ def reproject_dataset(
     #   bounds of source_gm.
     # - extract the corresponding coordinates for each bbox in the source dataset
 
-    indexing, x_coords, y_coords = _get_scr_bboxes_indices(
+    indexing, x_coords, y_coords = _get_src_bboxes_indices(
         transformer, source_gm, target_gm
     )
 
@@ -355,7 +355,7 @@ def _reproject_block(
     return _sample_array_at_indices(scr_data, ix, iy, interp_method)
 
 
-def _get_scr_bboxes_indices(
+def _get_src_bboxes_indices(
     transformer: pyproj.Transformer,
     source_gm: GridMapping,
     target_gm: GridMapping,

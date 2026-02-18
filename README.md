@@ -8,13 +8,18 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **xcube-resampling** provides efficient algorithms for transforming datasets into 
-different spatial grid mappings. It is designed for geospatial workflows that need 
-flexible resampling and reprojection.
+different spatial grids and temporal scales. It is designed for geospatial workflows that need
+flexible resampling and reprojection. This library provides up and downsampling for both
+spatial and temporal domains.
 
 ### ✨ Features
-- **Affine resampling** – simple resampling using affine transformations  
-- **Reprojection** – convert datasets between different coordinate reference systems (CRS)  
-- **Rectification** – transform irregular grids into regular, well-structured grids  
+- #### Spatial Resampling
+    - **Affine resampling** – simple resampling using affine transformations
+    - **Reprojection** – convert datasets between different coordinate reference systems (CRS)
+    - **Rectification** – transform irregular grids into regular, well-structured grids
+
+- #### Temporal Resampling
+    - **Time-based resampling** – upsample or downsample data along the time dimension
 
 All methods work seamlessly with chunked (lazily loaded) [xarray.Datasets](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html) and are powered by [Dask](https://www.dask.org/) for scalable, out-of-core computation.
 
