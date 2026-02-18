@@ -277,7 +277,7 @@ def _downscale_source_dataset(
     interp_methods: SpatialInterpMethods | None,
     agg_methods: SpatialAggMethods | None,
     prevent_nan_propagations: PreventNaNPropagations,
-) -> (xr.Dataset, GridMapping):
+) -> tuple[xr.Dataset, GridMapping]:
     if interp_methods in [0, "nearest"]:
         return source_ds, source_gm
 
@@ -294,9 +294,9 @@ def _downscale_source_dataset(
         (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0]),
         downscaled_size,
         source_gm.tile_size,
-        _prep_spatial_interp_methods_downscale(interp_methods),
-        agg_methods,
-        prevent_nan_propagations,
+        interp_methods=_prep_spatial_interp_methods_downscale(interp_methods),
+        agg_methods=agg_methods,
+        prevent_nan_propagations=prevent_nan_propagations or True,
     )
     source_gm = GridMapping.from_dataset(source_ds)
 
