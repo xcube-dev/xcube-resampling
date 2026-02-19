@@ -39,6 +39,7 @@ from .constants import (
     SpatialInterpMethodStr,
 )
 from .gridmapping import GridMapping
+from .gridmapping.cfconv import get_dataset_grid_mapping_proxies
 from .utils import (
     SourceTileIndexing,
     _clip_if_needed,
@@ -128,6 +129,7 @@ def rectify_dataset(
         coordinate variables are ignored in the output.
     """
     source_ds = _select_variables(source_ds, variables)
+    source_ds = _ensure_increasing_x(source_ds)
 
     source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -200,9 +202,8 @@ def _assemble_rectified_dataset(
     coords = source_ds.coords.to_dataset()
     coords = coords.drop_vars((src_x_name, src_y_name), errors="ignore")
 
-    target_coords = target_gm.to_coords()
-    coords[tgt_x_name] = target_coords[tgt_x_name]
-    coords[tgt_y_name] = target_coords[tgt_y_name]
+    coords[tgt_x_name] = target_gm.x_coords
+    coords[tgt_y_name] = target_gm.y_coords
     coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 
@@ -721,3 +722,12 @@ def _rectify_block(
     sampled = _sample_array_at_indices(data_array, ix[valid], iy[valid], interp_method)
     data_rectified[:, valid] = sampled
     return data_rectified
+
+
+def _ensure_increasing_x(ds: xr.Dataset) -> xr.Dataset:
+    gm_proxy = next(iter(get_dataset_grid_mapping_proxies(ds).values()))
+    x_coords = gm_proxy.coords.x
+    if x_coords[0, 0] > x_coords[0, 1]:
+        x_dim = x_coords.dims[1]
+        ds = ds.isel({x_dim: slice(None, None, -1)})
+    return ds

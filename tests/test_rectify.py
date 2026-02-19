@@ -89,6 +89,33 @@ class RectifyDatasetTest(unittest.TestCase):
             ),
         )
 
+    def test_rectify_2x2_decreasing_x_coords(self):
+        source_ds = create_2x2_dataset_with_irregular_coords()
+        source_ds = source_ds.isel({"x": slice(None, None, -1)})
+
+        target_gm = GridMapping.regular(
+            size=(4, 4), xy_min=(0, 50), xy_res=2, crs=CRS_WGS84
+        )
+        target_ds = rectify_dataset(
+            source_ds,
+            target_gm=target_gm,
+            interp_methods=0,
+            output_indices_names=("indices_lon", "indices_lat"),
+        )
+
+        np.testing.assert_almost_equal(
+            target_ds.rad.values,
+            np.array(
+                [
+                    [nan, nan, nan, nan],
+                    [nan, 1.0, 2.0, nan],
+                    [3.0, 3.0, 2.0, nan],
+                    [nan, 4.0, nan, nan],
+                ],
+                dtype=target_ds.rad.dtype,
+            ),
+        )
+
     def test_rectify_2x2_to_regular(self):
         source_ds = create_2x2_dataset_with_irregular_coords()
         target_ds = rectify_dataset(source_ds, interp_methods=0)
