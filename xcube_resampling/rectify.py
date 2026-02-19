@@ -560,7 +560,7 @@ def _compute_source_tile_indexing(
     target_xy_bboxes[:, 3] += source_gm.y_res
 
     source_xy_bboxes = _get_xy_bboxes(source_gm).compute()
-    scr_ij_bboxes = np.full_like(target_xy_bboxes, np.nan)
+    src_ij_bboxes = np.full_like(target_xy_bboxes, np.nan)
 
     tasks = []
     meta = []
@@ -603,52 +603,52 @@ def _compute_source_tile_indexing(
     for (rmin, rmax, cmin, cmax), (tile_idx, i_min, j_min) in zip(results, meta):
         if np.isnan(rmin):
             continue
-        scr_ij_bboxes[tile_idx, 1] = rmin + i_min - 1
-        scr_ij_bboxes[tile_idx, 3] = rmax + i_min + 1
-        scr_ij_bboxes[tile_idx, 0] = cmin + j_min - 1
-        scr_ij_bboxes[tile_idx, 2] = cmax + j_min + 1
+        src_ij_bboxes[tile_idx, 1] = rmin + i_min - 1
+        src_ij_bboxes[tile_idx, 3] = rmax + i_min + 1
+        src_ij_bboxes[tile_idx, 0] = cmin + j_min - 1
+        src_ij_bboxes[tile_idx, 2] = cmax + j_min + 1
     target_block_j = int(np.ceil(target_gm.height / target_gm.tile_height))
     target_block_i = int(np.ceil(target_gm.width / target_gm.tile_width))
-    scr_ij_bboxes = scr_ij_bboxes.reshape(
+    src_ij_bboxes = src_ij_bboxes.reshape(
         (target_block_j, target_block_i, 4)
     ).transpose((2, 0, 1))
 
     # Extend bounding box indices to match the largest bounding box.
     # This ensures uniform chunk sizes, which are required for da.map_blocks.
-    i_diff = scr_ij_bboxes[2] - scr_ij_bboxes[0]
-    j_diff = scr_ij_bboxes[3] - scr_ij_bboxes[1]
+    i_diff = src_ij_bboxes[2] - src_ij_bboxes[0]
+    j_diff = src_ij_bboxes[3] - src_ij_bboxes[1]
     i_diff_max = np.nanmax(i_diff) + 1
     j_diff_max = np.nanmax(j_diff) + 1
     i_half = (i_diff_max - i_diff) // 2
     j_half = (j_diff_max - j_diff) // 2
-    scr_ij_bboxes[0] -= i_half
-    scr_ij_bboxes[2] = scr_ij_bboxes[0] + i_diff_max
-    scr_ij_bboxes[1] -= j_half
-    scr_ij_bboxes[3] = scr_ij_bboxes[1] + j_diff_max
+    src_ij_bboxes[0] -= i_half
+    src_ij_bboxes[2] = src_ij_bboxes[0] + i_diff_max
+    src_ij_bboxes[1] -= j_half
+    src_ij_bboxes[3] = src_ij_bboxes[1] + j_diff_max
 
     # assign padding if needed
-    i_min = np.nanmin(scr_ij_bboxes[0])
-    i_max = np.nanmax(scr_ij_bboxes[2])
-    j_min = np.nanmin(scr_ij_bboxes[[1, 3]])
-    j_max = np.nanmax(scr_ij_bboxes[[1, 3]])
+    i_min = np.nanmin(src_ij_bboxes[0])
+    i_max = np.nanmax(src_ij_bboxes[2])
+    j_min = np.nanmin(src_ij_bboxes[[1, 3]])
+    j_max = np.nanmax(src_ij_bboxes[[1, 3]])
     pad_width = (
         (-min(0, int(j_min)), max(0, int(j_max - source_gm.height))),
         (-min(0, int(i_min)), max(0, int(i_max - source_gm.width))),
     )
-    scr_ij_bboxes[[1, 3]] += pad_width[0][0]
-    scr_ij_bboxes[[0, 2]] += pad_width[1][0]
+    src_ij_bboxes[[1, 3]] += pad_width[0][0]
+    src_ij_bboxes[[0, 2]] += pad_width[1][0]
 
-    scr_ij_bboxes = np.where(np.isnan(scr_ij_bboxes), -1, scr_ij_bboxes).astype(
+    src_ij_bboxes = np.where(np.isnan(src_ij_bboxes), -1, src_ij_bboxes).astype(
         np.int32
     )
     tile_size = (int(j_diff_max), int(i_diff_max))
     size = (
-        int(j_diff_max * scr_ij_bboxes.shape[1]),
-        int(i_diff_max * scr_ij_bboxes.shape[2]),
+        int(j_diff_max * src_ij_bboxes.shape[1]),
+        int(i_diff_max * src_ij_bboxes.shape[2]),
     )
 
     return SourceTileIndexing(
-        ij_bboxes=scr_ij_bboxes,
+        ij_bboxes=src_ij_bboxes,
         pad_width=pad_width,
         output_size=size,
         tile_size=tile_size,

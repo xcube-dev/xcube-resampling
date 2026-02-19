@@ -297,7 +297,7 @@ def _reproject_data_array(
     # chunks of source_xx and source_yy
     fill_value = _get_fill_value(fill_values, var_name, data_array)
     interp_method = _get_spatial_interp_method_str(interp_methods, var_name, data_array)
-    scr_data = _reorganize_tiled_array(array, indexing, fill_value)
+    src_data = _reorganize_tiled_array(array, indexing, fill_value)
     slices_reprojected = []
     # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
     dim0_end = 0
@@ -309,17 +309,17 @@ def _reproject_data_array(
             _reproject_block,
             source_xx,
             source_yy,
-            scr_data[dim0_start:dim0_end],
+            src_data[dim0_start:dim0_end],
             x_coords,
             y_coords,
             dtype=data_array.dtype,
             chunks=(
-                scr_data[dim0_start:dim0_end].shape[0],
+                src_data[dim0_start:dim0_end].shape[0],
                 source_yy.chunks[0][0],
                 source_yy.chunks[1][0],
             ),
-            scr_x_res=source_gm.x_res,
-            scr_y_res=source_gm.y_res,
+            src_x_res=source_gm.x_res,
+            src_y_res=source_gm.y_res,
             interp_method=interp_method,
         )
         data_reprojected = data_reprojected[:, : target_gm.height, : target_gm.width]
@@ -342,17 +342,17 @@ def _reproject_data_array(
 def _reproject_block(
     source_xx: np.ndarray,
     source_yy: np.ndarray,
-    scr_data: np.ndarray,
+    src_data: np.ndarray,
     x_coord: np.ndarray,
     y_coord: np.ndarray,
-    scr_x_res: int | float,
-    scr_y_res: int | float,
+    src_x_res: int | float,
+    src_y_res: int | float,
     interp_method: SpatialInterpMethodStr,
 ) -> np.ndarray:
-    ix = (source_xx - x_coord[0]) / scr_x_res
-    iy = (source_yy - y_coord[0]) / -scr_y_res
+    ix = (source_xx - x_coord[0]) / src_x_res
+    iy = (source_yy - y_coord[0]) / -src_y_res
 
-    return _sample_array_at_indices(scr_data, ix, iy, interp_method)
+    return _sample_array_at_indices(src_data, ix, iy, interp_method)
 
 
 def _get_src_bboxes_indices(
@@ -365,7 +365,7 @@ def _get_src_bboxes_indices(
 
     # get bboxes indices in source grid mapping
     origin = source_gm.x_coords.values[0], source_gm.y_coords.values[0]
-    scr_ij_bboxes = np.full((4, num_tiles_y, num_tiles_x), -1, dtype=np.int32)
+    src_ij_bboxes = np.full((4, num_tiles_y, num_tiles_x), -1, dtype=np.int32)
     for idx, xy_bbox in enumerate(target_gm.xy_bboxes):
         j, i = np.unravel_index(idx, (num_tiles_y, num_tiles_x))
         source_xy_bbox = transformer.transform_bounds(*xy_bbox)
@@ -373,36 +373,36 @@ def _get_src_bboxes_indices(
         i_max = math.ceil((source_xy_bbox[2] - origin[0]) / source_gm.x_res)
         j_min = math.floor((origin[1] - source_xy_bbox[3]) / source_gm.y_res)
         j_max = math.ceil((origin[1] - source_xy_bbox[1]) / source_gm.y_res)
-        scr_ij_bboxes[:, j, i] = [i_min, j_min, i_max, j_max]
+        src_ij_bboxes[:, j, i] = [i_min, j_min, i_max, j_max]
 
     # Extend bounding box indices to match the largest bounding box.
     # This ensures uniform chunk sizes, which are required for da.map_blocks.
-    i_diff = scr_ij_bboxes[2] - scr_ij_bboxes[0]
-    j_diff = scr_ij_bboxes[3] - scr_ij_bboxes[1]
+    i_diff = src_ij_bboxes[2] - src_ij_bboxes[0]
+    j_diff = src_ij_bboxes[3] - src_ij_bboxes[1]
     i_diff_max = np.max(i_diff) + 1
     j_diff_max = np.max(j_diff) + 1
     for i in range(num_tiles_x):
         for j in range(num_tiles_y):
-            scr_ij_bbox = scr_ij_bboxes[:, j, i]
+            src_ij_bbox = src_ij_bboxes[:, j, i]
 
             i_half = (i_diff_max - i_diff[j, i]) // 2
-            i_start = scr_ij_bbox[0] - i_half
+            i_start = src_ij_bbox[0] - i_half
             i_end = i_start + i_diff_max
 
             j_half = (j_diff_max - j_diff[j, i]) // 2
-            j_start = scr_ij_bbox[1] - j_half
+            j_start = src_ij_bbox[1] - j_half
             j_end = j_start + j_diff_max
 
-            scr_ij_bboxes[:, j, i] = [i_start, j_start, i_end, j_end]
+            src_ij_bboxes[:, j, i] = [i_start, j_start, i_end, j_end]
 
     # gather the coordinates; coordinates will be extended
     # if they are outside the source grid mapping
     x_coords = np.zeros((i_diff_max, num_tiles_y, num_tiles_x), dtype=np.float32)
     y_coords = np.zeros((j_diff_max, num_tiles_y, num_tiles_x), dtype=np.float32)
-    i_min = np.min(scr_ij_bboxes[0])
-    i_max = np.max(scr_ij_bboxes[2])
-    j_min = np.min(scr_ij_bboxes[[1, 3]])
-    j_max = np.max(scr_ij_bboxes[[1, 3]])
+    i_min = np.min(src_ij_bboxes[0])
+    i_max = np.max(src_ij_bboxes[2])
+    j_min = np.min(src_ij_bboxes[[1, 3]])
+    j_max = np.max(src_ij_bboxes[[1, 3]])
     x_start = source_gm.x_coords.values[0] + i_min * source_gm.x_res
     x_end = source_gm.x_coords.values[0] + i_max * source_gm.x_res
     x_coord = np.arange(x_start, x_end, source_gm.x_res)
@@ -412,13 +412,13 @@ def _get_src_bboxes_indices(
     y_coord = np.arange(y_start, y_end, y_res)
     for i in range(num_tiles_x):
         for j in range(num_tiles_y):
-            scr_ij_bbox = scr_ij_bboxes[:, j, i]
+            src_ij_bbox = src_ij_bboxes[:, j, i]
 
-            i_start = scr_ij_bbox[0] - i_min
+            i_start = src_ij_bbox[0] - i_min
             i_end = i_start + i_diff_max
             x_coords[:, j, i] = x_coord[i_start:i_end]
 
-            j_start = scr_ij_bbox[1] - j_min
+            j_start = src_ij_bbox[1] - j_min
             j_end = j_start + j_diff_max
             y_coords[:, j, i] = y_coord[j_start:j_end]
 
@@ -435,11 +435,11 @@ def _get_src_bboxes_indices(
             max(0, int(i_max - source_gm.width)),
         ),
     )
-    scr_ij_bboxes[[1, 3]] += pad_width[0][0]
-    scr_ij_bboxes[[0, 2]] += pad_width[1][0]
+    src_ij_bboxes[[1, 3]] += pad_width[0][0]
+    src_ij_bboxes[[0, 2]] += pad_width[1][0]
 
     indexing = SourceTileIndexing(
-        ij_bboxes=scr_ij_bboxes,
+        ij_bboxes=src_ij_bboxes,
         pad_width=pad_width,
         output_size=(y_coords.shape[0] * num_tiles_y, x_coords.shape[0] * num_tiles_x),
         tile_size=(y_coords.shape[0], x_coords.shape[0]),
