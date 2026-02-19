@@ -287,7 +287,7 @@ def _downscale(
     prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
+    (i_scale, _, i_off), (_, j_scale, j_off) = affine_matrix
     j_divisor = math.ceil(abs(j_scale))
     i_divisor = math.ceil(abs(i_scale))
     affine_matrix = (
@@ -325,7 +325,7 @@ def _upscale(
     prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    ((i_scale, _, i_off), (_, j_scale, j_off)) = affine_matrix
+    (i_scale, _, i_off), (_, j_scale, j_off) = affine_matrix
     offset = (array.ndim - 2) * (0,) + (j_off, i_off)
     scale = (array.ndim - 2) * (1,) + (j_scale, i_scale)
     matrix = np.diag(scale)

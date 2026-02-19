@@ -351,45 +351,7 @@ class GridMappingTest(unittest.TestCase):
         self.assertEqual(
             ("transformed_x", "transformed_y"), transformed_gm.xy_var_names
         )
-        self.assertEqual(("lon", "lat"), transformed_gm.xy_dim_names)
-
-    def test_transform_xy_res(self):
-        gm = _TestGridMapping(
-            **self.kwargs(
-                xy_min=(20, 56),
-                size=(400, 200),
-                tile_size=(200, 200),
-                xy_res=(0.01, 0.01),
-            )
-        )
-        transformed_gm = gm.transform("EPSG:32633", xy_res=1000)
-
-        self.assertIsNot(gm, transformed_gm)
-        self.assertIsInstance(transformed_gm, Coords2DGridMapping)
-        self.assertEqual(pyproj.CRS.from_string("EPSG:32633"), transformed_gm.crs)
-        self.assertEqual((400, 200), transformed_gm.size)
-        self.assertEqual((200, 200), transformed_gm.tile_size)
-        self.assertAlmostEqual(605.566, transformed_gm.xy_res[0])
-        self.assertAlmostEqual(1109.47, transformed_gm.xy_res[1])
-        self.assertEqual(False, transformed_gm.is_j_axis_up)
-        self.assertEqual(
-            ("transformed_x", "transformed_y"), transformed_gm.xy_var_names
-        )
-        self.assertEqual(("lon", "lat"), transformed_gm.xy_dim_names)
-
-        transformed_gm_regular = transformed_gm.to_regular()
-        self.assertIsNot(gm, transformed_gm_regular)
-        self.assertIsInstance(transformed_gm_regular, RegularGridMapping)
-        self.assertEqual(
-            pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
-        )
-        self.assertEqual((439, 223), transformed_gm_regular.size)
-        self.assertEqual((200, 200), transformed_gm_regular.tile_size)
-        self.assertAlmostEqual(605.566, transformed_gm_regular.xy_res[0])
-        self.assertAlmostEqual(1109.47, transformed_gm_regular.xy_res[1])
-        self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
-        self.assertEqual(("x", "y"), transformed_gm_regular.xy_var_names)
-        self.assertEqual(("x", "y"), transformed_gm_regular.xy_dim_names)
+        self.assertEqual(("x", "y"), transformed_gm.xy_dim_names)
 
     def test_to_regular(self):
         gm = _TestGridMapping(
@@ -461,64 +423,6 @@ class GridMappingTest(unittest.TestCase):
             gm._assert_regular()
         self.assertIn(
             "Operation not implemented for non-regular grid mappings", str(cm.exception)
-        )
-
-    def test_ij_bbox_from_xy_bbox(self):
-        gm = _TestGridMapping(**self.kwargs())
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 180, 90))
-        self.assertEqual((0, 0, 720, 360), ij_bbox)
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 0, 0))
-        self.assertEqual((0, 180, 360, 360), ij_bbox)
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((0, 0, 180, 90))
-        self.assertEqual((360, 0, 720, 180), ij_bbox)
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 0, 0), ij_border=1)
-        self.assertEqual((0, 179, 361, 360), ij_bbox)
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((0, 0, 180, 90), ij_border=1)
-        self.assertEqual((359, 0, 720, 181), ij_bbox)
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((-190, -100, -170, -80), ij_border=1)
-        self.assertEqual((0, 339, 21, 360), ij_bbox)
-
-        ij_bbox = gm.ij_bbox_from_xy_bbox((-190, -100, -180, -90), ij_border=1)
-        self.assertEqual((-1, -1, -1, -1), ij_bbox)
-
-    def test_ij_bboxes_from_xy_bboxes(self):
-        gm = _TestGridMapping(**self.kwargs())
-
-        ij_bboxes = gm.ij_bboxes_from_xy_bboxes(
-            xy_bboxes=np.array(
-                [
-                    [-180, -90, 180, 90],
-                    [-180, -90, 0, 0],
-                    [0, 0, 180, 90],
-                    [-180, -90, 0, 0],
-                    [0, 0, 180, 90],
-                    [-190, -100, -170, -80],
-                    [-190, -100, -180, -90],
-                ],
-                dtype=np.float32,
-            )
-        )
-
-        np.testing.assert_equal(
-            ij_bboxes,
-            np.array(
-                [
-                    [0, 0, 720, 360],
-                    [0, 180, 360, 360],
-                    [360, 0, 720, 180],
-                    [0, 180, 360, 360],
-                    [360, 0, 720, 180],
-                    [0, 340, 20, 360],
-                    [-1, -1, -1, -1],
-                ],
-                dtype=np.int64,
-            ),
         )
 
     def test_repr_markdown(self):

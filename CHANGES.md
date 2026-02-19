@@ -1,10 +1,15 @@
-## Changes in 0.2.5 (under development)
+## Changes in 0.3.0 (under development)
 
 - Fixed an issue when retrieving coordinate names from regular grid mappings.
 - Improved documentation for the `frequency` and `tolerance` arguments of
   `xcube_resampling.resample_in_time`.
 - Fixed incorrect time coverage metadata in dataset attributes after calling
   `xcube_resampling.resample_in_time`.
+- `xcube_resampling.rectify_dataset` is now fully lazy and scalable.
+- Removed methods `test_ij_bbox_from_xy_bbox` and `test_ij_bboxes_from_xy_bboxes` from
+  `xcube_resampling.gridmapping.GridMapping`. These methods were only used by
+  `xcube_resampling.rectify_dataset`; their updated implementations now live in
+  `xcube_resampling.rectify._compute_source_tile_indexing`.
 
 
 ## Changes in 0.2.4

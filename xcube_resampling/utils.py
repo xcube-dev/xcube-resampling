@@ -20,7 +20,9 @@
 # DEALINGS IN THE SOFTWARE.
 
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
@@ -31,8 +33,10 @@ from .constants import (
     FILLVALUE_INT,
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
+    FILLVALUE_UINT32,
     INTERP_METHOD_MAPPING,
     LOG,
+    FillValues,
     FloatInt,
     PreventNaNPropagations,
     SpatialAggMethod,
@@ -491,6 +495,8 @@ def _get_fill_value(
             fill_value = FILLVALUE_UINT8
         elif data_type == np.uint16:
             fill_value = FILLVALUE_UINT16
+        elif data_type == np.uint32:
+            fill_value = FILLVALUE_UINT32
         elif np.issubdtype(data_type, np.integer):
             fill_value = FILLVALUE_INT
         else:
@@ -512,3 +518,231 @@ def _get_fill_value(
         fill_value = assign_defaults(var.dtype)
 
     return fill_value
+
+
+def _sample_array_at_indices(
+    data: np.ndarray,
+    ix: np.ndarray,
+    iy: np.ndarray,
+    interp_method: SpatialInterpMethodStr,
+) -> np.ndarray:
+    """
+    Sample a 3d array at fractional indices (iy, ix).
+    """
+    if interp_method == "nearest":
+        ix_i = np.ceil(ix - 0.5).astype(np.intp)
+        iy_i = np.ceil(iy - 0.5).astype(np.intp)
+        return data[:, iy_i, ix_i]
+
+    ix_floor = np.floor(ix).astype(np.intp)
+    iy_floor = np.floor(iy).astype(np.intp)
+    ix_ceil = np.ceil(ix).astype(np.intp)
+    iy_ceil = np.ceil(iy).astype(np.intp)
+
+    dx = ix - ix_floor
+    dy = iy - iy_floor
+
+    v00 = data[:, iy_floor, ix_floor]
+    v01 = data[:, iy_floor, ix_ceil]
+    v10 = data[:, iy_ceil, ix_floor]
+    v11 = data[:, iy_ceil, ix_ceil]
+
+    if interp_method == "bilinear":
+        u0 = v00 + dx * (v01 - v00)
+        u1 = v10 + dx * (v11 - v10)
+        return u0 + dy * (u1 - u0)
+
+    if interp_method == "triangular":
+        dx3 = dx[np.newaxis, ...]
+        dy3 = dy[np.newaxis, ...]
+
+        tri1 = v00 + dx3 * (v01 - v00) + dy3 * (v10 - v00)
+        tri2 = v11 + (1 - dx3) * (v10 - v11) + (1 - dy3) * (v01 - v11)
+        mask3 = (dx + dy < 1.0)[np.newaxis, ...]
+        return np.where(mask3, tri1, tri2)
+
+    raise NotImplementedError(
+        f"interp_methods must be one of 0, 1, 'nearest', 'bilinear', 'triangular', "
+        f"was '{interp_method}'."
+    )
+
+
+def _create_empty_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    fill_values: FillValues | None = None,
+) -> xr.Dataset:
+    x_name, y_name = source_gm.xy_var_names
+    coords = source_ds.coords.to_dataset()
+    coords = coords.drop_vars((x_name, y_name), errors="ignore")
+    x_name, y_name = target_gm.xy_var_names
+    coords[x_name] = target_gm.x_coords
+    coords[y_name] = target_gm.y_coords
+    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
+    target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
+    for key, data in source_ds.data_vars.items():
+        shape = list(source_ds[key].shape)
+        shape[-1] = target_gm.width
+        shape[-2] = target_gm.height
+        dims = list(source_ds[key].dims)
+        dims[-1] = target_gm.xy_var_names[0]
+        dims[-2] = target_gm.xy_var_names[1]
+        if source_ds[key].ndim == 3:
+            chunks = (
+                source_ds[key].chunks[0][0],
+                target_gm.height,
+                target_gm.width,
+            )
+        else:
+            chunks = (target_gm.height, target_gm.width)
+        target_ds[key] = xr.DataArray(
+            da.full(
+                shape,
+                fill_value=_get_fill_value(fill_values, key, data),
+                chunks=chunks,
+            ),
+            dims=dims,
+            attrs=source_ds[key].attrs,
+        )
+    return target_ds
+
+
+def _clip_if_needed(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    fill_values: FillValues | None,
+    transformer: pyproj.Transformer | None = None,
+) -> tuple[xr.Dataset, GridMapping, bool]:
+    """
+    Clip the source dataset to the target bounding box if overlap is limited.
+    """
+    if transformer is None:
+        target_bbox = target_gm.xy_bbox
+        buffer_x = 2 * max(source_gm.x_res, target_gm.x_res)
+        buffer_y = 2 * max(source_gm.y_res, target_gm.y_res)
+    else:
+        target_bbox = transformer.transform_bounds(*target_gm.xy_bbox)
+        target_x_res = (target_bbox[2] - target_bbox[0]) / target_gm.width
+        target_y_res = (target_bbox[3] - target_bbox[1]) / target_gm.height
+        buffer_x = 2 * max(source_gm.x_res, target_x_res)
+        buffer_y = 2 * max(source_gm.y_res, target_y_res)
+
+    overlap = bbox_overlap(source_gm.xy_bbox, target_bbox)
+    if overlap == 0.0:
+        LOG.info(
+            "Target grid mapping does not overlap with the source grid mapping. "
+            "Returning empty target dataset."
+        )
+        empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+        return empty_ds, target_gm, True
+    if overlap >= 0.8:
+        return source_ds, source_gm, False
+
+    # Expand target bbox slightly to ensure coverage
+    bbox = [
+        target_bbox[0] - buffer_x,
+        target_bbox[1] - buffer_y,
+        target_bbox[2] + buffer_x,
+        target_bbox[3] + buffer_y,
+    ]
+    clipped = clip_dataset_by_bbox(source_ds, bbox)
+
+    if any(clipped.sizes[source_gm.xy_dim_names[i]] < 2 for i in range(2)):
+        LOG.warning(
+            "Clipped dataset contains a spatial dimension with size < 2. "
+            "Returning empty target dataset."
+        )
+        empty_ds = _create_empty_dataset(source_ds, source_gm, target_gm, fill_values)
+        return empty_ds, target_gm, True
+
+    return clipped, GridMapping.from_dataset(clipped), False
+
+
+@dataclass(frozen=True)
+class SourceTileIndexing:
+    ij_bboxes: np.ndarray  # (4, ny_tiles, nx_tiles)
+    pad_width: tuple[tuple[int, int], tuple[int, int]]
+    output_size: tuple[int, int]
+    tile_size: tuple[int, int]
+
+
+def _reorganize_tiled_array(
+    array: da.Array,
+    indexing: SourceTileIndexing,
+    fill_value: FloatInt,
+) -> da.Array:
+    """
+    Reorganize a 2D or 3D array into uniformly sized tiles based on source index bboxes.
+    """
+
+    is_3d = array.ndim == 3
+    if not is_3d:
+        array = array[None, ...]
+
+    pad_width = ((0, 0),) + indexing.pad_width
+    padded = da.pad(array, pad_width, mode="constant", constant_values=fill_value)
+
+    out_shape = (
+        array.shape[0],
+        indexing.output_size[0],
+        indexing.output_size[1],
+    )
+    chunks = (
+        array.chunks[0],
+        indexing.tile_size[0],
+        indexing.tile_size[1],
+    )
+
+    out = da.zeros(out_shape, chunks=chunks, dtype=array.dtype)
+
+    ny, nx = indexing.ij_bboxes.shape[1:]
+    th, tw = indexing.tile_size
+
+    for j in range(ny):
+        for i in range(nx):
+            bbox = indexing.ij_bboxes[:, j, i]
+
+            y0, y1 = j * th, (j + 1) * th
+            x0, x1 = i * tw, (i + 1) * tw
+
+            if bbox[0] == -1:
+                out[:, y0:y1, x0:x1] = da.full(
+                    (array.shape[0], th, tw),
+                    fill_value,
+                    chunks=chunks,
+                    dtype=array.dtype,
+                )
+            else:
+                out[:, y0:y1, x0:x1] = padded[
+                    :,
+                    bbox[1] : bbox[3],
+                    bbox[0] : bbox[2],
+                ]
+
+    return out if is_3d else out[0]
+
+
+def _map_to_source_indices(pixel_target_ij, indexing):
+    """Convert tile-local fractional source pixel indices to original source indices.
+
+    Applies per-tile source index offsets and removes padding introduced during
+    tiling, returning fractional (ix, iy) indices in the original source grid.
+    """
+    offsets_x = da.zeros_like(pixel_target_ij[0])
+    offsets_y = da.zeros_like(pixel_target_ij[1])
+
+    ny, nx = indexing.ij_bboxes.shape[1:]
+    th, tw = indexing.tile_size
+
+    for j in range(ny):
+        for i in range(nx):
+            bbox = indexing.ij_bboxes[:, j, i]
+            offsets_x[th * j : th * (j + 1), tw * i : tw * (i + 1)] = bbox[0]
+            offsets_y[th * j : th * (j + 1), tw * i : tw * (i + 1)] = bbox[1]
+
+    offsets_x -= indexing.pad_width[1][0]
+    offsets_y -= indexing.pad_width[0][0]
+
+    return da.stack([pixel_target_ij[0] + offsets_x, pixel_target_ij[1] + offsets_y])
