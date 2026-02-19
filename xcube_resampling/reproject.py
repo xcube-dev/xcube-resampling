@@ -37,6 +37,7 @@ from .constants import (
     SpatialInterpMethodStr,
 )
 from .gridmapping import GridMapping
+from .gridmapping.helpers import from_lon_360
 from .utils import (
     SourceTileIndexing,
     _clip_if_needed,
@@ -187,12 +188,17 @@ def _assemble_reprojected_dataset(
     interp_methods: SpatialInterpMethods | None = None,
     fill_values: FillValues | None = None,
 ):
-    x_name, y_name = source_gm.xy_var_names
+    src_x_name, src_y_name = source_gm.xy_var_names
+    tgt_x_name, tgt_y_name = target_gm.xy_var_names
+
     coords = source_ds.coords.to_dataset()
-    coords = coords.drop_vars((x_name, y_name), errors="ignore")
-    x_name, y_name = target_gm.xy_var_names
-    coords[x_name] = target_gm.x_coords
-    coords[y_name] = target_gm.y_coords
+    coords = coords.drop_vars((src_x_name, src_y_name), errors="ignore")
+
+    tgt_x = target_gm.x_coords
+    if target_gm.is_lon_360:
+        tgt_x = from_lon_360(tgt_x)
+    coords[tgt_x_name] = tgt_x
+    coords[tgt_y_name] = target_gm.y_coords
     coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
 

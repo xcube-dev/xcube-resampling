@@ -40,6 +40,7 @@ from .constants import (
 )
 from .gridmapping import GridMapping
 from .gridmapping.cfconv import get_dataset_grid_mapping_proxies
+from .gridmapping.helpers import from_lon_360
 from .utils import (
     SourceTileIndexing,
     _clip_if_needed,
@@ -202,7 +203,10 @@ def _assemble_rectified_dataset(
     coords = source_ds.coords.to_dataset()
     coords = coords.drop_vars((src_x_name, src_y_name), errors="ignore")
 
-    coords[tgt_x_name] = target_gm.x_coords
+    tgt_x = target_gm.x_coords
+    if target_gm.is_lon_360:
+        tgt_x = from_lon_360(tgt_x)
+    coords[tgt_x_name] = tgt_x
     coords[tgt_y_name] = target_gm.y_coords
     coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     target_ds = xr.Dataset(coords=coords, attrs=source_ds.attrs)
@@ -727,7 +731,8 @@ def _rectify_block(
 def _ensure_increasing_x(ds: xr.Dataset) -> xr.Dataset:
     gm_proxy = next(iter(get_dataset_grid_mapping_proxies(ds).values()))
     x_coords = gm_proxy.coords.x
-    if x_coords[0, 0] > x_coords[0, 1]:
+    x_diff = x_coords[0, 1] - x_coords[0, 0]
+    if -180 < x_diff < 0:
         x_dim = x_coords.dims[1]
         ds = ds.isel({x_dim: slice(None, None, -1)})
     return ds
