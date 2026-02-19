@@ -10,6 +10,8 @@
   `xcube_resampling.gridmapping.GridMapping`. These methods were only used by
   `xcube_resampling.rectify_dataset`; their updated implementations now live in
   `xcube_resampling.rectify._compute_source_tile_indexing`.
+- Added support for rectifying datasets with decreasing x-coordinate in 
+  `xcube_resampling.rectify_dataset`.
 
 
 ## Changes in 0.2.4
