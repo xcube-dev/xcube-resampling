@@ -57,6 +57,29 @@ def create_2x2x2_dataset_with_irregular_coords():
     )
 
 
+def create_2x2x2x2_dataset_with_irregular_coords():
+    lon = np.array([[1.0, 6.0], [0.0, 2.0]])
+    lat = np.array([[56.0, 53.0], [52.0, 50.0]])
+    time = pd.date_range("2025-08-01", periods=2)
+    member = np.arange(2)
+    rad = np.array([[1.0, 2.0], [3.0, 4.0]])
+    rad = np.repeat(rad[np.newaxis, :, :], 2, axis=0)
+    rad = np.repeat(rad[np.newaxis, :, :, :], 2, axis=0)
+    rad = np.transpose(rad, (2, 0, 3, 1))
+    return xr.Dataset(
+        dict(
+            rad=xr.DataArray(rad, dims=("y", "member", "x", "time")),
+            time_series=xr.DataArray(np.array([1, 2]), dims="time"),
+        ),
+        coords=dict(
+            lon=xr.DataArray(lon, dims=("y", "x")),
+            lat=xr.DataArray(lat, dims=("y", "x")),
+            time=time,
+            member=member,
+        ),
+    )
+
+
 def create_8x6_dataset_with_regular_coords():
     res = 0.1
     return xr.Dataset(
@@ -137,6 +160,30 @@ def create_2x5x5_dataset_regular_utm():
             )
         ),
         coords=dict(time=time, x=x, y=y, spatial_ref=spatial_ref),
+    )
+    ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32632").to_cf()
+    return ds
+
+
+def create_2x2x5x5_dataset_regular_utm():
+    x = np.arange(565300.0, 565800.0, 100.0)
+    y = np.arange(5934300.0, 5933800.0, -100.0)
+    time = pd.date_range("2025-08-01", periods=2)
+    members = np.arange(2)
+    spatial_ref = np.array(0)
+    band_1 = np.arange(25).reshape((5, 5))
+    band_1 = np.repeat(band_1[np.newaxis, :, :], 2, axis=0)
+    band_1 = np.repeat(band_1[np.newaxis, :, :, :], 2, axis=0)
+    band_1 = np.transpose(band_1, (2, 0, 3, 1))
+    ds = xr.Dataset(
+        dict(
+            band_1=xr.DataArray(
+                band_1,
+                dims=("y", "members", "x", "time"),
+                attrs=dict(grid_mapping="spatial_ref"),
+            )
+        ),
+        coords=dict(time=time, x=x, y=y, members=members, spatial_ref=spatial_ref),
     )
     ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32632").to_cf()
     return ds

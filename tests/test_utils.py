@@ -23,6 +23,7 @@ from xcube_resampling.utils import (
     _get_spatial_interp_method,
     _prep_spatial_interp_methods_downscale,
     _select_variables,
+    _transpose_dims,
     bbox_overlap,
     clip_dataset_by_bbox,
     get_spatial_coords,
@@ -496,3 +497,24 @@ class TestClipDatasetByBBox(unittest.TestCase):
         np.testing.assert_array_equal(
             np.isnan(target_ds.rad), np.ones_like(target_ds.rad, dtype=bool)
         )
+
+    def test_transpose_dims(self):
+        gm = GridMapping.regular_from_bbox([1000, 1000, 2000, 2000], 100, "EPSG:3035")
+
+        data = xr.Dataset(
+            {
+                "var0": xr.DataArray(np.random.rand(2, 4, 3), dims=("x", "time", "y")),
+                "var1": xr.DataArray(np.random.rand(2, 3), dims=("x", "y")),
+                "var2": xr.DataArray(np.random.rand(4, 3, 2), dims=("time", "y", "x")),
+                "var3": xr.DataArray(np.random.rand(3, 2), dims=("y", "x")),
+                "var4": xr.DataArray(np.random.rand(4, 2), dims=("time", "x")),
+                "var5": xr.DataArray(np.random.rand(2), dims="x"),
+            },
+        )
+        result = _transpose_dims(data, gm)
+        self.assertEqual(("time", "y", "x"), result["var0"].dims)
+        self.assertEqual(("y", "x"), result["var1"].dims)
+        self.assertEqual(("time", "y", "x"), result["var2"].dims)
+        self.assertEqual(("y", "x"), result["var3"].dims)
+        self.assertEqual(("time", "x"), result["var4"].dims)
+        self.assertEqual(("x",), result["var5"].dims)

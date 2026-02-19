@@ -10,6 +10,7 @@ from xcube_resampling.gridmapping import CRS_WGS84, GridMapping
 from xcube_resampling.reproject import reproject_dataset
 
 from .sampledata import (
+    create_2x2x5x5_dataset_regular_utm,
     create_2x5x5_dataset_regular_utm,
     create_5x5_dataset_regular_utm,
     create_large_dataset_for_reproject,
@@ -69,6 +70,58 @@ class ReprojectDatasetTest(unittest.TestCase):
                         [11, 12, 12, 13, 14],
                         [16, 17, 17, 18, 19],
                         [21, 17, 17, 18, 19],
+                    ],
+                ],
+                dtype=target_ds.band_1.dtype,
+            ),
+        )
+
+    def test_reproject_target_gm_4d(self):
+        source_ds = create_2x2x5x5_dataset_regular_utm()
+
+        # test projected CRS, similar resolution
+        target_gm = GridMapping.regular(
+            size=(5, 5), xy_min=(4320120, 3382520), xy_res=80, crs="epsg:3035"
+        )
+        target_ds = reproject_dataset(source_ds, target_gm)
+        self.assertEqual(set(source_ds.variables), set(target_ds.variables))
+        self.assertEqual(("members", "time", "y", "x"), target_ds.band_1.dims)
+
+        np.testing.assert_almost_equal(
+            target_ds.band_1.values,
+            np.array(
+                [
+                    [
+                        [
+                            [1, 1, 2, 3, 4],
+                            [6, 6, 7, 8, 9],
+                            [11, 12, 12, 13, 14],
+                            [16, 17, 17, 18, 19],
+                            [21, 17, 17, 18, 19],
+                        ],
+                        [
+                            [1, 1, 2, 3, 4],
+                            [6, 6, 7, 8, 9],
+                            [11, 12, 12, 13, 14],
+                            [16, 17, 17, 18, 19],
+                            [21, 17, 17, 18, 19],
+                        ],
+                    ],
+                    [
+                        [
+                            [1, 1, 2, 3, 4],
+                            [6, 6, 7, 8, 9],
+                            [11, 12, 12, 13, 14],
+                            [16, 17, 17, 18, 19],
+                            [21, 17, 17, 18, 19],
+                        ],
+                        [
+                            [1, 1, 2, 3, 4],
+                            [6, 6, 7, 8, 9],
+                            [11, 12, 12, 13, 14],
+                            [16, 17, 17, 18, 19],
+                            [21, 17, 17, 18, 19],
+                        ],
                     ],
                 ],
                 dtype=target_ds.band_1.dtype,

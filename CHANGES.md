@@ -12,7 +12,10 @@
   `xcube_resampling.rectify._compute_source_tile_indexing`.
 - Added support for rectifying datasets with decreasing x-coordinate in 
   `xcube_resampling.rectify_dataset`.
-
+- Support data variables with arbitrary dimensionality (≥ 3D) in
+  `xcube_resampling.rectify_dataset` and `xcube_resampling.reproject_dataset`.
+  Spatial dimensions are automatically reordered to the trailing `(y, x)`
+  positions when required.
 
 ## Changes in 0.2.4
 
