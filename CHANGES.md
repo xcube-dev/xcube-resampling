@@ -1,4 +1,4 @@
-## Changes in 0.3.0 (under development)
+## Changes in 0.3.0
 
 - Fixed an issue when retrieving coordinate names from regular grid mappings.
 - Improved documentation for the `frequency` and `tolerance` arguments of

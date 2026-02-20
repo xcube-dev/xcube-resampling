@@ -127,11 +127,11 @@ def reproject_dataset(
         target_gm.crs, source_gm.crs, always_xy=True
     )
 
-    source_ds, source_gm, is_empty = _clip_if_needed(
-        source_ds, source_gm, target_gm, fill_values, transformer=transformer
-    )
-    if is_empty:
-        return source_ds
+    # source_ds, source_gm, is_empty = _clip_if_needed(
+    #     source_ds, source_gm, target_gm, fill_values, transformer=transformer
+    # )
+    # if is_empty:
+    #     return source_ds
 
     # If source has higher resolution than target, downscale first, then reproject
     source_ds, source_gm = _downscale_source_dataset(
