@@ -88,7 +88,7 @@ You can create new grid mappings from existing ones using:
 - [transform](api.md/#xcube_resampling.gridmapping.GridMapping.transform):
   change the CRS of a grid mapping (regular → irregular with 2D coordinates).
 
-An example is available in the [Example Notebooks](examples/coords.ipynb).
+An example is available in the [Example Notebooks](examples/grid_mapping.ipynb).
 
 ---
 

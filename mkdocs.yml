@@ -9,7 +9,7 @@ nav:
   - Getting Started: start.md
   - User Guide: guide.md
   - Example Notebooks:
-      - GridMapping instance: examples/coords.ipynb
+      - GridMapping instance: examples/grid_mapping.ipynb
       - Affine Transformation: examples/affine.ipynb
       - Rectification of a Sentinel-3 tile: examples/rectify_sentinel3.ipynb
       - Reprojection of large Land Cover Map: examples/resample_in_space_large_example_reproject_dataset.ipynb
