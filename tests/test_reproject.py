@@ -12,6 +12,7 @@ from xcube_resampling.reproject import reproject_dataset
 from .sampledata import (
     create_2x5x5_dataset_regular_utm,
     create_5x5_dataset_regular_utm,
+    create_5x5_dataset_regular_utm_antimeridian,
     create_large_dataset_for_reproject,
 )
 
@@ -152,7 +153,7 @@ class ReprojectDatasetTest(unittest.TestCase):
                 [
                     [0, 1, 3],
                     [5, 6, 8],
-                    [15, 16, 18],
+                    [15, 11, 13],
                 ],
                 dtype=target_ds.band_1.dtype,
             ),
@@ -175,6 +176,45 @@ class ReprojectDatasetTest(unittest.TestCase):
                     [22, 23, 23, 23, 24],
                 ],
                 dtype=target_ds.band_1.dtype,
+            ),
+        )
+
+    def test_reproject_target_gm_geographic_crs_antimeridian(self):
+        source_ds = create_5x5_dataset_regular_utm_antimeridian()
+
+        # Geographic target grid placed near 179.99°E
+        target_gm = GridMapping.regular(
+            size=(5, 5),
+            xy_min=(179.998, 9.95),
+            xy_res=0.001,
+            crs=CRS_WGS84,
+        )
+
+        fill_value = -9999
+        target_ds = reproject_dataset(
+            source_ds,
+            target_gm,
+            fill_values=fill_value,
+        )
+
+        np.testing.assert_almost_equal(
+            target_ds.band_1.values,
+            np.array(
+                [
+                    [-9999, -9999, -9999, -9999, -9999],
+                    [0, 1, 2, 3, 4],
+                    [5, 6, 7, 8, 9],
+                    [10, 11, 12, 13, 14],
+                    [15, 16, 17, 18, 19],
+                ],
+                dtype=target_ds.band_1.dtype,
+            ),
+        )
+        np.testing.assert_almost_equal(
+            target_ds.lon.values,
+            np.array(
+                [179.998, 179.999, 180.0, -179.999, -179.998],
+                dtype=target_ds.lon.dtype,
             ),
         )
 

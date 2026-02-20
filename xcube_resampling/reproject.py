@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
-from collections.abc import Hashable, Iterable
+from collections.abc import Hashable, Iterable, Mapping
 
 import dask.array as da
 import numpy as np
@@ -33,6 +33,7 @@ from .constants import (
     FillValues,
     PreventNaNPropagations,
     SpatialAggMethods,
+    SpatialInterpMethod,
     SpatialInterpMethods,
     SpatialInterpMethodStr,
 )
@@ -40,9 +41,9 @@ from .gridmapping import GridMapping
 from .gridmapping.helpers import from_lon_360
 from .utils import (
     SourceTileIndexing,
-    _clip_if_needed,
     _get_fill_value,
     _get_spatial_interp_method_str,
+    _get_spatial_interp_methods,
     _prep_spatial_interp_methods_downscale,
     _reorganize_tiled_array,
     _sample_array_at_indices,
@@ -127,13 +128,8 @@ def reproject_dataset(
         target_gm.crs, source_gm.crs, always_xy=True
     )
 
-    # source_ds, source_gm, is_empty = _clip_if_needed(
-    #     source_ds, source_gm, target_gm, fill_values, transformer=transformer
-    # )
-    # if is_empty:
-    #     return source_ds
-
     # If source has higher resolution than target, downscale first, then reproject
+    interp_methods = _get_spatial_interp_methods(source_ds, interp_methods)
     source_ds, source_gm = _downscale_source_dataset(
         source_ds,
         source_gm,
@@ -234,11 +230,11 @@ def _downscale_source_dataset(
     source_gm: GridMapping,
     target_gm: GridMapping,
     transformer: pyproj.Transformer,
-    interp_methods: SpatialInterpMethods | None,
+    interp_methods: Mapping[Hashable, SpatialInterpMethod],
     agg_methods: SpatialAggMethods | None,
     prevent_nan_propagations: PreventNaNPropagations,
 ) -> (xr.Dataset, GridMapping):
-    if interp_methods in [0, "nearest"]:
+    if all(v in (0, "nearest") for v in interp_methods.values()):
         return source_ds, source_gm
 
     bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)

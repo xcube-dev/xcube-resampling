@@ -54,6 +54,8 @@ class Coords1DGridMappingTest(unittest.TestCase):
         self.assertIs(x_coords, gm.x_coords)
         # noinspection PyUnresolvedReferences
         self.assertIs(y_coords, gm.y_coords)
+        self.assertIs(x_coords, gm._new_x_coords())
+        self.assertIs(y_coords, gm._new_y_coords())
 
     def test_1d_j_axis_up(self):
         gm = GridMapping.from_coords(

@@ -26,12 +26,12 @@ import threading
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 
 from xcube_resampling.constants import AffineTransformMatrix, FloatInt
+
 from .assertions import assert_given, assert_instance, assert_true
 from .helpers import (
     _assert_valid_xy_coords,

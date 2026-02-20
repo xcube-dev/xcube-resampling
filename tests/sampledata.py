@@ -123,6 +123,35 @@ def create_5x5_dataset_regular_utm():
     return ds
 
 
+def create_5x5_dataset_regular_utm_antimeridian():
+    # Regular 5x5 grid in meters (UTM zone 60N, close to 180°E)
+    x = np.arange(828800.0, 829300.0, 100.0)
+    y = np.arange(1101700.0, 1101200.0, -100.0)
+
+    spatial_ref = np.array(0)
+    band_1 = np.arange(25).reshape((5, 5))
+
+    ds = xr.Dataset(
+        dict(
+            band_1=xr.DataArray(
+                band_1,
+                dims=("y", "x"),
+                attrs=dict(grid_mapping="spatial_ref"),
+            )
+        ),
+        coords=dict(
+            x=x,
+            y=y,
+            spatial_ref=spatial_ref,
+        ),
+    )
+
+    # Attach UTM zone 60N CRS
+    ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32660").to_cf()
+
+    return ds
+
+
 def create_2x5x5_dataset_regular_utm():
     x = np.arange(565300.0, 565800.0, 100.0)
     y = np.arange(5934300.0, 5933800.0, -100.0)

@@ -435,6 +435,15 @@ def _prep_spatial_interp_methods_downscale(
     return interp_methods
 
 
+def _get_spatial_interp_methods(
+    ds: xr.Dataset, interp_methods: SpatialInterpMethods | None
+) -> Mapping[Hashable, SpatialInterpMethod]:
+    interp_methods_new = {}
+    for name, var in ds.data_vars.items():
+        interp_methods_new[name] = _get_spatial_interp_method(interp_methods, name, var)
+    return interp_methods_new
+
+
 def _get_spatial_agg_method(
     agg_methods: SpatialAggMethods | None,
     key: Hashable,

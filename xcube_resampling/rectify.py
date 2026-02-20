@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import os
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable, Mapping
 
 import dask.array as da
 import numba as nb
@@ -46,6 +46,7 @@ from .utils import (
     _clip_if_needed,
     _get_fill_value,
     _get_spatial_interp_method_str,
+    _get_spatial_interp_methods,
     _is_equal_crs,
     _map_to_source_indices,
     _prep_spatial_interp_methods_downscale,
@@ -145,6 +146,7 @@ def rectify_dataset(
         return source_ds
 
     # If source has higher resolution than target, downscale first, then reproject
+    interp_methods = _get_spatial_interp_methods(source_ds, interp_methods)
     source_ds, source_gm = _downscale_source_dataset(
         source_ds,
         source_gm,
@@ -284,11 +286,11 @@ def _downscale_source_dataset(
     source_ds: xr.Dataset,
     source_gm: GridMapping,
     target_gm: GridMapping,
-    interp_methods: SpatialInterpMethods | None,
+    interp_methods: Mapping[Hashable, SpatialInterpMethod],
     agg_methods: SpatialAggMethods | None,
     prevent_nan_propagations: PreventNaNPropagations,
 ) -> (xr.Dataset, GridMapping):
-    if interp_methods in [0, "nearest"]:
+    if all(v in (0, "nearest") for v in interp_methods.values()):
         return source_ds, source_gm
 
     x_scale = source_gm.x_res / target_gm.x_res

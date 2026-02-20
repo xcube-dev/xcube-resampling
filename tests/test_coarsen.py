@@ -24,7 +24,6 @@
 or have special implementations compared to their numpy equivalents.
 """
 
-
 import unittest
 
 import numpy as np
