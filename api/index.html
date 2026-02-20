@@ -388,14 +388,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/coords/" class="md-nav__link">
+      <a href="../examples/grid_mapping/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    GridMapping instance
+    Overview of the instance
   
 
     
@@ -451,7 +451,7 @@
   <span class="md-ellipsis">
     
   
-    Rectification to a Sentinel-3 OLCI scene
+    Rectification to a Sentinel-3 OLCI Scene
   
 
     
@@ -3505,8 +3505,7 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/reproject.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 54</span>
-<span class="normal"> 55</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 55</span>
 <span class="normal"> 56</span>
 <span class="normal"> 57</span>
 <span class="normal"> 58</span>
@@ -3623,11 +3622,7 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 <span class="normal">169</span>
 <span class="normal">170</span>
 <span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_dataset</span><span class="p">(</span>
+<span class="normal">172</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_dataset</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -3703,13 +3698,8 @@ grid. Variables without 2D spatial dimensions are copied as-is.
         <span class="n">target_gm</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">source_gm</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 
-    <span class="c1"># source_ds, source_gm, is_empty = _clip_if_needed(</span>
-    <span class="c1">#     source_ds, source_gm, target_gm, fill_values, transformer=transformer</span>
-    <span class="c1"># )</span>
-    <span class="c1"># if is_empty:</span>
-    <span class="c1">#     return source_ds</span>
-
     <span class="c1"># If source has higher resolution than target, downscale first, then reproject</span>
+    <span class="n">interp_methods</span> <span class="o">=</span> <span class="n">_get_spatial_interp_methods</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">interp_methods</span><span class="p">)</span>
     <span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span> <span class="o">=</span> <span class="n">_downscale_source_dataset</span><span class="p">(</span>
         <span class="n">source_ds</span><span class="p">,</span>
         <span class="n">source_gm</span><span class="p">,</span>
@@ -4041,8 +4031,7 @@ pixel indices for the last and second-last dimension, respectively.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/rectify.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 63</span>
-<span class="normal"> 64</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 64</span>
 <span class="normal"> 65</span>
 <span class="normal"> 66</span>
 <span class="normal"> 67</span>
@@ -4162,7 +4151,9 @@ pixel indices for the last and second-last dimension, respectively.</p>
 <span class="normal">181</span>
 <span class="normal">182</span>
 <span class="normal">183</span>
-<span class="normal">184</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rectify_dataset</span><span class="p">(</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rectify_dataset</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4247,6 +4238,7 @@ pixel indices for the last and second-last dimension, respectively.</p>
         <span class="k">return</span> <span class="n">source_ds</span>
 
     <span class="c1"># If source has higher resolution than target, downscale first, then reproject</span>
+    <span class="n">interp_methods</span> <span class="o">=</span> <span class="n">_get_spatial_interp_methods</span><span class="p">(</span><span class="n">source_ds</span><span class="p">,</span> <span class="n">interp_methods</span><span class="p">)</span>
     <span class="n">source_ds</span><span class="p">,</span> <span class="n">source_gm</span> <span class="o">=</span> <span class="n">_downscale_source_dataset</span><span class="p">(</span>
         <span class="n">source_ds</span><span class="p">,</span>
         <span class="n">source_gm</span><span class="p">,</span>
