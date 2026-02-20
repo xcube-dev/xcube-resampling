@@ -39,7 +39,6 @@ from .constants import (
     SpatialInterpMethodStr,
 )
 from .gridmapping import GridMapping
-from .gridmapping.cfconv import get_dataset_grid_mapping_proxies
 from .gridmapping.helpers import from_lon_360
 from .utils import (
     SourceTileIndexing,
@@ -131,7 +130,6 @@ def rectify_dataset(
         coordinate variables are ignored in the output.
     """
     source_ds = _select_variables(source_ds, variables)
-    source_ds = _ensure_increasing_x(source_ds, gm=source_gm)
 
     source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -728,19 +726,3 @@ def _rectify_block(
     sampled = _sample_array_at_indices(data_array, ix[valid], iy[valid], interp_method)
     data_rectified[:, valid] = sampled
     return data_rectified
-
-
-def _ensure_increasing_x(ds: xr.Dataset, gm: GridMapping | None = None) -> xr.Dataset:
-    if gm is None:
-        gm_proxies = get_dataset_grid_mapping_proxies(ds)
-        if not gm_proxies:
-            raise ValueError("cannot find any grid mapping in dataset")
-        gm_proxy = next(iter(gm_proxies.values()))
-        x_coords = gm_proxy.coords.x
-    else:
-        x_coords = gm.x_coords
-    x_diff = x_coords[0, 1] - x_coords[0, 0]
-    if -180 < x_diff < 0:
-        x_dim = x_coords.dims[1]
-        ds = ds.isel({x_dim: slice(None, None, -1)})
-    return ds
