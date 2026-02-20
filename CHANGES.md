@@ -1,3 +1,9 @@
+## Changes in 0.3.1
+
+- Fixed an issue in `rectify_dataset` when processing datasets with decreasing 
+  x-coordinates.
+
+
 ## Changes in 0.3.0
 
 - Fixed an issue when retrieving coordinate names from regular grid mappings.
