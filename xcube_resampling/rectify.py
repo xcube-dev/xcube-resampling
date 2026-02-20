@@ -131,7 +131,7 @@ def rectify_dataset(
         coordinate variables are ignored in the output.
     """
     source_ds = _select_variables(source_ds, variables)
-    source_ds = _ensure_increasing_x(source_ds)
+    source_ds = _ensure_increasing_x(source_ds, gm=source_gm)
 
     source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -730,9 +730,15 @@ def _rectify_block(
     return data_rectified
 
 
-def _ensure_increasing_x(ds: xr.Dataset) -> xr.Dataset:
-    gm_proxy = next(iter(get_dataset_grid_mapping_proxies(ds).values()))
-    x_coords = gm_proxy.coords.x
+def _ensure_increasing_x(ds: xr.Dataset, gm: GridMapping | None = None) -> xr.Dataset:
+    if gm is None:
+        gm_proxies = get_dataset_grid_mapping_proxies(ds)
+        if not gm_proxies:
+            raise ValueError("cannot find any grid mapping in dataset")
+        gm_proxy = next(iter(gm_proxies.values()))
+        x_coords = gm_proxy.coords.x
+    else:
+        x_coords = gm.x_coords
     x_diff = x_coords[0, 1] - x_coords[0, 0]
     if -180 < x_diff < 0:
         x_dim = x_coords.dims[1]
