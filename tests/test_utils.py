@@ -158,7 +158,7 @@ class TestUtils(unittest.TestCase):
 
         # no matching keys shall trigger a log warning
         interp_methods = {"something": "bilinear"}
-        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+        with self.assertLogs("xcube.resampling", level="DEBUG") as cm:
             # noinspection PyTypeChecker
             result = _get_spatial_interp_method(interp_methods, "var", int_var)
         self.assertEqual(result, 0)  # default value
@@ -226,7 +226,7 @@ class TestUtils(unittest.TestCase):
 
         # no matching keys triggers log warning
         agg_methods = {"something": "mean"}
-        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+        with self.assertLogs("xcube.resampling", level="DEBUG") as cm:
             # noinspection PyTypeChecker
             result = _get_spatial_agg_method(agg_methods, "var", int_var)
         self.assertEqual(result, AGG_METHODS["center"])  # default value
@@ -261,7 +261,7 @@ class TestUtils(unittest.TestCase):
 
         # missing key/dtype → default False with log warning
         prevent_nan_propagations = {"something": True}
-        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+        with self.assertLogs("xcube.resampling", level="DEBUG") as cm:
             # noinspection PyTypeChecker
             result = _get_prevent_nan_propagation(
                 prevent_nan_propagations, "var", int_var
@@ -278,6 +278,9 @@ class TestUtils(unittest.TestCase):
         uint16_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint16), dims=["x"])
         uint32_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint32), dims=["x"])
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
+        bool_var = xr.DataArray(
+            np.array([True, False, True], dtype=np.bool_), dims=["x"]
+        )
         float_var = xr.DataArray(
             np.array([1.0, 2.0, 3.0], dtype=np.float32), dims=["x"]
         )
@@ -299,7 +302,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(result, 3.14)
 
         # unmatched mapping triggers warning + defaults
-        with self.assertLogs("xcube.resampling", level="WARNING") as cm:
+        with self.assertLogs("xcube.resampling", level="DEBUG") as cm:
             result = _get_fill_value({"something": 42}, "var", int_var)
         self.assertEqual(result, FILLVALUE_INT)
         self.assertIn("Fill value could not be derived", cm.output[0])
@@ -309,6 +312,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(_get_fill_value(None, "var", uint16_var), FILLVALUE_UINT16)
         self.assertEqual(_get_fill_value(None, "var", uint32_var), FILLVALUE_UINT32)
         self.assertEqual(_get_fill_value(None, "var", int_var), FILLVALUE_INT)
+        self.assertEqual(_get_fill_value(None, "var", bool_var), 0)
         self.assertTrue(np.isnan(_get_fill_value(None, "var", float_var)))
 
     def test_reproject_bbox(self):

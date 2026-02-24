@@ -341,6 +341,7 @@ def _get_pixel_target_ij(
         fractional source pixel indices (ix, iy) per target pixel.
         Missing values are NaN.
     """
+    dtype = src_x_coords.dtype
 
     def _pixel_index_block(
         tgt_x_block: np.ndarray,
@@ -350,13 +351,17 @@ def _get_pixel_target_ij(
         scale: np.ndarray,
     ) -> np.ndarray:
         """Compute fractional source indices for a single target tile."""
-        target_x = tgt_x_block[0, :].astype(np.float32)
-        target_y = tgt_y_block[:, 0].astype(np.float32)
+        target_x = tgt_x_block[0, :]
+        target_y = tgt_y_block[:, 0]
 
         nx_tgt = target_x.size
         ny_tgt = target_y.size
 
-        idx_frac = np.full((2, ny_tgt, nx_tgt), np.nan, dtype=np.float32)
+        idx_frac = np.full(
+            (2, ny_tgt, nx_tgt),
+            np.nan,
+            dtype=np.float32 if np.issubdtype(dtype, np.integer) else dtype,
+        )
 
         ny_src, nx_src = src_x_block.shape
 
@@ -366,7 +371,7 @@ def _get_pixel_target_ij(
         quad_ij0 = np.stack((ix0, iy0)).astype(np.int32)
 
         # Quad corner coordinates
-        src_coords = np.stack((src_x_block, src_y_block)).astype(np.float32)
+        src_coords = np.stack((src_x_block, src_y_block))
         quad_corners = np.stack(
             (
                 src_coords[:, quad_ij0[1], quad_ij0[0]],
@@ -385,7 +390,7 @@ def _get_pixel_target_ij(
             return idx_frac
 
         # Bounding target pixel indices per quad
-        offset = np.array([target_x[0], target_y[0]], dtype=np.float32)
+        offset = np.array([target_x[0], target_y[0]])
         tgt_bbox = np.floor(
             (quad_corners - offset[:, None, None]) / scale[:, None, None]
         ).astype(np.int32)
@@ -423,7 +428,7 @@ def _get_pixel_target_ij(
     # Build block-aligned target coordinate views
     tgt_x = target_gm.x_coords.data
     tgt_y = target_gm.y_coords.data
-    scale = np.array([tgt_x[1] - tgt_x[0], tgt_y[1] - tgt_y[0]], dtype=np.float32)
+    scale = np.array([tgt_x[1] - tgt_x[0], tgt_y[1] - tgt_y[0]])
     tgt_x = da.stack([tgt_x] * len(tgt_y.chunks[0]), axis=0)
     tgt_y = da.stack([tgt_y] * len(tgt_x.chunks[1]), axis=1)
 
@@ -434,7 +439,7 @@ def _get_pixel_target_ij(
         src_x_coords,
         src_y_coords,
         scale,
-        dtype=np.float32,
+        dtype=np.float32 if np.issubdtype(dtype, np.integer) else dtype,
         chunks=(2, tgt_y.chunks[0], tgt_x.chunks[1]),
     )
 
@@ -534,13 +539,8 @@ def _xy_bbox_block(x_coords: np.ndarray, y_coords: np.ndarray):
     x_edges = np.concatenate([x_coords[:, 0], x_coords[:, -1]])
     y_edges = np.concatenate([y_coords[0, :], y_coords[-1, :]])
     bbox = np.array(
-        [
-            x_edges.min(),
-            y_edges.min(),
-            x_edges.max(),
-            y_edges.max(),
-        ],
-        dtype=np.float32,
+        [x_edges.min(), y_edges.min(), x_edges.max(), y_edges.max()],
+        dtype=x_coords.dtype,
     )
     return bbox[:, None, None]
 
@@ -550,7 +550,7 @@ def _get_xy_bboxes(gm_2d: GridMapping):
         _xy_bbox_block,
         gm_2d.x_coords.data,
         gm_2d.y_coords.data,
-        dtype=np.float32,
+        dtype=gm_2d.x_coords.dtype,
         chunks=(4, 1, 1),
     )
 
