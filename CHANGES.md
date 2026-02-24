@@ -1,3 +1,12 @@
+## Changes in 0.3.1
+
+- Fixed a bug in `xcube_resampling.rectify_dataset` that occurred when processing  
+  datasets with decreasing x-coordinates.
+- Boolean (`bool`) data arrays now default to nearest-neighbor interpolation.  
+  For spatial aggregation, values are centered, and `0` is used as the default fill 
+  value—matching the behavior of integer arrays to ensure consistent and valid results.
+
+
 ## Changes in 0.3.0
 
 - Fixed an issue when retrieving coordinate names from regular grid mappings.

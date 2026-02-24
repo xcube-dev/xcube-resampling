@@ -39,7 +39,6 @@ from .constants import (
     SpatialInterpMethodStr,
 )
 from .gridmapping import GridMapping
-from .gridmapping.cfconv import get_dataset_grid_mapping_proxies
 from .gridmapping.helpers import from_lon_360
 from .utils import (
     SourceTileIndexing,
@@ -131,7 +130,6 @@ def rectify_dataset(
         coordinate variables are ignored in the output.
     """
     source_ds = _select_variables(source_ds, variables)
-    source_ds = _ensure_increasing_x(source_ds)
 
     source_gm = source_gm or GridMapping.from_dataset(source_ds)
     source_ds = normalize_grid_mapping(source_ds, source_gm)
@@ -298,7 +296,8 @@ def _downscale_source_dataset(
     if x_scale >= SCALE_LIMIT and y_scale >= SCALE_LIMIT:
         return source_ds, source_gm
 
-    w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
+    w = np.floor(x_scale * (source_gm.width - 1))
+    h = np.floor(y_scale * (source_gm.height - 1))
     downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
     source_ds = resample_dataset(
         source_ds,
@@ -342,6 +341,7 @@ def _get_pixel_target_ij(
         fractional source pixel indices (ix, iy) per target pixel.
         Missing values are NaN.
     """
+    dtype = src_x_coords.dtype
 
     def _pixel_index_block(
         tgt_x_block: np.ndarray,
@@ -351,13 +351,17 @@ def _get_pixel_target_ij(
         scale: np.ndarray,
     ) -> np.ndarray:
         """Compute fractional source indices for a single target tile."""
-        target_x = tgt_x_block[0, :].astype(np.float32)
-        target_y = tgt_y_block[:, 0].astype(np.float32)
+        target_x = tgt_x_block[0, :]
+        target_y = tgt_y_block[:, 0]
 
         nx_tgt = target_x.size
         ny_tgt = target_y.size
 
-        idx_frac = np.full((2, ny_tgt, nx_tgt), np.nan, dtype=np.float32)
+        idx_frac = np.full(
+            (2, ny_tgt, nx_tgt),
+            np.nan,
+            dtype=np.float32 if np.issubdtype(dtype, np.integer) else dtype,
+        )
 
         ny_src, nx_src = src_x_block.shape
 
@@ -367,7 +371,7 @@ def _get_pixel_target_ij(
         quad_ij0 = np.stack((ix0, iy0)).astype(np.int32)
 
         # Quad corner coordinates
-        src_coords = np.stack((src_x_block, src_y_block)).astype(np.float32)
+        src_coords = np.stack((src_x_block, src_y_block))
         quad_corners = np.stack(
             (
                 src_coords[:, quad_ij0[1], quad_ij0[0]],
@@ -386,7 +390,7 @@ def _get_pixel_target_ij(
             return idx_frac
 
         # Bounding target pixel indices per quad
-        offset = np.array([target_x[0], target_y[0]], dtype=np.float32)
+        offset = np.array([target_x[0], target_y[0]])
         tgt_bbox = np.floor(
             (quad_corners - offset[:, None, None]) / scale[:, None, None]
         ).astype(np.int32)
@@ -424,7 +428,7 @@ def _get_pixel_target_ij(
     # Build block-aligned target coordinate views
     tgt_x = target_gm.x_coords.data
     tgt_y = target_gm.y_coords.data
-    scale = np.array([tgt_x[1] - tgt_x[0], tgt_y[1] - tgt_y[0]], dtype=np.float32)
+    scale = np.array([tgt_x[1] - tgt_x[0], tgt_y[1] - tgt_y[0]])
     tgt_x = da.stack([tgt_x] * len(tgt_y.chunks[0]), axis=0)
     tgt_y = da.stack([tgt_y] * len(tgt_x.chunks[1]), axis=1)
 
@@ -435,7 +439,7 @@ def _get_pixel_target_ij(
         src_x_coords,
         src_y_coords,
         scale,
-        dtype=np.float32,
+        dtype=np.float32 if np.issubdtype(dtype, np.integer) else dtype,
         chunks=(2, tgt_y.chunks[0], tgt_x.chunks[1]),
     )
 
@@ -535,13 +539,8 @@ def _xy_bbox_block(x_coords: np.ndarray, y_coords: np.ndarray):
     x_edges = np.concatenate([x_coords[:, 0], x_coords[:, -1]])
     y_edges = np.concatenate([y_coords[0, :], y_coords[-1, :]])
     bbox = np.array(
-        [
-            x_edges.min(),
-            y_edges.min(),
-            x_edges.max(),
-            y_edges.max(),
-        ],
-        dtype=np.float32,
+        [x_edges.min(), y_edges.min(), x_edges.max(), y_edges.max()],
+        dtype=x_coords.dtype,
     )
     return bbox[:, None, None]
 
@@ -551,7 +550,7 @@ def _get_xy_bboxes(gm_2d: GridMapping):
         _xy_bbox_block,
         gm_2d.x_coords.data,
         gm_2d.y_coords.data,
-        dtype=np.float32,
+        dtype=gm_2d.x_coords.dtype,
         chunks=(4, 1, 1),
     )
 
@@ -728,13 +727,3 @@ def _rectify_block(
     sampled = _sample_array_at_indices(data_array, ix[valid], iy[valid], interp_method)
     data_rectified[:, valid] = sampled
     return data_rectified
-
-
-def _ensure_increasing_x(ds: xr.Dataset) -> xr.Dataset:
-    gm_proxy = next(iter(get_dataset_grid_mapping_proxies(ds).values()))
-    x_coords = gm_proxy.coords.x
-    x_diff = x_coords[0, 1] - x_coords[0, 0]
-    if -180 < x_diff < 0:
-        x_dim = x_coords.dims[1]
-        ds = ds.isel({x_dim: slice(None, None, -1)})
-    return ds

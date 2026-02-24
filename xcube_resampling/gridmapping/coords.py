@@ -263,10 +263,13 @@ def new_2d_grid_mapping_from_coords(
     y11 = y_vals[2, 1]
 
     is_j_axis_up = y00 < y10
-    is_lon_360 = None
+    x_max = max(x00, x01, x10, x11)
+    x_min = min(x00, x01, x10, x11)
+    x_span = x_max - x_min
+    is_lon_360 = False
     if crs.is_geographic:
-        is_lon_360 = bool(max(x00, x01, x10, x11) > 180)
-    if max(x00, x10) > min(x01, x11):
+        is_lon_360 = bool(x_max > 180)
+    if x_span > 180:
         x_coords = to_lon_360(x_coords)
         x_da = x_coords.isel({ydim: [0, 1, -1], xdim: [0, -1]}).compute()
         x_vals = x_da.values
@@ -310,14 +313,10 @@ def new_2d_grid_mapping_from_coords(
 
     if xy_bbox is None:
         x_pad, y_pad = x_res / 2, y_res / 2
-        x_min = min(x00, x10)
-        x_max = max(x01, x11)
-        if is_j_axis_up:
-            y_min = min(y00, y01)
-            y_max = max(y10, y11)
-        else:
-            y_min = min(y10, y11)
-            y_max = max(y00, y01)
+        x_min = min(x00, x10, x01, x11)
+        x_max = max(x00, x10, x01, x11)
+        y_min = min(y00, y01, y10, y11)
+        y_max = max(y00, y01, y10, y11)
         x_min = _to_int_or_float(x_min - x_pad)
         y_min = _to_int_or_float(y_min - y_pad)
         x_max = _to_int_or_float(x_max + x_pad)

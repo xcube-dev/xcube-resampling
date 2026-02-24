@@ -379,12 +379,16 @@ def _get_spatial_interp_method(
     var: xr.DataArray,
 ) -> SpatialInterpMethod:
     def assign_defaults(data_type: np.dtype) -> SpatialInterpMethod:
-        return 0 if np.issubdtype(data_type, np.integer) else 1
+        if np.issubdtype(data_type, np.bool_):
+            return 0
+        if np.issubdtype(data_type, np.integer):
+            return 0
+        return 1
 
     if isinstance(interp_methods, Mapping):
         interp_method = interp_methods.get(str(key), interp_methods.get(var.dtype))
         if interp_method is None:
-            LOG.warning(
+            LOG.debug(
                 f"Interpolation method could not be derived from the mapping "
                 f"`interp_methods` for data variable {key!r} with data type "
                 f"{var.dtype!r}. Defaults are assigned."
@@ -450,12 +454,16 @@ def _get_spatial_agg_method(
     var: xr.DataArray,
 ) -> Callable:
     def assign_defaults(data_type: np.dtype) -> SpatialAggMethod:
-        return "center" if np.issubdtype(data_type, np.integer) else "mean"
+        if np.issubdtype(data_type, np.bool_):
+            return "center"
+        if np.issubdtype(data_type, np.integer):
+            return "center"
+        return "mean"
 
     if isinstance(agg_methods, Mapping):
         agg_method = agg_methods.get(str(key), agg_methods.get(var.dtype))
         if agg_method is None:
-            LOG.warning(
+            LOG.debug(
                 f"Aggregation method could not be derived from the mapping `agg_methods` "
                 f"for data variable {key!r} with data type {var.dtype!r}. Defaults "
                 f"are assigned."
@@ -479,7 +487,7 @@ def _get_prevent_nan_propagation(
             str(key), prevent_nan_propagations.get(var.dtype)
         )
         if prevent_nan_propagation is None:
-            LOG.warning(
+            LOG.debug(
                 f"The method to prevent NaN propagation could not be derived from "
                 f"the mapping `prevent_nan_propagations`  for data variable {key!r} "
                 f"with data type {var.dtype!r}. Defaults are assigned."
@@ -508,6 +516,8 @@ def _get_fill_value(
             fill_value = FILLVALUE_UINT32
         elif np.issubdtype(data_type, np.integer):
             fill_value = FILLVALUE_INT
+        elif np.issubdtype(data_type, np.bool_):
+            fill_value = 0
         else:
             fill_value = FILLVALUE_FLOAT
         return fill_value
@@ -515,7 +525,7 @@ def _get_fill_value(
     if isinstance(fill_values, Mapping):
         fill_value = fill_values.get(str(key), fill_values.get(var.dtype))
         if fill_value is None:
-            LOG.warning(
+            LOG.debug(
                 f"Fill value could not be derived from the mapping `fill_values` "
                 f"for data variable {key!r} with data type {var.dtype!r}. Defaults "
                 f"are assigned."

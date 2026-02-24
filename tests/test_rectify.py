@@ -109,7 +109,7 @@ class RectifyDatasetTest(unittest.TestCase):
                 [
                     [nan, nan, nan, nan],
                     [nan, 1.0, 2.0, nan],
-                    [3.0, 3.0, 2.0, nan],
+                    [3.0, 4.0, 2.0, nan],
                     [nan, 4.0, nan, nan],
                 ],
                 dtype=target_ds.rad.dtype,

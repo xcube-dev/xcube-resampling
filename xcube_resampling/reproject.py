@@ -245,7 +245,8 @@ def _downscale_source_dataset(
     if x_scale >= SCALE_LIMIT and y_scale >= SCALE_LIMIT:
         return source_ds, source_gm
 
-    w, h = np.floor(x_scale * source_gm.width), np.floor(y_scale * source_gm.height)
+    w = np.floor(x_scale * (source_gm.width - 1))
+    h = np.floor(y_scale * (source_gm.height - 1))
     downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
     downscale_target_gm = GridMapping.regular(
         size=downscaled_size,
