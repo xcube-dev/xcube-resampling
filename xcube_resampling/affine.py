@@ -253,7 +253,7 @@ def _resample_array(
     prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    if (affine_matrix[0][0] > 1 or affine_matrix[1][0] > 1) and interp_method != 0:
+    if (affine_matrix[0][0] > 1 or affine_matrix[1][1] > 1) and interp_method != 0:
         array = _downscale(
             array,
             affine_matrix,
