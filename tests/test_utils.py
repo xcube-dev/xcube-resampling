@@ -117,12 +117,19 @@ class TestUtils(unittest.TestCase):
 
     def test_get_interp_method(self):
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
+        bool_var = xr.DataArray(
+            np.array([True, False, True], dtype=np.bool_), dims=["x"]
+        )
         float_var = xr.DataArray(
             np.array([1.0, 2.0, 3.0], dtype=np.float32), dims=["x"]
         )
 
         # integer type data array
         result = _get_spatial_interp_method(None, "var", int_var)
+        self.assertEqual(result, 0)
+
+        # bool type data array
+        result = _get_spatial_interp_method(None, "var", bool_var)
         self.assertEqual(result, 0)
 
         # float type data array
@@ -182,12 +189,19 @@ class TestUtils(unittest.TestCase):
 
     def test_get_agg_method(self):
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
+        bool_var = xr.DataArray(
+            np.array([True, False, True], dtype=np.bool_), dims=["x"]
+        )
         float_var = xr.DataArray(
             np.array([1.0, 2.0, 3.0], dtype=np.float32), dims=["x"]
         )
 
         # integer type data array, default
         result = _get_spatial_agg_method(None, "var", int_var)
+        self.assertEqual(result, AGG_METHODS["center"])
+
+        # bool type data array, default
+        result = _get_spatial_agg_method(None, "var", bool_var)
         self.assertEqual(result, AGG_METHODS["center"])
 
         # float type data array, default

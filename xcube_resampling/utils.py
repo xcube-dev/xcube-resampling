@@ -379,7 +379,11 @@ def _get_spatial_interp_method(
     var: xr.DataArray,
 ) -> SpatialInterpMethod:
     def assign_defaults(data_type: np.dtype) -> SpatialInterpMethod:
-        return 0 if np.issubdtype(data_type, np.integer) else 1
+        if np.issubdtype(data_type, np.bool_):
+            return 0
+        if np.issubdtype(data_type, np.integer):
+            return 0
+        return 1
 
     if isinstance(interp_methods, Mapping):
         interp_method = interp_methods.get(str(key), interp_methods.get(var.dtype))
@@ -450,7 +454,11 @@ def _get_spatial_agg_method(
     var: xr.DataArray,
 ) -> Callable:
     def assign_defaults(data_type: np.dtype) -> SpatialAggMethod:
-        return "center" if np.issubdtype(data_type, np.integer) else "mean"
+        if np.issubdtype(data_type, np.bool_):
+            return "center"
+        if np.issubdtype(data_type, np.integer):
+            return "center"
+        return "mean"
 
     if isinstance(agg_methods, Mapping):
         agg_method = agg_methods.get(str(key), agg_methods.get(var.dtype))

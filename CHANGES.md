@@ -2,7 +2,9 @@
 
 - Fixed an issue in `rectify_dataset` when processing datasets with decreasing 
   x-coordinates.
-
+- Boolean (`bool`) data arrays now default to nearest-neighbor interpolation and 
+  center for spatial aggregation, matching the behavior of integer arrays to 
+  ensure valid results.
 
 ## Changes in 0.3.0
 
