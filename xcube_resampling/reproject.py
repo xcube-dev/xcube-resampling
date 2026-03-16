@@ -41,6 +41,7 @@ from .gridmapping import GridMapping
 from .gridmapping.helpers import from_lon_360
 from .utils import (
     SourceTileIndexing,
+    _clip_if_needed,
     _get_fill_value,
     _get_spatial_interp_method_str,
     _get_spatial_interp_methods,
@@ -127,6 +128,11 @@ def reproject_dataset(
     transformer = pyproj.Transformer.from_crs(
         target_gm.crs, source_gm.crs, always_xy=True
     )
+    source_ds, source_gm, is_empty = _clip_if_needed(
+        source_ds, source_gm, target_gm, fill_values, transformer
+    )
+    if is_empty:
+        return source_ds
 
     # If source has higher resolution than target, downscale first, then reproject
     interp_methods = _get_spatial_interp_methods(source_ds, interp_methods)
@@ -233,7 +239,7 @@ def _downscale_source_dataset(
     interp_methods: Mapping[Hashable, SpatialInterpMethod],
     agg_methods: SpatialAggMethods | None,
     prevent_nan_propagations: PreventNaNPropagations,
-) -> (xr.Dataset, GridMapping):
+) -> tuple[xr.Dataset, GridMapping]:
     if all(v in (0, "nearest") for v in interp_methods.values()):
         return source_ds, source_gm
 
@@ -362,7 +368,7 @@ def _get_src_bboxes_indices(
     transformer: pyproj.Transformer,
     source_gm: GridMapping,
     target_gm: GridMapping,
-) -> (SourceTileIndexing, da.Array, da.Array):
+) -> tuple[SourceTileIndexing, da.Array, da.Array]:
     num_tiles_x = math.ceil(target_gm.width / target_gm.tile_width)
     num_tiles_y = math.ceil(target_gm.height / target_gm.tile_height)
 

@@ -6,7 +6,9 @@
   only loosely fit the scope of the **xcube-resampling** repository.
 - Added `xcube_resampling.utils.get_utm_crs` to return the UTM CRS for a given 
   longitude and latitude pair.
-
+- In `xcube_resampling.reproject_dataset`, the dataset is now clipped when the target
+  grid-mapping covers less than 80% of the source grid-mapping, improving performance
+  for reprojected cutouts.
 
 ## Changes in 0.3.1
 
