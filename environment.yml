@@ -12,7 +12,6 @@ dependencies:
   - numpy >=1.16
   - pyproj >=3.0
   - xarray >=2024.7
-  - zarr >=2.11,<3  # until we can ensure zarr 3 compatibility
   # Development Dependencies - Tools
   - black
   - isort
@@ -28,4 +27,5 @@ dependencies:
   # Development Dependencies - Demos
   - jupyterlab
   - matplotlib
+  - zarr
 

@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os.path
 import unittest
 
 import numpy as np
@@ -79,31 +78,6 @@ class DatasetGridMappingTest(unittest.TestCase):
         result = GridMapping.from_dataset(ds, crs="EPSG:4326")
         self.assertTrue(result.is_regular)
         self.assertEqual(result.crs.to_string(), "EPSG:4326")
-
-    def test_from_real_olci(self):
-        olci_l2_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "examples",
-            "inputdata",
-            "S3-OLCI-L2A.zarr.zip",
-        )
-
-        dataset = xr.open_zarr(olci_l2_path, consolidated=False)
-        gm = GridMapping.from_dataset(dataset)
-        self.assertEqual((1189, 1890), gm.size)
-        self.assertEqual((512, 512), gm.tile_size)
-        self.assertEqual(GEO_CRS, gm.crs)
-        self.assertEqual((0.00447132, 0.00255235), gm.xy_res)
-        self.assertEqual(False, gm.is_regular)
-        self.assertEqual(False, gm.is_lon_360)
-        self.assertEqual(False, gm.is_j_axis_up)
-        self.assertEqual((2, 1890, 1189), gm.xy_coords.shape)
-        self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
-
-        gm = gm.to_regular()
-        self.assertEqual((1636, 2132), gm.size)
 
     def test_from_sentinel_2(self):
         dataset = create_s2plus_dataset()

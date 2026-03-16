@@ -20,16 +20,12 @@
 # DEALINGS IN THE SOFTWARE.
 
 import warnings
-from collections.abc import Hashable, MutableMapping
+from collections.abc import Hashable
 from typing import Any
 
-import numpy as np
 import pyproj
 import xarray as xr
-import zarr
-import zarr.convenience
 
-from .assertions import assert_instance
 from .base import CRS_WGS84
 from .helpers import get_dataset_chunks
 
@@ -315,44 +311,3 @@ def _find_dataset_tile_size(
     if tile_width is not None and tile_height is not None:
         return tile_width, tile_height
     return None
-
-
-def add_spatial_ref(
-    dataset_store: zarr.convenience.StoreLike,
-    crs: pyproj.CRS,
-    crs_var_name: str = "spatial_ref",
-    xy_dim_names: tuple[str, str] | None = None,
-):
-    """Helper function that allows adding a spatial reference to an
-    existing Zarr dataset.
-
-    Args:
-        dataset_store: The dataset's existing Zarr store or path.
-        crs: The spatial coordinate reference system.
-        crs_var_name: The name of the variable that will hold the
-            spatial reference. Defaults to "spatial_ref".
-        xy_dim_names: The names of the x and y dimensions. Defaults to
-            ("x", "y").
-    """
-    assert_instance(dataset_store, (MutableMapping, str), name="group_store")
-    assert_instance(crs_var_name, str, name="crs_var_name")
-    x_dim_name, y_dim_name = xy_dim_names or ("x", "y")
-
-    spatial_attrs = crs.to_cf()
-    spatial_attrs["_ARRAY_DIMENSIONS"] = []  # Required by xarray
-    group = zarr.open(dataset_store, mode="r+")
-    spatial_ref = group.array(crs_var_name, 0, shape=(), dtype=np.uint8, fill_value=0)
-    spatial_ref.attrs.update(**spatial_attrs)
-
-    for item_name, item in group.items():
-        if item_name != crs_var_name:
-            dims = item.attrs.get("_ARRAY_DIMENSIONS")
-            if (
-                dims
-                and len(dims) >= 2
-                and dims[-2] == y_dim_name
-                and dims[-1] == x_dim_name
-            ):
-                item.attrs["grid_mapping"] = crs_var_name
-
-    zarr.convenience.consolidate_metadata(dataset_store)

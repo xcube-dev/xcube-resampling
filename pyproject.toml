@@ -48,7 +48,6 @@ dependencies = [
   "numpy>=1.16",
   "pyproj>=3.0",
   "xarray>=2024.7",
-  "zarr>=2.11,<3"
 ]
 
 [project.optional-dependencies]
