@@ -1,6 +1,9 @@
 ## Changes in 0.3.2
 
 - Change inconsistent license classifier in `pyproject.toml` 
+- Removed the dependency on `zarr`. As part of this change, 
+  `xcube_resampling.grid_mapping.cfconv.add_spatial_ref` has been removed, as it 
+  only loosely fit the scope of the **xcube-resampling** repository.
 
 ## Changes in 0.3.1
 
