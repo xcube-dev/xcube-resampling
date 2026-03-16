@@ -24,6 +24,8 @@ dependencies:
   - pytest
   - pytest-cov
   - ruff
+  # for testing
+  - zarr
   # Development Dependencies - Demos
   - jupyterlab
   - matplotlib
