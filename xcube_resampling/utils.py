@@ -52,7 +52,7 @@ from .gridmapping import GridMapping
 from .gridmapping.helpers import _normalize_crs
 
 
-def get_spatial_coords(ds: xr.Dataset) -> (str, str):
+def get_spatial_coords(ds: xr.Dataset) -> tuple[str, str]:
     """
     Identify the names of horizontal spatial coordinate in an xarray dataset.
 
@@ -84,6 +84,39 @@ def get_spatial_coords(ds: xr.Dataset) -> (str, str):
             f"Expected pairs ('lon', 'lat') or ('x', 'y'), but found: {list(ds.dims)}."
         )
     return x_coord, y_coord
+
+
+def get_utm_crs(lon: float, lat: float) -> pyproj.CRS:
+    """
+    Returns the UTM CRS for a given latitude and longitude as a pyproj.CRS object.
+
+    Args:
+        lon: Longitude in decimal degrees.
+        lat: Latitude in decimal degrees.
+
+    Returns:
+        CRS object corresponding to the correct UTM zone.
+    """
+    # Standard UTM zone calculation
+    zone_number = int((lon + 180) // 6) + 1
+
+    # Norway exception (Western Norway and Svalbard)
+    if 56.0 <= lat <= 64.0 and 3.0 <= lon <= 12.0:
+        zone_number = 32  # Western Norway
+    if 72.0 <= lat <= 84.0:
+        # Svalbard zones (special UTM divisions)
+        if 0 <= lon < 9:
+            zone_number = 31
+        elif 9 <= lon < 21:
+            zone_number = 33
+        elif 21 <= lon < 33:
+            zone_number = 35
+        elif 33 <= lon < 42:
+            zone_number = 37
+
+    # Northern or Southern hemisphere
+    epsg = 32600 + zone_number if lat >= 0 else 32700 + zone_number
+    return pyproj.CRS.from_epsg(epsg)
 
 
 def clip_dataset_by_bbox(

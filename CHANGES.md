@@ -4,6 +4,9 @@
 - Removed the dependency on `zarr`. As part of this change, 
   `xcube_resampling.grid_mapping.cfconv.add_spatial_ref` has been removed, as it 
   only loosely fit the scope of the **xcube-resampling** repository.
+- Added `xcube_resampling.utils.get_utm_crs` to return the UTM CRS for a given 
+  longitude and latitude pair.
+
 
 ## Changes in 0.3.1
 
