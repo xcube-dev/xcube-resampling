@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -1358,11 +1358,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pp</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zarr.storage</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZipStore</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import dask.array as da
 import numpy as np
 import pyproj as pp
-import xarray as xr</div>
+import xarray as xr
+from zarr.storage import ZipStore</div>
 </div>
 </div>
 </div>
@@ -1374,7 +1376,7 @@ import xarray as xr</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -1387,10 +1389,14 @@ import xarray as xr</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_zarr</span><span class="p">(</span><span class="s2">"./inputdata/S3-OLCI-L2A.zarr.zip"</span><span class="p">,</span> <span class="n">consolidated</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="o">%%</span><span class="n">time</span>
+<span class="n">store</span> <span class="o">=</span> <span class="n">ZipStore</span><span class="p">(</span><span class="s2">"inputdata/S3-OLCI-L2A.zarr.zip"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_zarr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">consolidated</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">ds</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">ds = xr.open_zarr("./inputdata/S3-OLCI-L2A.zarr.zip", consolidated=False)
+<div class="clipboard-copy-txt" id="cell-2">%%time
+store = ZipStore("inputdata/S3-OLCI-L2A.zarr.zip", mode="r")
+ds = xr.open_zarr(store, consolidated=False)
 ds</div>
 </div>
 </div>
@@ -1400,8 +1406,16 @@ ds</div>
 <div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>CPU times: user 51.1 ms, sys: 4.03 ms, total: 55.1 ms
+Wall time: 53.6 ms
+</pre>
+</div>
+</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[3]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div><svg style="position: absolute; width: 0; height: 0; overflow: hidden">
 <defs>
@@ -1418,9 +1432,7 @@ ds</div>
 </symbol>
 </defs>
 </svg>
-<style>/* CSS stylesheet for displaying xarray objects in jupyterlab.
- *
- */
+<style>/* CSS stylesheet for displaying xarray objects in notebooks */
 
 :root {
   --xr-font-color0: var(
@@ -1499,6 +1511,8 @@ body.vscode-dark {
   display: block !important;
   min-width: 300px;
   max-width: 700px;
+  line-height: 1.6;
+  padding-bottom: 4px;
 }
 
 .xr-text-repr-fallback {
@@ -1509,8 +1523,11 @@ body.vscode-dark {
 .xr-header {
   padding-top: 6px;
   padding-bottom: 6px;
-  margin-bottom: 4px;
+}
+
+.xr-header {
   border-bottom: solid 1px var(--xr-border-color);
+  margin-bottom: 4px;
 }
 
 .xr-header > div,
@@ -1521,46 +1538,62 @@ body.vscode-dark {
 }
 
 .xr-obj-type,
-.xr-array-name {
+.xr-obj-name {
   margin-left: 2px;
   margin-right: 10px;
 }
 
-.xr-obj-type {
+.xr-obj-type,
+.xr-group-box-contents > label {
   color: var(--xr-font-color2);
+  display: block;
 }
 
 .xr-sections {
   padding-left: 0 !important;
   display: grid;
   grid-template-columns: 150px auto auto 1fr 0 20px 0 20px;
+  margin-block-start: 0;
+  margin-block-end: 0;
 }
 
 .xr-section-item {
   display: contents;
 }
 
-.xr-section-item input {
-  display: inline-block;
+.xr-section-item > input,
+.xr-group-box-contents > input,
+.xr-array-wrap > input {
+  display: block;
   opacity: 0;
   height: 0;
+  margin: 0;
 }
 
-.xr-section-item input + label {
+.xr-section-item > input + label,
+.xr-var-item > input + label {
   color: var(--xr-disabled-color);
-  border: 2px solid transparent !important;
 }
 
-.xr-section-item input:enabled + label {
+.xr-section-item > input:enabled + label,
+.xr-var-item > input:enabled + label,
+.xr-array-wrap > input:enabled + label,
+.xr-group-box-contents > input:enabled + label {
   cursor: pointer;
   color: var(--xr-font-color2);
 }
 
-.xr-section-item input:focus + label {
-  border: 2px solid var(--xr-font-color0) !important;
+.xr-section-item > input:focus-visible + label,
+.xr-var-item > input:focus-visible + label,
+.xr-array-wrap > input:focus-visible + label,
+.xr-group-box-contents > input:focus-visible + label {
+  outline: auto;
 }
 
-.xr-section-item input:enabled + label:hover {
+.xr-section-item > input:enabled + label:hover,
+.xr-var-item > input:enabled + label:hover,
+.xr-array-wrap > input:enabled + label:hover,
+.xr-group-box-contents > input:enabled + label:hover {
   color: var(--xr-font-color0);
 }
 
@@ -1568,11 +1601,25 @@ body.vscode-dark {
   grid-column: 1;
   color: var(--xr-font-color2);
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.xr-section-summary > em {
+  font-weight: normal;
+}
+
+.xr-span-grid {
+  grid-column-end: -1;
 }
 
 .xr-section-summary > span {
   display: inline-block;
-  padding-left: 0.5em;
+  padding-left: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label > span {
+  display: inline-block;
+  padding-left: 0.6em;
 }
 
 .xr-section-summary-in:disabled + label {
@@ -1600,9 +1647,9 @@ body.vscode-dark {
 }
 
 .xr-section-summary,
-.xr-section-inline-details {
+.xr-section-inline-details,
+.xr-group-box-contents > label {
   padding-top: 4px;
-  padding-bottom: 4px;
 }
 
 .xr-section-inline-details {
@@ -1610,13 +1657,79 @@ body.vscode-dark {
 }
 
 .xr-section-details {
-  display: none;
   grid-column: 1 / -1;
+  margin-top: 4px;
   margin-bottom: 5px;
+}
+
+.xr-section-summary-in ~ .xr-section-details {
+  display: none;
 }
 
 .xr-section-summary-in:checked ~ .xr-section-details {
   display: contents;
+}
+
+.xr-children {
+  display: inline-grid;
+  grid-template-columns: 100%;
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.xr-group-box {
+  display: inline-grid;
+  grid-template-columns: 0px 30px auto;
+}
+
+.xr-group-box-vline {
+  grid-column-start: 1;
+  border-right: 0.2em solid;
+  border-color: var(--xr-border-color);
+  width: 0px;
+}
+
+.xr-group-box-hline {
+  grid-column-start: 2;
+  grid-row-start: 1;
+  height: 1em;
+  width: 26px;
+  border-bottom: 0.2em solid;
+  border-color: var(--xr-border-color);
+}
+
+.xr-group-box-contents {
+  grid-column-start: 3;
+  padding-bottom: 4px;
+}
+
+.xr-group-box-contents > label::before {
+  content: "📂";
+  padding-right: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label::before {
+  content: "📁";
+}
+
+.xr-group-box-contents > input:checked + label {
+  padding-bottom: 0px;
+}
+
+.xr-group-box-contents > input:checked ~ .xr-sections {
+  display: none;
+}
+
+.xr-group-box-contents > input + label > span {
+  display: none;
+}
+
+.xr-group-box-ellipsis {
+  font-size: 1.4em;
+  font-weight: 900;
+  color: var(--xr-font-color2);
+  letter-spacing: 0.15em;
+  cursor: default;
 }
 
 .xr-array-wrap {
@@ -1849,19 +1962,19 @@ dl.xr-attrs {
 </style><pre class="xr-text-repr-fallback">&lt;xarray.Dataset&gt; Size: 72MB
 Dimensions:        (y: 1890, x: 1189)
 Coordinates:
-    lat            (y, x) float64 18MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
     lon            (y, x) float64 18MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
+    lat            (y, x) float64 18MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
 Dimensions without coordinates: y, x
 Data variables:
     quality_flags  (y, x) uint32 9MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
-    rtoa_3         (y, x) float32 9MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
-    rtoa_6         (y, x) float32 9MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
     rtoa_8         (y, x) float32 9MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
+    rtoa_6         (y, x) float32 9MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
+    rtoa_3         (y, x) float32 9MB dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;
 Attributes:
     Conventions:   CF-1.4
     product_type:  C2RCC_OLCI
     start_date:    04-JUL-2018 09:21:55.677316
-    stop_date:     04-JUL-2018 09:23:18.811790</pre><div class="xr-wrap" style="display:none"><div class="xr-header"><div class="xr-obj-type">xarray.Dataset</div></div><ul class="xr-sections"><li class="xr-section-item"><input class="xr-section-summary-in" disabled="" id="section-9d97c6b2-969f-4ad5-b3b6-26921f3b0af9" type="checkbox"/><label class="xr-section-summary" for="section-9d97c6b2-969f-4ad5-b3b6-26921f3b0af9" title="Expand/collapse section">Dimensions:</label><div class="xr-section-inline-details"><ul class="xr-dim-list"><li><span>y</span>: 1890</li><li><span>x</span>: 1189</li></ul></div><div class="xr-section-details"></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-6dc015e2-4abe-42af-b979-873b2de0b39a" type="checkbox"/><label class="xr-section-summary" for="section-6dc015e2-4abe-42af-b979-873b2de0b39a">Coordinates: <span>(2)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>lat</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-deddca9e-bf07-482d-ab99-f08cb1e2342c" type="checkbox"/><label for="attrs-deddca9e-bf07-482d-ab99-f08cb1e2342c" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-d71f1250-32d5-48e8-b9a9-e34f1f53b6fa" type="checkbox"/><label for="data-d71f1250-32d5-48e8-b9a9-e34f1f53b6fa" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>long_name :</span></dt><dd>latitude coordinate</dd><dt><span>standard_name :</span></dt><dd>latitude</dd><dt><span>units :</span></dt><dd>degrees_north</dd></dl></div><div class="xr-var-data"><table>
+    stop_date:     04-JUL-2018 09:23:18.811790</pre><div class="xr-wrap" style="display:none"><div class="xr-header"><div class="xr-obj-type">xarray.Dataset</div></div><ul class="xr-sections"><li class="xr-section-item"><input class="xr-section-summary-in" disabled="" id="section-062422a0-035f-4ce5-943c-5b4dbc028b5f" type="checkbox"/><label class="xr-section-summary" for="section-062422a0-035f-4ce5-943c-5b4dbc028b5f">Dimensions:</label><div class="xr-section-inline-details"><ul class="xr-dim-list"><li><span>y</span>: 1890</li><li><span>x</span>: 1189</li></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-e3031f42-545c-4fbb-a655-37b9c3ef17a0" type="checkbox"/><label class="xr-section-summary" for="section-e3031f42-545c-4fbb-a655-37b9c3ef17a0" title="Expand/collapse section">Coordinates: <span>(2)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>lon</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-35676472-5380-4e7b-9e2e-3a31525aa90e" type="checkbox"/><label for="attrs-35676472-5380-4e7b-9e2e-3a31525aa90e" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-0f67f2a6-ab2d-40b9-a8b6-e1cd6f436b08" type="checkbox"/><label for="data-0f67f2a6-ab2d-40b9-a8b6-e1cd6f436b08" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>long_name :</span></dt><dd>longitude coordinate</dd><dt><span>standard_name :</span></dt><dd>longitude</dd><dt><span>units :</span></dt><dd>degrees_east</dd></dl></div><div class="xr-var-data"><table>
 <tr>
 <td>
 <table style="border-collapse: collapse;">
@@ -1910,12 +2023,12 @@ Attributes:
 <!-- Colored Rectangle -->
 <polygon points="0.0,0.0 75.4920634920635,0.0 75.4920634920635,120.0 0.0,120.0" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.746032" y="140.000000">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.492063,60.000000)" x="95.492063" y="60.000000">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.74603174603175" y="140.0">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.4920634920635,60.0)" x="95.4920634920635" y="60.0">1890</text>
 </svg>
 </td>
 </tr>
-</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>lon</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-d96693ec-542c-4e7d-a4a9-c2797ff03b5d" type="checkbox"/><label for="attrs-d96693ec-542c-4e7d-a4a9-c2797ff03b5d" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-4e1c7824-f0a8-49f5-aa27-d4cfaae78e67" type="checkbox"/><label for="data-4e1c7824-f0a8-49f5-aa27-d4cfaae78e67" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>long_name :</span></dt><dd>longitude coordinate</dd><dt><span>standard_name :</span></dt><dd>longitude</dd><dt><span>units :</span></dt><dd>degrees_east</dd></dl></div><div class="xr-var-data"><table>
+</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>lat</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-29092c87-8faf-4f5f-871a-3f266fa3b4bd" type="checkbox"/><label for="attrs-29092c87-8faf-4f5f-871a-3f266fa3b4bd" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-0f54ca8a-f8bd-4a71-bb34-e547807f62fd" type="checkbox"/><label for="data-0f54ca8a-f8bd-4a71-bb34-e547807f62fd" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>long_name :</span></dt><dd>latitude coordinate</dd><dt><span>standard_name :</span></dt><dd>latitude</dd><dt><span>units :</span></dt><dd>degrees_north</dd></dl></div><div class="xr-var-data"><table>
 <tr>
 <td>
 <table style="border-collapse: collapse;">
@@ -1964,12 +2077,12 @@ Attributes:
 <!-- Colored Rectangle -->
 <polygon points="0.0,0.0 75.4920634920635,0.0 75.4920634920635,120.0 0.0,120.0" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.746032" y="140.000000">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.492063,60.000000)" x="95.492063" y="60.000000">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.74603174603175" y="140.0">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.4920634920635,60.0)" x="95.4920634920635" y="60.0">1890</text>
 </svg>
 </td>
 </tr>
-</table></div></li></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-71e5c3c7-6911-4566-88c1-6adcb98ff152" type="checkbox"/><label class="xr-section-summary" for="section-71e5c3c7-6911-4566-88c1-6adcb98ff152">Data variables: <span>(4)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>quality_flags</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">uint32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-6e582c1e-8520-4a49-85b2-63c1d24727b5" type="checkbox"/><label for="attrs-6e582c1e-8520-4a49-85b2-63c1d24727b5" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-ef89196d-1f87-4884-b181-ef2a3527615d" type="checkbox"/><label for="data-ef89196d-1f87-4884-b181-ef2a3527615d" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>flag_coding_name :</span></dt><dd>quality_flags</dd><dt><span>flag_descriptions :</span></dt><dd></dd><dt><span>flag_masks :</span></dt><dd>[-2147483648, 1073741824, 536870912, 268435456, 134217728, 67108864, 33554432, 16777216, 8388608, 4194304, 2097152, 1048576, 524288, 262144, 131072, 65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]</dd><dt><span>flag_meanings :</span></dt><dd>land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21</dd><dt><span>long_name :</span></dt><dd>Classification and quality flags</dd></dl></div><div class="xr-var-data"><table>
+</table></div></li></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-0f4b7342-dc11-4071-9513-ecc6a913bdaa" type="checkbox"><label class="xr-section-summary" for="section-0f4b7342-dc11-4071-9513-ecc6a913bdaa" title="Expand/collapse section">Data variables: <span>(4)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>quality_flags</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">uint32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-fcfc621f-417d-45fe-ba8c-87ef35a46fa0" type="checkbox"/><label for="attrs-fcfc621f-417d-45fe-ba8c-87ef35a46fa0" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-03a9c2f3-59b9-46fb-b2dd-118dcaf1f38d" type="checkbox"/><label for="data-03a9c2f3-59b9-46fb-b2dd-118dcaf1f38d" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>flag_coding_name :</span></dt><dd>quality_flags</dd><dt><span>flag_descriptions :</span></dt><dd></dd><dt><span>flag_masks :</span></dt><dd>[-2147483648, 1073741824, 536870912, 268435456, 134217728, 67108864, 33554432, 16777216, 8388608, 4194304, 2097152, 1048576, 524288, 262144, 131072, 65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]</dd><dt><span>flag_meanings :</span></dt><dd>land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21</dd><dt><span>long_name :</span></dt><dd>Classification and quality flags</dd></dl></div><div class="xr-var-data"><table>
 <tr>
 <td>
 <table style="border-collapse: collapse;">
@@ -2018,12 +2131,12 @@ Attributes:
 <!-- Colored Rectangle -->
 <polygon points="0.0,0.0 75.4920634920635,0.0 75.4920634920635,120.0 0.0,120.0" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.746032" y="140.000000">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.492063,60.000000)" x="95.492063" y="60.000000">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.74603174603175" y="140.0">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.4920634920635,60.0)" x="95.4920634920635" y="60.0">1890</text>
 </svg>
 </td>
 </tr>
-</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>rtoa_3</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-1e2330d7-255c-4fb5-a607-0b30307ae071" type="checkbox"/><label for="attrs-1e2330d7-255c-4fb5-a607-0b30307ae071" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-2152fc0c-c484-45d6-8373-712029aede62" type="checkbox"/><label for="data-2152fc0c-c484-45d6-8373-712029aede62" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>bandwidth :</span></dt><dd>10.0</dd><dt><span>long_name :</span></dt><dd>Top-of-atmosphere reflectance</dd><dt><span>spectral_band_index :</span></dt><dd>2.0</dd><dt><span>units :</span></dt><dd>1</dd><dt><span>wavelength :</span></dt><dd>442.5</dd></dl></div><div class="xr-var-data"><table>
+</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>rtoa_8</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-99c3a43f-00b8-4308-81f5-32b9e117f3f3" type="checkbox"/><label for="attrs-99c3a43f-00b8-4308-81f5-32b9e117f3f3" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-18add4ff-560b-4ef9-9835-92fb7411a1da" type="checkbox"/><label for="data-18add4ff-560b-4ef9-9835-92fb7411a1da" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>bandwidth :</span></dt><dd>10.0</dd><dt><span>long_name :</span></dt><dd>Top-of-atmosphere reflectance</dd><dt><span>spectral_band_index :</span></dt><dd>7.0</dd><dt><span>units :</span></dt><dd>1</dd><dt><span>wavelength :</span></dt><dd>665.0</dd></dl></div><div class="xr-var-data"><table>
 <tr>
 <td>
 <table style="border-collapse: collapse;">
@@ -2072,12 +2185,12 @@ Attributes:
 <!-- Colored Rectangle -->
 <polygon points="0.0,0.0 75.4920634920635,0.0 75.4920634920635,120.0 0.0,120.0" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.746032" y="140.000000">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.492063,60.000000)" x="95.492063" y="60.000000">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.74603174603175" y="140.0">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.4920634920635,60.0)" x="95.4920634920635" y="60.0">1890</text>
 </svg>
 </td>
 </tr>
-</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>rtoa_6</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-034898b4-a379-4180-9e4b-4dc873db74d2" type="checkbox"/><label for="attrs-034898b4-a379-4180-9e4b-4dc873db74d2" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-ec125ddd-5246-499d-b1e9-79b56f641602" type="checkbox"/><label for="data-ec125ddd-5246-499d-b1e9-79b56f641602" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>bandwidth :</span></dt><dd>10.0</dd><dt><span>long_name :</span></dt><dd>Top-of-atmosphere reflectance</dd><dt><span>spectral_band_index :</span></dt><dd>5.0</dd><dt><span>units :</span></dt><dd>1</dd><dt><span>wavelength :</span></dt><dd>560.0</dd></dl></div><div class="xr-var-data"><table>
+</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>rtoa_6</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-7dacbf9a-830c-4c84-9d91-e55921a2dcb4" type="checkbox"/><label for="attrs-7dacbf9a-830c-4c84-9d91-e55921a2dcb4" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-c4ba4b7f-03b6-4f0a-b1a6-5f3f9b4a3680" type="checkbox"/><label for="data-c4ba4b7f-03b6-4f0a-b1a6-5f3f9b4a3680" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>bandwidth :</span></dt><dd>10.0</dd><dt><span>long_name :</span></dt><dd>Top-of-atmosphere reflectance</dd><dt><span>spectral_band_index :</span></dt><dd>5.0</dd><dt><span>units :</span></dt><dd>1</dd><dt><span>wavelength :</span></dt><dd>560.0</dd></dl></div><div class="xr-var-data"><table>
 <tr>
 <td>
 <table style="border-collapse: collapse;">
@@ -2126,12 +2239,12 @@ Attributes:
 <!-- Colored Rectangle -->
 <polygon points="0.0,0.0 75.4920634920635,0.0 75.4920634920635,120.0 0.0,120.0" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.746032" y="140.000000">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.492063,60.000000)" x="95.492063" y="60.000000">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.74603174603175" y="140.0">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.4920634920635,60.0)" x="95.4920634920635" y="60.0">1890</text>
 </svg>
 </td>
 </tr>
-</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>rtoa_8</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-a883ef5f-62e6-45ef-9987-e49b7ea06da2" type="checkbox"/><label for="attrs-a883ef5f-62e6-45ef-9987-e49b7ea06da2" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-e664eba8-20d0-4aec-919d-646c5041023b" type="checkbox"/><label for="data-e664eba8-20d0-4aec-919d-646c5041023b" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>bandwidth :</span></dt><dd>10.0</dd><dt><span>long_name :</span></dt><dd>Top-of-atmosphere reflectance</dd><dt><span>spectral_band_index :</span></dt><dd>7.0</dd><dt><span>units :</span></dt><dd>1</dd><dt><span>wavelength :</span></dt><dd>665.0</dd></dl></div><div class="xr-var-data"><table>
+</table></div></li><li class="xr-var-item"><div class="xr-var-name"><span>rtoa_3</span></div><div class="xr-var-dims">(y, x)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">dask.array&lt;chunksize=(512, 512), meta=np.ndarray&gt;</div><input class="xr-var-attrs-in" id="attrs-7d8edf6d-ed30-40fa-97d1-5474cf97bb9a" type="checkbox"/><label for="attrs-7d8edf6d-ed30-40fa-97d1-5474cf97bb9a" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-03399361-6593-4cb9-b7b2-0e106f3f3cac" type="checkbox"/><label for="data-03399361-6593-4cb9-b7b2-0e106f3f3cac" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>bandwidth :</span></dt><dd>10.0</dd><dt><span>long_name :</span></dt><dd>Top-of-atmosphere reflectance</dd><dt><span>spectral_band_index :</span></dt><dd>2.0</dd><dt><span>units :</span></dt><dd>1</dd><dt><span>wavelength :</span></dt><dd>442.5</dd></dl></div><div class="xr-var-data"><table>
 <tr>
 <td>
 <table style="border-collapse: collapse;">
@@ -2180,12 +2293,12 @@ Attributes:
 <!-- Colored Rectangle -->
 <polygon points="0.0,0.0 75.4920634920635,0.0 75.4920634920635,120.0 0.0,120.0" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.746032" y="140.000000">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.492063,60.000000)" x="95.492063" y="60.000000">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="37.74603174603175" y="140.0">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,95.4920634920635,60.0)" x="95.4920634920635" y="60.0">1890</text>
 </svg>
 </td>
 </tr>
-</table></div></li></ul></div></li><li class="xr-section-item"><input class="xr-section-summary-in" disabled="" id="section-10d64c3c-c0f8-4d57-8c3a-1814c98ddd2b" type="checkbox"/><label class="xr-section-summary" for="section-10d64c3c-c0f8-4d57-8c3a-1814c98ddd2b" title="Expand/collapse section">Indexes: <span>(0)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-2e4d819d-ead3-46d1-84db-e7355c379e2e" type="checkbox"/><label class="xr-section-summary" for="section-2e4d819d-ead3-46d1-84db-e7355c379e2e">Attributes: <span>(4)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><dl class="xr-attrs"><dt><span>Conventions :</span></dt><dd>CF-1.4</dd><dt><span>product_type :</span></dt><dd>C2RCC_OLCI</dd><dt><span>start_date :</span></dt><dd>04-JUL-2018 09:21:55.677316</dd><dt><span>stop_date :</span></dt><dd>04-JUL-2018 09:23:18.811790</dd></dl></div></li></ul></div></div>
+</table></div></li></ul></div></input></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-32fb75ff-1086-4dc8-a8b9-8d614295f245" type="checkbox"><label class="xr-section-summary" for="section-32fb75ff-1086-4dc8-a8b9-8d614295f245" title="Expand/collapse section">Attributes: <span>(4)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><dl class="xr-attrs"><dt><span>Conventions :</span></dt><dd>CF-1.4</dd><dt><span>product_type :</span></dt><dd>C2RCC_OLCI</dd><dt><span>start_date :</span></dt><dd>04-JUL-2018 09:21:55.677316</dd><dt><span>stop_date :</span></dt><dd>04-JUL-2018 09:23:18.811790</dd></dl></div></input></li></ul></div></div>
 </div>
 </div>
 </div>
@@ -2197,7 +2310,7 @@ Attributes:
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -2224,7 +2337,7 @@ crs_4326</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[4]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[3]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>&lt;Geographic 2D CRS: EPSG:4326&gt;
 Name: WGS 84
@@ -2248,7 +2361,7 @@ Datum: World Geodetic System 1984 ensemble
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
@@ -2273,7 +2386,7 @@ Datum: World Geodetic System 1984 ensemble
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[4]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>True</pre>
 </div>
@@ -2287,7 +2400,7 @@ Datum: World Geodetic System 1984 ensemble
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
@@ -2312,7 +2425,7 @@ Datum: World Geodetic System 1984 ensemble
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[6]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>False</pre>
 </div>
@@ -2326,7 +2439,7 @@ Datum: World Geodetic System 1984 ensemble
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
@@ -2353,7 +2466,7 @@ crs_32633</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[6]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>&lt;Projected CRS: EPSG:32633&gt;
 Name: WGS 84 / UTM zone 33N
@@ -2380,7 +2493,7 @@ Datum: World Geodetic System 1984 ensemble
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
@@ -2407,7 +2520,7 @@ t</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[8]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>&lt;Conversion Transformer: pipeline&gt;
 Description: UTM zone 33N
@@ -2425,7 +2538,7 @@ Area of Use:
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
@@ -2454,7 +2567,7 @@ lat = ds.lat.values</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-9">
@@ -2483,8 +2596,8 @@ x, y = t.transform(lat, lon)</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>CPU times: user 454 ms, sys: 10.1 ms, total: 464 ms
-Wall time: 463 ms
+<pre>CPU times: user 662 ms, sys: 15.4 ms, total: 677 ms
+Wall time: 675 ms
 </pre>
 </div>
 </div>
@@ -2497,7 +2610,7 @@ Wall time: 463 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-10">
@@ -2522,7 +2635,7 @@ Wall time: 463 ms
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[11]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[10]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>(array([[464353.17350437, 464753.99068697, 464753.99068697, ...,
          778366.98327271, 778663.97989779, 778960.82095417],
@@ -2563,7 +2676,7 @@ Wall time: 463 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-11">
@@ -2590,7 +2703,7 @@ coords_4326</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[12]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[11]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <table>
 <tr>
@@ -2662,9 +2775,9 @@ coords_4326</div>
 <!-- Colored Rectangle -->
 <polygon points="24.9485979497544,14.948597949754403 100.4406614418179,14.948597949754403 100.4406614418179,134.9485979497544 24.9485979497544,134.9485979497544" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="62.694630" y="154.948598">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,120.440661,74.948598)" x="120.440661" y="74.948598">1890</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(45,7.474299,147.474299)" x="7.474299" y="147.474299">2</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="62.69462969578615" y="154.9485979497544">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,120.4406614418179,74.9485979497544)" x="120.4406614418179" y="74.9485979497544">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(45,7.4742989748772,147.4742989748772)" x="7.4742989748772" y="147.4742989748772">2</text>
 </svg>
 </td>
 </tr>
@@ -2680,7 +2793,7 @@ coords_4326</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-12">
@@ -2713,7 +2826,7 @@ coords_4326</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
@@ -2744,7 +2857,7 @@ coords_32633</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[14]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[13]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <table>
 <tr>
@@ -2816,9 +2929,9 @@ coords_32633</div>
 <!-- Colored Rectangle -->
 <polygon points="24.9485979497544,14.948597949754403 100.4406614418179,14.948597949754403 100.4406614418179,134.9485979497544 24.9485979497544,134.9485979497544" style="fill:#ECB172A0;stroke-width:0"></polygon>
 <!-- Text -->
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="62.694630" y="154.948598">1189</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,120.440661,74.948598)" x="120.440661" y="74.948598">1890</text>
-<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(45,7.474299,147.474299)" x="7.474299" y="147.474299">2</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" x="62.69462969578615" y="154.9485979497544">1189</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(-90,120.4406614418179,74.9485979497544)" x="120.4406614418179" y="74.9485979497544">1890</text>
+<text font-size="1.0rem" font-weight="100" text-anchor="middle" transform="rotate(45,7.4742989748772,147.4742989748772)" x="7.4742989748772" y="147.4742989748772">2</text>
 </svg>
 </td>
 </tr>
@@ -2834,7 +2947,7 @@ coords_32633</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-14">
@@ -2863,8 +2976,8 @@ x, y = coords_32633.compute()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>CPU times: user 955 ms, sys: 107 ms, total: 1.06 s
-Wall time: 343 ms
+<pre>CPU times: user 1.43 s, sys: 313 ms, total: 1.74 s
+Wall time: 556 ms
 </pre>
 </div>
 </div>
@@ -2877,7 +2990,7 @@ Wall time: 343 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-15">
@@ -2902,7 +3015,7 @@ Wall time: 343 ms
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[16]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[15]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>(array([[464353.17350437, 464753.99068697, 464753.99068697, ...,
          778366.98327271, 778663.97989779, 778960.82095417],
@@ -2943,7 +3056,7 @@ Wall time: 343 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-16">
@@ -2974,7 +3087,7 @@ Wall time: 343 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-17">
@@ -3015,7 +3128,7 @@ x, y</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[18]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[17]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>(dask.array&lt;transpose, shape=(1890, 1189), dtype=float64, chunksize=(512, 512), chunktype=numpy.ndarray&gt;,
  dask.array&lt;transpose, shape=(1890, 1189), dtype=float64, chunksize=(512, 512), chunktype=numpy.ndarray&gt;)</pre>
@@ -3030,7 +3143,7 @@ x, y</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-18">
@@ -3061,8 +3174,8 @@ yy = y.compute()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>CPU times: user 1.69 s, sys: 64.8 ms, total: 1.76 s
-Wall time: 570 ms
+<pre>CPU times: user 2.27 s, sys: 204 ms, total: 2.48 s
+Wall time: 824 ms
 </pre>
 </div>
 </div>
@@ -3075,7 +3188,7 @@ Wall time: 570 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [20]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-19">
@@ -3100,7 +3213,7 @@ Wall time: 570 ms
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[20]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[19]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>(array([[464353.17350437, 464753.99068697, 464753.99068697, ...,
          778366.98327271, 778663.97989779, 778960.82095417],
@@ -3141,7 +3254,7 @@ Wall time: 570 ms
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [21]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [20]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-20">
@@ -3166,7 +3279,7 @@ Wall time: 570 ms
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[21]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[20]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>&lt;Geographic 2D CRS: OGC:CRS84&gt;
 Name: WGS 84 (CRS84)
@@ -3190,7 +3303,7 @@ Datum: World Geodetic System 1984 ensemble
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [22]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [21]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-21">
@@ -3215,7 +3328,7 @@ Datum: World Geodetic System 1984 ensemble
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[22]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[21]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>&lt;Geographic 2D CRS: EPSG:4326&gt;
 Name: WGS 84
