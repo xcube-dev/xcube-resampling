@@ -26,6 +26,7 @@ from xcube_resampling.utils import (
     bbox_overlap,
     clip_dataset_by_bbox,
     get_spatial_coords,
+    get_utm_crs,
     reproject_bbox,
     resolution_meters_to_degrees,
 )
@@ -59,6 +60,22 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(KeyError) as context:
             get_spatial_coords(ds)
         self.assertIn("No standard spatial coordinates found", str(context.exception))
+
+    def test_get_utm_crs(self):
+        crs = get_utm_crs(10, 55.5)
+        self.assertEqual("EPSG:32632", crs.to_string())
+        crs = get_utm_crs(5, 60)
+        self.assertEqual("EPSG:32632", crs.to_string())
+        crs = get_utm_crs(2.9, 60)
+        self.assertEqual("EPSG:32631", crs.to_string())
+        crs = get_utm_crs(8, 75)
+        self.assertEqual("EPSG:32631", crs.to_string())
+        crs = get_utm_crs(20, 75)
+        self.assertEqual("EPSG:32633", crs.to_string())
+        crs = get_utm_crs(22, 75)
+        self.assertEqual("EPSG:32635", crs.to_string())
+        crs = get_utm_crs(40, 75)
+        self.assertEqual("EPSG:32637", crs.to_string())
 
     def test_select_variables(self):
         ds = xr.Dataset(
