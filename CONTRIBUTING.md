@@ -42,7 +42,7 @@ sort imports statements according to the default settings of
 
 0. Future imports
 1. Python standard library imports, e.g., `os`, `typing`, etc
-2. 3rd-party imports, e.g., `xarray`, `zarr`, etc
+2. 3rd-party imports, e.g., `xarray`, `pyproj`, etc
 3. 1st-party library module imports using absolute paths, 
    e.g., `from xcube_resampling.a.b.c import d`. 
 4. 1st-party library module imports from local modules: 

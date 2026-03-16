@@ -26,7 +26,6 @@ import warnings
 import numpy as np
 import pyproj
 import xarray as xr
-import zarr
 
 # noinspection PyProtectedMember
 from xcube_resampling.gridmapping.cfconv import (
@@ -34,7 +33,6 @@ from xcube_resampling.gridmapping.cfconv import (
     GridMappingProxy,
     _find_potential_coord_vars,
     _is_potential_coord_var,
-    add_spatial_ref,
     get_dataset_grid_mapping_proxies,
 )
 
@@ -397,41 +395,3 @@ class XarrayDecodeCfTest(unittest.TestCase):
         self.assertEqual(("y", "x"), lon.dims)
         self.assertEqual(("y", "x"), lat.dims)
         return noise, crs, lon, lat
-
-
-class TestAddSpatialRef(unittest.TestCase):
-
-    def setUp(self):
-        # Create an in-memory Zarr group
-        self.store = zarr.MemoryStore()
-        self.group = zarr.group(store=self.store, overwrite=True)
-        # Create a dummy dataset array
-        self.group.zeros("data", shape=(3, 3), chunks=(3, 3), dtype=np.float32)
-        # Add _ARRAY_DIMENSIONS attribute to simulate xarray
-        self.group["data"].attrs["_ARRAY_DIMENSIONS"] = ["y", "x"]
-
-    def test_add_spatial_ref_creates_variable(self):
-        crs = pyproj.CRS.from_epsg(4326)
-        add_spatial_ref(self.store, crs, crs_var_name="spatial_ref_test")
-
-        # The spatial_ref_test variable should exist
-        self.assertIn("spatial_ref_test", self.group)
-        spatial_ref = self.group["spatial_ref_test"]
-        self.assertEqual(spatial_ref.shape, ())
-        self.assertTrue(spatial_ref.attrs)  # CRS attributes added
-        self.assertIn("_ARRAY_DIMENSIONS", spatial_ref.attrs)
-        self.assertEqual(spatial_ref.attrs["_ARRAY_DIMENSIONS"], [])
-
-    def test_add_grid_mapping_attribute(self):
-        crs = pyproj.CRS.from_epsg(4326)
-        add_spatial_ref(
-            self.store,
-            crs,
-            crs_var_name="spatial_ref_test",
-            xy_dim_names=("x", "y"),
-        )
-
-        # Original array should have grid_mapping pointing to spatial_ref_test
-        self.assertEqual(
-            self.group["data"].attrs.get("grid_mapping"), "spatial_ref_test"
-        )
