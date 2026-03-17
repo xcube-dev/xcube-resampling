@@ -293,10 +293,8 @@ class GridMapping(abc.ABC):
         - Shape (width,) for rectilinear grids
         - Shape (height, width) for curvilinear grids
 
-        See Also
-        --------
-        CF Conventions, section on coordinate systems:
-        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate
+        See Also:
+            [CF Conventions,  Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)
         """
         return self._get_computed_attribute("_x_coords", self._new_x_coords)
 
@@ -314,10 +312,8 @@ class GridMapping(abc.ABC):
         - Shape (width,) for rectilinear grids
         - Shape (height, width) for curvilinear grids
 
-        See Also
-        --------
-        CF Conventions, section on coordinate systems:
-        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate
+        See Also:
+            [CF Conventions,  Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)
         """
         return self._get_computed_attribute("_y_coords", self._new_y_coords)
 
@@ -368,14 +364,14 @@ class GridMapping(abc.ABC):
     @property
     def xy_var_names(self) -> tuple[str, str]:
         """The variable names of `x_coords` and `y_coords` as tuple
-        (x_var_name, y_var_name).
+        `(x_var_name, y_var_name)`.
         """
         return self._xy_var_names
 
     @property
     def xy_dim_names(self) -> tuple[str, str]:
         """The dimension names of `x_coords` and `y_coords` as
-        tuple (x_dim_name, y_dim_name).
+        tuple `(x_dim_name, y_dim_name)`.
         """
         return self._xy_dim_names
 
@@ -406,7 +402,7 @@ class GridMapping(abc.ABC):
 
     @property
     def xy_res(self) -> tuple[FloatInt, FloatInt]:
-        """Pixel size in eastward (x) and northward (y) direction (x_res, y_res)."""
+        """Pixel size in eastward (x) and northward (y) direction `(x_res, y_res)`."""
         return self._xy_res
 
     @property
