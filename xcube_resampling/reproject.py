@@ -128,11 +128,11 @@ def reproject_dataset(
     transformer = pyproj.Transformer.from_crs(
         target_gm.crs, source_gm.crs, always_xy=True
     )
-    # source_ds, source_gm, is_empty = _clip_if_needed(
-    #     source_ds, source_gm, target_gm, fill_values, transformer
-    # )
-    # if is_empty:
-    #     return source_ds
+    source_ds, source_gm, is_empty = _clip_if_needed(
+        source_ds, source_gm, target_gm, fill_values, transformer
+    )
+    if is_empty:
+        return source_ds
 
     # If source has higher resolution than target, downscale first, then reproject
     interp_methods = _get_spatial_interp_methods(source_ds, interp_methods)
