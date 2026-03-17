@@ -204,6 +204,11 @@ def resample_dataset(
         data_array = xr.DataArray(data_array)
         new_data_array = None
         if data_array.dims[-2:] == yx_dims:
+            assert len(data_array.dims) in (
+                2,
+                3,
+            ), f"Data variable {var_name} has {len(data_array.dims)} dimensions."
+
             data_array_expanded = False
             if len(data_array.dims) == 2:
                 data_array = data_array.expand_dims({"dummy": 1})
@@ -373,17 +378,4 @@ def _upscale(
         else:
             return ndinterp.affine_transform(slice_2d, matrix, **kwargs)
 
-    array = array.rechunk({0: 1})
-    stacked = da.stack(
-        [
-            da.from_delayed(
-                dask.delayed(_transform_slice)(array[i]),
-                shape=output_shape[-2:],
-                dtype=array.dtype,
-            )
-            for i in range(array.shape[0])
-        ],
-        axis=0,
-    )
-
-    return stacked
+    return da.stack([_transform_slice(array[i]) for i in range(array.shape[0])])
