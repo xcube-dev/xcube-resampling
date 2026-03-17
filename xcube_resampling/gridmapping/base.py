@@ -62,17 +62,28 @@ class GridMapping(abc.ABC):
     This class cannot be instantiated directly. Use one of its factory methods
     to create instances:
 
-    * `regular`
-    * `regular_from_bbox`
-    * `from_dataset`
-    * `from_coords`
+    - `regular`
+    - `regular_from_bbox`
+    - `from_dataset`
+    - `from_coords`
 
     Some instance methods can be used to derive new instances:
 
-    * `derive`
-    * `scale`
-    * `transform`
-    * `to_regular`
+    - `derive`
+    - `scale`
+    - `transform`
+    - `to_regular`
+
+    Notes:
+
+    - `x` : eastward axis in CRS coordinates
+    - `y` : northward axis in CRS coordinates
+    - `i` : eastward axis in pixel space
+    - `j` : northward axis in pixel space
+
+    References:
+        CF Conventions — Coordinate types:
+        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#coordinate-types
     """
 
     def __init__(
