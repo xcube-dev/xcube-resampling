@@ -22,6 +22,7 @@
 import math
 from collections.abc import Iterable, Sequence
 
+import dask
 import dask.array as da
 import numpy as np
 import xarray as xr
@@ -203,6 +204,11 @@ def resample_dataset(
         data_array = xr.DataArray(data_array)
         new_data_array = None
         if data_array.dims[-2:] == yx_dims:
+            data_array_expanded = False
+            if len(data_array.dims) == 2:
+                data_array = data_array.expand_dims({"dummy": 1})
+                data_array_expanded = True
+
             if isinstance(data_array.data, np.ndarray):
                 is_numpy_array = True
                 array = da.asarray(data_array.data)
@@ -229,8 +235,13 @@ def resample_dataset(
             )
             if is_numpy_array:
                 resampled_array = resampled_array.compute()
+            if data_array_expanded:
+                resampled_array = resampled_array[0, :, :]
+                dims = yx_dims
+            else:
+                dims = data_array.dims
             new_data_array = xr.DataArray(
-                data=resampled_array, dims=data_array.dims, attrs=data_array.attrs
+                data=resampled_array, dims=dims, attrs=data_array.attrs
             )
         elif yx_dims[0] not in data_array.dims and yx_dims[1] not in data_array.dims:
             new_data_array = data_array
@@ -326,9 +337,8 @@ def _upscale(
     fill_value: FloatInt,
 ) -> da.Array:
     (i_scale, _, i_off), (_, j_scale, j_off) = affine_matrix
-    offset = (array.ndim - 2) * (0,) + (j_off, i_off)
-    scale = (array.ndim - 2) * (1,) + (j_scale, i_scale)
-    matrix = np.diag(scale)
+    offset = (j_off, i_off)
+    matrix = np.diag((j_scale, i_scale))
     if interp_method > 1:
         raise ValueError(
             "interp_methods must be one of 0, 1, 'nearest', 'bilinear'. "
@@ -339,18 +349,18 @@ def _upscale(
     kwargs = dict(
         offset=offset,
         order=interp_method,
-        output_shape=output_shape,
-        output_chunks=output_chunks,
+        output_shape=output_shape[-2:],
+        output_chunks=output_chunks[-2:],
         mode="constant",
         cval=fill_value,
     )
-    if prevent_nan_propagation and interp_method > 0:
-        # Prevent NaNs from spreading to nearby pixels during interpolation
-        mask = da.isnan(array)
-        # First check if there are NaN values ar all
-        if da.any(mask):
+
+    def _transform_slice(slice_2d: da.Array):
+        if prevent_nan_propagation and interp_method > 0:
+            # Prevent NaNs from spreading to nearby pixels during interpolation
+            mask = da.isnan(slice_2d)
             # 1. replace NaN by zero
-            filled_im = da.where(mask, 0.0, array)
+            filled_im = da.where(mask, 0.0, slice_2d)
             # 2. transform the zero-filled image
             scaled_im = ndinterp.affine_transform(filled_im, matrix, **kwargs)
             # 3. transform the inverted mask
@@ -360,5 +370,20 @@ def _upscale(
             return da.where(
                 da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm
             )
+        else:
+            return ndinterp.affine_transform(slice_2d, matrix, **kwargs)
 
-    return ndinterp.affine_transform(array, matrix, **kwargs)
+    array = array.rechunk({0: 1})
+    stacked = da.stack(
+        [
+            da.from_delayed(
+                dask.delayed(_transform_slice)(array[i]),
+                shape=output_shape[-2:],
+                dtype=array.dtype,
+            )
+            for i in range(array.shape[0])
+        ],
+        axis=0,
+    )
+
+    return stacked

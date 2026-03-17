@@ -9,6 +9,13 @@
 - In `xcube_resampling.reproject_dataset`, the dataset is now clipped when the target
   grid-mapping covers less than 80% of the source grid-mapping, improving performance
   for reprojected cutouts.
+- In `xcube_resampling.affine_transform_dataset`, resampling is now performed per 
+  spatial slice, ensuring that interpolation is applied only along the spatial axes 
+  and no longer across non-spatial dimensions (e.g., time).
+- When `prevent_nan_propagation=True`, computation is now fully lazy. Previously, the 
+  implementation checked for NaN values in the source array, which triggered loading
+  of the entire dataset into memory.
+
 
 ## Changes in 0.3.1
 
