@@ -15,6 +15,7 @@
 - When `prevent_nan_propagation=True`, computation is now fully lazy. Previously, the 
   implementation checked for NaN values in the source array, which triggered loading
   of the entire dataset into memory.
+- Enhanced `GridMapping` API documentation.
 
 
 ## Changes in 0.3.1
