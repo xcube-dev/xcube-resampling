@@ -438,8 +438,8 @@ class GridMapping(abc.ABC):
         """Check whether the x (eastward) and y (northward) coordinates form a regular
         grid.
 
-        A regular grid is defined as having constant spacing (delta) along both
-        the x- and y-axes.
+        A regular grid is defined as having constant spacing (delta) along
+        the x- and y-axes individually.
         """
 
         return self._is_regular
