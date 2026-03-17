@@ -809,23 +809,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="x_coords">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#xcube_resampling.gridmapping.GridMapping.x_coords--see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
         
           <li class="md-nav__item">
@@ -836,23 +819,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="y_coords">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#xcube_resampling.gridmapping.GridMapping.y_coords--see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -1756,23 +1722,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="x_coords">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#xcube_resampling.gridmapping.GridMapping.x_coords--see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
         
           <li class="md-nav__item">
@@ -1783,23 +1732,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="y_coords">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#xcube_resampling.gridmapping.GridMapping.y_coords--see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -7048,11 +6980,7 @@ to create instances:</p>
 <span class="normal">883</span>
 <span class="normal">884</span>
 <span class="normal">885</span>
-<span class="normal">886</span>
-<span class="normal">887</span>
-<span class="normal">888</span>
-<span class="normal">889</span>
-<span class="normal">890</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GridMapping</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<span class="normal">886</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GridMapping</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An abstract base class for grid mappings that define an image grid and</span>
 <span class="sd">    a transformation from image pixel coordinates to spatial Earth coordinates</span>
 <span class="sd">    defined in a well-known coordinate reference system (CRS).</span>
@@ -7291,10 +7219,8 @@ to create instances:</p>
 <span class="sd">        - Shape (width,) for rectilinear grids</span>
 <span class="sd">        - Shape (height, width) for curvilinear grids</span>
 
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        CF Conventions, section on coordinate systems:</span>
-<span class="sd">        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate</span>
+<span class="sd">        See Also:</span>
+<span class="sd">            [CF Conventions,  Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_computed_attribute</span><span class="p">(</span><span class="s2">&quot;_x_coords&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_x_coords</span><span class="p">)</span>
 
@@ -7312,10 +7238,8 @@ to create instances:</p>
 <span class="sd">        - Shape (width,) for rectilinear grids</span>
 <span class="sd">        - Shape (height, width) for curvilinear grids</span>
 
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        CF Conventions, section on coordinate systems:</span>
-<span class="sd">        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate</span>
+<span class="sd">        See Also:</span>
+<span class="sd">            [CF Conventions,  Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_computed_attribute</span><span class="p">(</span><span class="s2">&quot;_y_coords&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_y_coords</span><span class="p">)</span>
 
@@ -7366,14 +7290,14 @@ to create instances:</p>
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">xy_var_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The variable names of `x_coords` and `y_coords` as tuple</span>
-<span class="sd">        (x_var_name, y_var_name).</span>
+<span class="sd">        `(x_var_name, y_var_name)`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xy_var_names</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">xy_dim_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The dimension names of `x_coords` and `y_coords` as</span>
-<span class="sd">        tuple (x_dim_name, y_dim_name).</span>
+<span class="sd">        tuple `(x_dim_name, y_dim_name)`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xy_dim_names</span>
 
@@ -7404,7 +7328,7 @@ to create instances:</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">xy_res</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pixel size in eastward (x) and northward (y) direction (x_res, y_res).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pixel size in eastward (x) and northward (y) direction `(x_res, y_res)`.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xy_res</span>
 
     <span class="nd">@property</span>
@@ -8073,10 +7997,12 @@ to create instances:</p>
 <p>The coordinates are provided as either a 1D or 2D array:
 - Shape (width,) for rectilinear grids
 - Shape (height, width) for curvilinear grids</p>
-<h5 id="xcube_resampling.gridmapping.GridMapping.x_coords--see-also">See Also</h5>
-<p>CF Conventions, section on coordinate systems:
-https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate</p>
 
+
+<details class="see-also" open>
+  <summary>See Also</summary>
+  <p><a href="https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate">CF Conventions,  Latitude Coordinate</a></p>
+</details>
     </div>
 
 </div>
@@ -8101,10 +8027,12 @@ https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions
 <p>The coordinates are provided as either a 1D or 2D array:
 - Shape (width,) for rectilinear grids
 - Shape (height, width) for curvilinear grids</p>
-<h5 id="xcube_resampling.gridmapping.GridMapping.y_coords--see-also">See Also</h5>
-<p>CF Conventions, section on coordinate systems:
-https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate</p>
 
+
+<details class="see-also" open>
+  <summary>See Also</summary>
+  <p><a href="https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate">CF Conventions,  Latitude Coordinate</a></p>
+</details>
     </div>
 
 </div>
@@ -8174,7 +8102,7 @@ dataset's CRS (coordinate reference system).</p>
     <div class="doc doc-contents ">
 
         <p>The variable names of <code>x_coords</code> and <code>y_coords</code> as tuple
-(x_var_name, y_var_name).</p>
+<code>(x_var_name, y_var_name)</code>.</p>
 
     </div>
 
@@ -8197,7 +8125,7 @@ dataset's CRS (coordinate reference system).</p>
     <div class="doc doc-contents ">
 
         <p>The dimension names of <code>x_coords</code> and <code>y_coords</code> as
-tuple (x_dim_name, y_dim_name).</p>
+tuple <code>(x_dim_name, y_dim_name)</code>.</p>
 
     </div>
 
@@ -8329,7 +8257,7 @@ tuple (x_dim_name, y_dim_name).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Pixel size in eastward (x) and northward (y) direction (x_res, y_res).</p>
+        <p>Pixel size in eastward (x) and northward (y) direction <code>(x_res, y_res)</code>.</p>
 
     </div>
 
@@ -9104,7 +9032,11 @@ coordinates.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">488</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
 <span class="normal">489</span>
 <span class="normal">490</span>
 <span class="normal">491</span>
@@ -9118,11 +9050,7 @@ coordinates.</p>
 <span class="normal">499</span>
 <span class="normal">500</span>
 <span class="normal">501</span>
-<span class="normal">502</span>
-<span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span>
-<span class="normal">506</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
+<span class="normal">502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the affine transformation matrix that transforms</span>
 <span class="sd">    image coordinates of `other` grid-mapping into image coordinates</span>
 <span class="sd">    of this image geometry.</span>
@@ -9225,7 +9153,11 @@ coordinates.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">508</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
 <span class="normal">509</span>
 <span class="normal">510</span>
 <span class="normal">511</span>
@@ -9238,11 +9170,7 @@ coordinates.</p>
 <span class="normal">518</span>
 <span class="normal">519</span>
 <span class="normal">520</span>
-<span class="normal">521</span>
-<span class="normal">522</span>
-<span class="normal">523</span>
-<span class="normal">524</span>
-<span class="normal">525</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
+<span class="normal">521</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ij_transform_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AffineTransformMatrix</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the affine transformation matrix that transforms</span>
 <span class="sd">    image coordinates of this grid-mapping to image</span>
 <span class="sd">    coordinates of *other* grid-mapping.</span>
@@ -9390,7 +9318,11 @@ arrays from target_gm or to compute new ones.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">583</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
 <span class="normal">584</span>
 <span class="normal">585</span>
 <span class="normal">586</span>
@@ -9420,11 +9352,7 @@ arrays from target_gm or to compute new ones.</p>
 <span class="normal">610</span>
 <span class="normal">611</span>
 <span class="normal">612</span>
-<span class="normal">613</span>
-<span class="normal">614</span>
-<span class="normal">615</span>
-<span class="normal">616</span>
-<span class="normal">617</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_coords</span><span class="p">(</span>
+<span class="normal">613</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_coords</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">xy_var_names</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">xy_dim_names</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -9586,7 +9514,11 @@ coordinates with each other. Must be in the units of the
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">619</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
 <span class="normal">620</span>
 <span class="normal">621</span>
 <span class="normal">622</span>
@@ -9612,11 +9544,7 @@ coordinates with each other. Must be in the units of the
 <span class="normal">642</span>
 <span class="normal">643</span>
 <span class="normal">644</span>
-<span class="normal">645</span>
-<span class="normal">646</span>
-<span class="normal">647</span>
-<span class="normal">648</span>
-<span class="normal">649</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
+<span class="normal">645</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">CRS</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -9808,7 +9736,11 @@ false.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">651</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
 <span class="normal">652</span>
 <span class="normal">653</span>
 <span class="normal">654</span>
@@ -9838,11 +9770,7 @@ false.</p>
 <span class="normal">678</span>
 <span class="normal">679</span>
 <span class="normal">680</span>
-<span class="normal">681</span>
-<span class="normal">682</span>
-<span class="normal">683</span>
-<span class="normal">684</span>
-<span class="normal">685</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">681</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">regular</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
@@ -10028,7 +9956,11 @@ square chunk size is assumed. Defaults to 1024.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">687</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">683</span>
+<span class="normal">684</span>
+<span class="normal">685</span>
+<span class="normal">686</span>
+<span class="normal">687</span>
 <span class="normal">688</span>
 <span class="normal">689</span>
 <span class="normal">690</span>
@@ -10052,11 +9984,7 @@ square chunk size is assumed. Defaults to 1024.</p>
 <span class="normal">708</span>
 <span class="normal">709</span>
 <span class="normal">710</span>
-<span class="normal">711</span>
-<span class="normal">712</span>
-<span class="normal">713</span>
-<span class="normal">714</span>
-<span class="normal">715</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">711</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">regular_from_bbox</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
@@ -10188,7 +10116,11 @@ false.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">717</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span>
 <span class="normal">718</span>
 <span class="normal">719</span>
 <span class="normal">720</span>
@@ -10202,11 +10134,7 @@ false.</p>
 <span class="normal">728</span>
 <span class="normal">729</span>
 <span class="normal">730</span>
-<span class="normal">731</span>
-<span class="normal">732</span>
-<span class="normal">733</span>
-<span class="normal">734</span>
-<span class="normal">735</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_regular</span><span class="p">(</span>
+<span class="normal">731</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_regular</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">tile_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_j_axis_up</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform this grid mapping into one that is regular.</span>
@@ -10406,7 +10334,11 @@ coordinates with each other. Must be in the units of the
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">737</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">733</span>
+<span class="normal">734</span>
+<span class="normal">735</span>
+<span class="normal">736</span>
+<span class="normal">737</span>
 <span class="normal">738</span>
 <span class="normal">739</span>
 <span class="normal">740</span>
@@ -10443,11 +10375,7 @@ coordinates with each other. Must be in the units of the
 <span class="normal">771</span>
 <span class="normal">772</span>
 <span class="normal">773</span>
-<span class="normal">774</span>
-<span class="normal">775</span>
-<span class="normal">776</span>
-<span class="normal">777</span>
-<span class="normal">778</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">774</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_dataset</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
@@ -10637,7 +10565,11 @@ coordinates with each other. Must be in the units of the
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">780</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">776</span>
+<span class="normal">777</span>
+<span class="normal">778</span>
+<span class="normal">779</span>
+<span class="normal">780</span>
 <span class="normal">781</span>
 <span class="normal">782</span>
 <span class="normal">783</span>
@@ -10667,11 +10599,7 @@ coordinates with each other. Must be in the units of the
 <span class="normal">807</span>
 <span class="normal">808</span>
 <span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span>
-<span class="normal">812</span>
-<span class="normal">813</span>
-<span class="normal">814</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">810</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_coords</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">x_coords</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
@@ -10800,7 +10728,11 @@ coordinates with each other. Must be in the units of the
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/gridmapping/base.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">816</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">812</span>
+<span class="normal">813</span>
+<span class="normal">814</span>
+<span class="normal">815</span>
+<span class="normal">816</span>
 <span class="normal">817</span>
 <span class="normal">818</span>
 <span class="normal">819</span>
@@ -10833,11 +10765,7 @@ coordinates with each other. Must be in the units of the
 <span class="normal">846</span>
 <span class="normal">847</span>
 <span class="normal">848</span>
-<span class="normal">849</span>
-<span class="normal">850</span>
-<span class="normal">851</span>
-<span class="normal">852</span>
-<span class="normal">853</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_close</span><span class="p">(</span>
+<span class="normal">849</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_close</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;GridMapping&quot;</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_TOLERANCE</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Tests whether this grid mapping is close to *other*.</span>
