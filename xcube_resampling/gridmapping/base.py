@@ -277,8 +277,16 @@ class GridMapping(abc.ABC):
 
     @property
     def x_coords(self):
-        """The 1D or 2D x-coordinate array of
-        shape (width,) or (height, width).
+        """Return the eastward (x) coordinate values.
+
+        The coordinates are provided as either a 1D or 2D array:
+        - Shape (width,) for rectilinear grids
+        - Shape (height, width) for curvilinear grids
+
+        See Also
+        --------
+        CF Conventions, section on coordinate systems:
+        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate
         """
         return self._get_computed_attribute("_x_coords", self._new_x_coords)
 
@@ -290,8 +298,16 @@ class GridMapping(abc.ABC):
 
     @property
     def y_coords(self):
-        """The 1D or 2D y-coordinate array of
-        shape (width,) or (height, width).
+        """Return the northward (y) coordinate values.
+
+        The coordinates are provided as either a 1D or 2D array:
+        - Shape (width,) for rectilinear grids
+        - Shape (height, width) for curvilinear grids
+
+        See Also
+        --------
+        CF Conventions, section on coordinate systems:
+        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate
         """
         return self._get_computed_attribute("_y_coords", self._new_y_coords)
 
@@ -303,8 +319,12 @@ class GridMapping(abc.ABC):
 
     @property
     def xy_coords(self) -> xr.DataArray:
-        """The x,y coordinates as data array of shape (2, height, width).
-        Coordinates are given in units of the CRS.
+        """Return the spatial coordinates as a single DataArray.
+
+        The coordinates are provided as a 3D array of shape `(2, height, width)`,
+        where the first axis corresponds to the x and y coordinates stacked in order:
+        `(x_coords, y_coords)`. All values are expressed in the units of the
+        dataset's CRS (coordinate reference system).
         """
         xy_coords = self._get_computed_attribute("_xy_coords", self._new_xy_coords)
         _assert_valid_xy_coords(xy_coords)
@@ -312,7 +332,7 @@ class GridMapping(abc.ABC):
 
     @property
     def xy_coords_chunks(self) -> tuple[int, int, int]:
-        """Get the chunks for the *xy_coords* array."""
+        """Return the chunks for the `xy_coords` array."""
         return 2, self.tile_height, self.tile_width
 
     @abc.abstractmethod
@@ -337,14 +357,14 @@ class GridMapping(abc.ABC):
 
     @property
     def xy_var_names(self) -> tuple[str, str]:
-        """The variable names of the x,y coordinates as
-        tuple (x_var_name, y_var_name).
+        """The variable names of `x_coords` and `y_coords` as tuple
+        (x_var_name, y_var_name).
         """
         return self._xy_var_names
 
     @property
     def xy_dim_names(self) -> tuple[str, str]:
-        """The dimension names of the x,y coordinates as
+        """The dimension names of `x_coords` and `y_coords` as
         tuple (x_dim_name, y_dim_name).
         """
         return self._xy_dim_names
@@ -356,37 +376,37 @@ class GridMapping(abc.ABC):
 
     @property
     def x_min(self) -> FloatInt:
-        """Minimum x-coordinate in CRS units."""
+        """Minimum eastward (x) coordinate value in CRS units."""
         return round(self._xy_bbox[0] + self.x_res / 2, ndigits=7)
 
     @property
     def y_min(self) -> FloatInt:
-        """Minimum y-coordinate in CRS units."""
+        """Minimum northward (y) coordinate value in CRS units."""
         return round(self._xy_bbox[1] + self.y_res / 2, ndigits=7)
 
     @property
     def x_max(self) -> FloatInt:
-        """Maximum x-coordinate in CRS units."""
+        """Maximum eastward (x) coordinate value in CRS units."""
         return round(self._xy_bbox[2] - self.x_res / 2, ndigits=7)
 
     @property
     def y_max(self) -> FloatInt:
-        """Maximum y-coordinate in CRS units."""
+        """Maximum northward (y) coordinate value in CRS units."""
         return round(self._xy_bbox[3] - self.y_res / 2, ndigits=7)
 
     @property
     def xy_res(self) -> tuple[FloatInt, FloatInt]:
-        """Pixel size in x and y direction."""
+        """Pixel size in eastward (x) and northward (y) direction (x_res, y_res)."""
         return self._xy_res
 
     @property
     def x_res(self) -> FloatInt:
-        """Pixel size in CRS units per pixel in x-direction."""
+        """Pixel size in CRS units per pixel in eastward (x) direction."""
         return self._xy_res[0]
 
     @property
     def y_res(self) -> FloatInt:
-        """Pixel size in CRS units per pixel in y-direction."""
+        """Pixel size in CRS units per pixel in northward (y) direction."""
         return self._xy_res[1]
 
     @property
@@ -400,8 +420,8 @@ class GridMapping(abc.ABC):
 
     @property
     def is_lon_360(self) -> bool | None:
-        """Check whether *x_max* is greater than 180 degrees.
-        Effectively tests whether the range *x_min*, *x_max* crosses
+        """Check whether `x_max` is greater than 180 degrees.
+        Effectively tests whether the range `x_min`, `x_max` crosses
         the anti-meridian at 180 degrees.
         Works only for geographical coordinate reference systems.
         """
@@ -409,29 +429,30 @@ class GridMapping(abc.ABC):
 
     @property
     def is_regular(self) -> bool | None:
-        """Do the x,y coordinates for a regular grid?
-        A regular grid has a constant delta in both
-        x- and y-directions of the x- and y-coordinates.
+        """Check whether the x (eastward) and y (northward) coordinates form a regular
+        grid.
 
-        Returns: None, if this property cannot be determined,
-            True or False otherwise.
+        A regular grid is defined as having constant spacing (delta) along both
+        the x- and y-axes.
         """
+
         return self._is_regular
 
     @property
     def is_j_axis_up(self) -> bool | None:
-        """Does the positive image j-axis point up?
-        By default, the positive image j-axis points down.
+        """Indicate whether the positive image j-axis points upward.
 
-        Returns: None, if this property cannot be determined,
-            True or False otherwise.
+        Here, the j-axis refers to the y-coordinate in pixel space. By convention,
+        the positive j-axis usually points downward in image coordinates, so
+        `True` indicates that the axis has been flipped to point upward.
         """
         return self._is_j_axis_up
 
     @property
     def ij_to_xy_transform(self) -> AffineTransformMatrix:
         """The affine transformation matrix from image to CRS coordinates.
-        Defined only for grid mappings with rectified x,y coordinates.
+        Defined only for grid mappings with regular x (eastward) and y (northward)
+        coordinates.
         """
         self._assert_regular()
         if self.is_j_axis_up:
@@ -448,20 +469,22 @@ class GridMapping(abc.ABC):
     @property
     def xy_to_ij_transform(self) -> AffineTransformMatrix:
         """The affine transformation matrix from CRS to image coordinates.
-        Defined only for grid mappings with rectified x,y coordinates.
+        Defined only for grid mappings with regular x (eastward) and y (northward)
+        coordinates.
         """
         self._assert_regular()
         return _from_affine(~_to_affine(self.ij_to_xy_transform))
 
     def ij_transform_to(self, other: "GridMapping") -> AffineTransformMatrix:
         """Get the affine transformation matrix that transforms
-        image coordinates of *other* into image coordinates
+        image coordinates of `other` grid-mapping into image coordinates
         of this image geometry.
 
-        Defined only for grid mappings with rectified x,y coordinates.
+        Defined only for grid mappings with regular x (eastward) and y (northward)
+        coordinates.
 
         Args:
-            other: The other image geometry
+            other: The other grid-mapping
 
         Returns:
             Affine transformation matrix
@@ -474,13 +497,14 @@ class GridMapping(abc.ABC):
 
     def ij_transform_from(self, other: "GridMapping") -> AffineTransformMatrix:
         """Get the affine transformation matrix that transforms
-        image coordinates of this image geometry to image
-        coordinates of *other*.
+        image coordinates of this grid-mapping to image
+        coordinates of *other* grid-mapping.
 
-        Defined only for grid mappings with rectified x,y coordinates.
+        Defined only for grid mappings with regular x (eastward) and y (northward)
+        coordinates.
 
         Args:
-            other: The other image geometry
+            other: The other grid-mapping
 
         Returns:
             Affine transformation matrix
