@@ -294,7 +294,7 @@ class GridMapping(abc.ABC):
         - Shape (height, width) for curvilinear grids
 
         See Also:
-            [CF Conventions,  Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)
+            [CF Conventions, Longitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#longitude-coordinate)
         """
         return self._get_computed_attribute("_x_coords", self._new_x_coords)
 
@@ -313,7 +313,7 @@ class GridMapping(abc.ABC):
         - Shape (height, width) for curvilinear grids
 
         See Also:
-            [CF Conventions,  Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)
+            [CF Conventions, Latitude Coordinate](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#latitude-coordinate)
         """
         return self._get_computed_attribute("_y_coords", self._new_y_coords)
 
