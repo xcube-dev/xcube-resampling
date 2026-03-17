@@ -82,8 +82,7 @@ class GridMapping(abc.ABC):
     - `j` : northward axis in pixel space
 
     References:
-        CF Conventions — Coordinate types:
-        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#coordinate-types
+        [CF Conventions — Coordinate types](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html#coordinate-types)
     """
 
     def __init__(
