@@ -1,3 +1,8 @@
+## Changes in 0.3.3
+
+- Added function `utils.resolution_degrees_to_meters` to convert spatial resolution
+  from degrees to meters at a given geographic latitude.
+
 ## Changes in 0.3.2
 
 - Change inconsistent license classifier in `pyproject.toml` 

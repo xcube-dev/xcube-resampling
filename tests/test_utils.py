@@ -28,6 +28,7 @@ from xcube_resampling.utils import (
     get_spatial_coords,
     get_utm_crs,
     reproject_bbox,
+    resolution_degrees_to_meters,
     resolution_meters_to_degrees,
 )
 
@@ -432,6 +433,22 @@ class TestUtils(unittest.TestCase):
         lon_deg, lat_deg = resolution_meters_to_degrees(111320, 60)
         self.assertAlmostEqual(1.0, lat_deg, places=6)
         self.assertAlmostEqual(1.0 / 0.5, lon_deg, places=6)  # 2 degrees
+
+    def test_resolution_degrees_to_meters(self):
+        # 111320 m ≈ 1 degree at equator
+        lat_deg, lon_deg = resolution_degrees_to_meters(1, 0)
+        self.assertAlmostEqual(111320, lat_deg, places=6)
+        self.assertAlmostEqual(111320, lon_deg, places=6)
+
+        # 222640 m ≈ 2 degrees latitude
+        lon_deg, lat_deg = resolution_degrees_to_meters((1, 2), 0)
+        self.assertAlmostEqual(222640, lat_deg, places=6)
+        self.assertAlmostEqual(111320, lon_deg, places=6)
+
+        # At 60 degrees latitude, longitude degrees shrink by cos(60°) = 0.5
+        lon_deg, lat_deg = resolution_degrees_to_meters(1, 60)
+        self.assertAlmostEqual(111320, lat_deg, places=6)
+        self.assertAlmostEqual(111320 * 0.5, lon_deg, places=6)
 
 
 class TestClipDatasetByBBox(unittest.TestCase):

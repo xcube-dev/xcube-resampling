@@ -341,6 +341,33 @@ def resolution_meters_to_degrees(
     )
 
 
+def resolution_degrees_to_meters(
+    resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
+) -> tuple[FloatInt, FloatInt]:
+    """Convert spatial resolution from degrees to meters at a given geographic latitude.
+
+    Args:
+        resolution: Spatial resolution in degrees. Can be a single number
+            (applied equally to both axes) or a tuple ``(lon_res, lat_res)``.
+        latitude: Latitude in degrees at which to compute the longitude scaling.
+
+    Returns:
+        A tuple `(x_res, y_res)` giving the approximate spatial
+        resolution in degrees for the latitude and longitude directions.
+
+    Notes:
+        - 1 degree of latitude ≈ 111,320 meters (constant approximation).
+        - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
+
+    """
+    if not isinstance(resolution, tuple):
+        resolution = (resolution, resolution)
+    return (
+        resolution[0] * (111320 * np.cos(np.deg2rad(latitude))),
+        resolution[1] * 111320,
+    )
+
+
 def normalize_grid_mapping(ds: xr.Dataset, gm: GridMapping) -> xr.Dataset:
     """
     Normalize the grid mapping of a dataset to use a standard "spatial_ref" coordinate.
