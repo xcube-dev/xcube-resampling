@@ -12,6 +12,7 @@ nav:
       - GridMapping instance: examples/grid_mapping.ipynb
       - Affine Transformation: examples/affine.ipynb
       - Rectification of a Sentinel-3 tile: examples/rectify_sentinel3.ipynb
+      - Demonstration of the function resample_in_space: examples/resample_in_space.ipynb
       - Reprojection of large Land Cover Map: examples/resample_in_space_large_example_reproject_dataset.ipynb
   - Python API: api.md
   - About: about.md
