@@ -22,7 +22,6 @@
 import math
 from collections.abc import Iterable, Sequence
 
-import dask
 import dask.array as da
 import numpy as np
 import xarray as xr

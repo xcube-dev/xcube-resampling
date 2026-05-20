@@ -30,6 +30,7 @@ from xcube_resampling.utils import (
     reproject_bbox,
     resolution_degrees_to_meters,
     resolution_meters_to_degrees,
+    transform_resolution,
 )
 
 from .sampledata import create_2x4x4_dataset_with_irregular_coords
@@ -418,9 +419,34 @@ class TestUtils(unittest.TestCase):
         target = (-170, 0, -160, 10)
         self.assertAlmostEqual(0.0, bbox_overlap(source, target))
 
+    def test_transform_resolution(self):
+        # EPSG:4326 → UTM (meters)
+        res = transform_resolution((3, 60), 1.0, "EPSG:4326", "EPSG:32631")
+        self.assertAlmostEqual(55777.9, res[0], places=1)
+        self.assertAlmostEqual(111376.2, res[1], places=1)
+
+        # UTM (meters) → EPSG:4326
+        res = transform_resolution(
+            (500_000, 6_651_411), 111376, "EPSG:32631", "EPSG:4326"
+        )
+        self.assertAlmostEqual(2.0, res[0], places=2)
+        self.assertAlmostEqual(1.0, res[1], places=2)
+
+        # UTM → UTM (same CRS, should remain ~unchanged in magnitude)
+        res = transform_resolution(
+            (500000, 0), (1000, 1000), "EPSG:32631", "EPSG:32631"
+        )
+        self.assertAlmostEqual(1000, res[0])
+        self.assertAlmostEqual(1000, res[1])
+
+        # US survey foot to meter
+        res = transform_resolution((0, 0), (1, 1), "EPSG:3561", "EPSG:32605")
+        self.assertAlmostEqual(0.30525, res[0], places=4)
+        self.assertAlmostEqual(0.30525, res[1], places=4)
+
     def test_resolution_meters_to_degrees(self):
         # 111320 m ≈ 1 degree at equator
-        lat_deg, lon_deg = resolution_meters_to_degrees(111320, 0)
+        lon_deg, lat_deg = resolution_meters_to_degrees(111320, 0)
         self.assertAlmostEqual(1.0, lat_deg, places=6)
         self.assertAlmostEqual(1.0, lon_deg, places=6)
 
@@ -436,7 +462,7 @@ class TestUtils(unittest.TestCase):
 
     def test_resolution_degrees_to_meters(self):
         # 111320 m ≈ 1 degree at equator
-        lat_deg, lon_deg = resolution_degrees_to_meters(1, 0)
+        lon_deg, lat_deg = resolution_degrees_to_meters(1, 0)
         self.assertAlmostEqual(111320, lat_deg, places=6)
         self.assertAlmostEqual(111320, lon_deg, places=6)
 
