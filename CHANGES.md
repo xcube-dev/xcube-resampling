@@ -1,9 +1,7 @@
 ## Changes in 0.3.4
 
 - Added `utils.transform_resolution` to convert spatial resolution between coordinate 
-  reference systems (CRS) and introduced deprecation warnings for 
-  `utils.resolution_degrees_to_meters` and `utils.resolution_meters_to_degrees`, which
-  are superseded by `utils.transform_resolution`.
+  reference systems (CRS).
 
 ## Changes in 0.3.3
 

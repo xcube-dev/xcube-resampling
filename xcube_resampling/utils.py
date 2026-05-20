@@ -359,9 +359,6 @@ def resolution_meters_to_degrees(
     """Convert spatial resolution from meters to degrees in longitude and latitude
     at a given geographic latitude.
 
-    This function is deprecated and will be removed in a future release.
-    Use `transform_resolution` instead for CRS-aware and more accurate conversions.
-
     Args:
         resolution: Spatial resolution in meters. Can be a single number
             (applied equally to both axes) or a tuple ``(x_res, y_res)``.
@@ -376,13 +373,6 @@ def resolution_meters_to_degrees(
         - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
 
     """
-    warnings.warn(
-        "resolution_meters_to_degrees is deprecated and will be removed in a future release. "
-        "Use `transform_resolution` instead for accurate CRS-based resolution handling.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
     if not isinstance(resolution, tuple):
         resolution = (resolution, resolution)
     return (
@@ -395,9 +385,6 @@ def resolution_degrees_to_meters(
     resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
 ) -> tuple[FloatInt, FloatInt]:
     """Convert spatial resolution from degrees to meters at a given geographic latitude.
-
-    This function is deprecated and will be removed in a future release.
-    Use `transform_resolution` instead for CRS-aware and more accurate conversions.
 
     Args:
         resolution: Spatial resolution in degrees. Can be a single number
@@ -413,13 +400,6 @@ def resolution_degrees_to_meters(
         - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
 
     """
-    warnings.warn(
-        "resolution_degrees_to_meters is deprecated and will be removed in a future release. "
-        "Use `transform_resolution` instead for accurate CRS-based resolution handling.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
     if not isinstance(resolution, tuple):
         resolution = (resolution, resolution)
     return (
