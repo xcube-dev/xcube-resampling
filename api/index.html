@@ -6065,8 +6065,6 @@ finite differences.</p>
 
         <p>Convert spatial resolution from meters to degrees in longitude and latitude
 at a given geographic latitude.</p>
-<p>This function is deprecated and will be removed in a future release.
-Use <code>transform_resolution</code> instead for CRS-aware and more accurate conversions.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6209,24 +6207,11 @@ Use <code>transform_resolution</code> instead for CRS-aware and more accurate co
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
-<span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_meters_to_degrees</span><span class="p">(</span>
+<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_meters_to_degrees</span><span class="p">(</span>
     <span class="n">resolution</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span> <span class="n">latitude</span><span class="p">:</span> <span class="n">FloatInt</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert spatial resolution from meters to degrees in longitude and latitude</span>
 <span class="sd">    at a given geographic latitude.</span>
-
-<span class="sd">    This function is deprecated and will be removed in a future release.</span>
-<span class="sd">    Use `transform_resolution` instead for CRS-aware and more accurate conversions.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        resolution: Spatial resolution in meters. Can be a single number</span>
@@ -6242,13 +6227,6 @@ Use <code>transform_resolution</code> instead for CRS-aware and more accurate co
 <span class="sd">        - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-        <span class="s2">&quot;resolution_meters_to_degrees is deprecated and will be removed in a future release. &quot;</span>
-        <span class="s2">&quot;Use `transform_resolution` instead for accurate CRS-based resolution handling.&quot;</span><span class="p">,</span>
-        <span class="ne">DeprecationWarning</span><span class="p">,</span>
-        <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="p">)</span>
-
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="n">resolution</span> <span class="o">=</span> <span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span>
@@ -6273,8 +6251,6 @@ Use <code>transform_resolution</code> instead for CRS-aware and more accurate co
     <div class="doc doc-contents ">
 
         <p>Convert spatial resolution from degrees to meters at a given geographic latitude.</p>
-<p>This function is deprecated and will be removed in a future release.
-Use <code>transform_resolution</code> instead for CRS-aware and more accurate conversions.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6392,7 +6368,17 @@ Use <code>transform_resolution</code> instead for CRS-aware and more accurate co
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">394</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
 <span class="normal">395</span>
 <span class="normal">396</span>
 <span class="normal">397</span>
@@ -6406,33 +6392,10 @@ Use <code>transform_resolution</code> instead for CRS-aware and more accurate co
 <span class="normal">405</span>
 <span class="normal">406</span>
 <span class="normal">407</span>
-<span class="normal">408</span>
-<span class="normal">409</span>
-<span class="normal">410</span>
-<span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
-<span class="normal">419</span>
-<span class="normal">420</span>
-<span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span>
-<span class="normal">428</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_degrees_to_meters</span><span class="p">(</span>
+<span class="normal">408</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_degrees_to_meters</span><span class="p">(</span>
     <span class="n">resolution</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span> <span class="n">latitude</span><span class="p">:</span> <span class="n">FloatInt</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert spatial resolution from degrees to meters at a given geographic latitude.</span>
-
-<span class="sd">    This function is deprecated and will be removed in a future release.</span>
-<span class="sd">    Use `transform_resolution` instead for CRS-aware and more accurate conversions.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        resolution: Spatial resolution in degrees. Can be a single number</span>
@@ -6448,13 +6411,6 @@ Use <code>transform_resolution</code> instead for CRS-aware and more accurate co
 <span class="sd">        - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-        <span class="s2">&quot;resolution_degrees_to_meters is deprecated and will be removed in a future release. &quot;</span>
-        <span class="s2">&quot;Use `transform_resolution` instead for accurate CRS-based resolution handling.&quot;</span><span class="p">,</span>
-        <span class="ne">DeprecationWarning</span><span class="p">,</span>
-        <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="p">)</span>
-
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="n">resolution</span> <span class="o">=</span> <span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span>
@@ -6558,31 +6514,31 @@ removes the original grid mapping variable (if present), and adds a new
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">431</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
 <span class="normal">432</span>
 <span class="normal">433</span>
 <span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span>
-<span class="normal">437</span>
-<span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
-<span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="normal">435</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Normalize the grid mapping of a dataset to use a standard &quot;spatial_ref&quot; coordinate.</span>
 
