@@ -21,6 +21,7 @@
 
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+import warnings
 
 import dask.array as da
 import numpy as np
@@ -313,11 +314,53 @@ def _split_bbox_antimeridian(bbox: Sequence[FloatInt]) -> Sequence[Sequence[Floa
     return [bbox]
 
 
+def transform_resolution(
+    ref_point: tuple[FloatInt, FloatInt],
+    resolution: FloatInt | tuple[FloatInt, FloatInt],
+    src_crs: str | pyproj.CRS,
+    dst_crs: str | pyproj.CRS,
+) -> tuple[FloatInt, FloatInt]:
+    """Estimate local spatial resolution in the destination CRS using
+    finite differences.
+
+    Args:
+        ref_point: Reference point (easting, northing) in the source CRS.
+        resolution: Spatial resolution in the source CRS. Can be a single number
+            (applied equally to both axes) or a tuple `(x_res, y_res)`.
+        src_crs: Source coordinate reference system.
+        dst_crs: Destination coordinate reference system.
+
+    Returns:
+        tuple: Estimated local resolution in the destination CRS as `(x_res, y_res)`.
+    """
+    transformer = pyproj.Transformer.from_crs(src_crs, dst_crs, always_xy=True)
+    if not isinstance(resolution, tuple):
+        resolution = (resolution, resolution)
+
+    # reference point
+    x0, y0 = transformer.transform(*ref_point)
+
+    # step in x direction
+    x1, y1 = transformer.transform(ref_point[0] + resolution[0], ref_point[1])
+
+    # step in y direction
+    x2, y2 = transformer.transform(ref_point[0], ref_point[1] + resolution[1])
+
+    # Euclidean distances
+    res_x = np.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+    res_y = np.sqrt((x2 - x0) ** 2 + (y2 - y0) ** 2)
+
+    return res_x, res_y
+
+
 def resolution_meters_to_degrees(
     resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
 ) -> tuple[FloatInt, FloatInt]:
     """Convert spatial resolution from meters to degrees in longitude and latitude
     at a given geographic latitude.
+
+    This function is deprecated and will be removed in a future release.
+    Use `transform_resolution` instead for CRS-aware and more accurate conversions.
 
     Args:
         resolution: Spatial resolution in meters. Can be a single number
@@ -333,6 +376,13 @@ def resolution_meters_to_degrees(
         - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
 
     """
+    warnings.warn(
+        "resolution_meters_to_degrees is deprecated and will be removed in a future release. "
+        "Use `transform_resolution` instead for accurate CRS-based resolution handling.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if not isinstance(resolution, tuple):
         resolution = (resolution, resolution)
     return (
@@ -345,6 +395,9 @@ def resolution_degrees_to_meters(
     resolution: FloatInt | tuple[FloatInt, FloatInt], latitude: FloatInt
 ) -> tuple[FloatInt, FloatInt]:
     """Convert spatial resolution from degrees to meters at a given geographic latitude.
+
+    This function is deprecated and will be removed in a future release.
+    Use `transform_resolution` instead for CRS-aware and more accurate conversions.
 
     Args:
         resolution: Spatial resolution in degrees. Can be a single number
@@ -360,6 +413,13 @@ def resolution_degrees_to_meters(
         - 1 degree of longitude ≈ 111,320 * cos(latitude) meters.
 
     """
+    warnings.warn(
+        "resolution_degrees_to_meters is deprecated and will be removed in a future release. "
+        "Use `transform_resolution` instead for accurate CRS-based resolution handling.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if not isinstance(resolution, tuple):
         resolution = (resolution, resolution)
     return (
