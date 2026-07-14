@@ -851,10 +851,10 @@ def _map_to_source_indices(pixel_target_ij, indexing):
     """
     offsets_x = da.zeros_like(pixel_target_ij[0])
     offsets_y = da.zeros_like(pixel_target_ij[1])
+    th = offsets_x.chunksize[0]
+    tw = offsets_x.chunksize[1]
 
     ny, nx = indexing.ij_bboxes.shape[1:]
-    th, tw = indexing.tile_size
-
     for j in range(ny):
         for i in range(nx):
             bbox = indexing.ij_bboxes[:, j, i]

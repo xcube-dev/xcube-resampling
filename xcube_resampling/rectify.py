@@ -287,7 +287,7 @@ def _downscale_source_dataset(
     interp_methods: Mapping[Hashable, SpatialInterpMethod],
     agg_methods: SpatialAggMethods | None,
     prevent_nan_propagations: PreventNaNPropagations,
-) -> (xr.Dataset, GridMapping):
+) -> tuple[xr.Dataset, GridMapping]:
     if all(v in (0, "nearest") for v in interp_methods.values()):
         return source_ds, source_gm
 

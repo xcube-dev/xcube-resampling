@@ -1,12 +1,19 @@
+## Changes in 0.3.5 (in development)
+
+- Fixed a bug in `rectify_dataset` where the conversion from block-space indices to 
+  global-space indices was incorrect when `output_indices_names` was provided.
+
 ## Changes in 0.3.4
 
 - Added `utils.transform_resolution` to convert spatial resolution between coordinate 
   reference systems (CRS).
 
+
 ## Changes in 0.3.3
 
 - Added function `utils.resolution_degrees_to_meters` to convert spatial resolution
   from degrees to meters at a given geographic latitude.
+
 
 ## Changes in 0.3.2
 
