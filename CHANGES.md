@@ -1,4 +1,4 @@
-## Changes in 0.3.5 (in development)
+## Changes in 0.3.5
 
 - Fixed a bug in `rectify_dataset` where the conversion from block-space indices to 
   global-space indices was incorrect when `output_indices_names` was provided.
