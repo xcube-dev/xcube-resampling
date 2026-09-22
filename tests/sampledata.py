@@ -31,11 +31,11 @@ def create_2x2_dataset_with_irregular_coords():
     lat = np.array([[56.0, 53.0], [52.0, 50.0]])
     rad = np.array([[1.0, 2.0], [3.0, 4.0]])
     return xr.Dataset(
-        dict(rad=xr.DataArray(rad, dims=("y", "x"))),
-        coords=dict(
-            lon=xr.DataArray(lon, dims=("y", "x")),
-            lat=xr.DataArray(lat, dims=("y", "x")),
-        ),
+        {"rad": xr.DataArray(rad, dims=("y", "x"))},
+        coords={
+            "lon": xr.DataArray(lon, dims=("y", "x")),
+            "lat": xr.DataArray(lat, dims=("y", "x")),
+        },
     )
 
 
@@ -45,23 +45,23 @@ def create_2x2x2_dataset_with_irregular_coords():
     time = pd.date_range("2025-08-01", periods=2)
     rad = np.array([[[1.0, 2.0], [3.0, 4.0]], [[1.0, 2.0], [3.0, 4.0]]])
     return xr.Dataset(
-        dict(
-            rad=xr.DataArray(rad, dims=("time", "y", "x")),
-            time_series=xr.DataArray(np.array([1, 2]), dims=("time")),
-        ),
-        coords=dict(
-            lon=xr.DataArray(lon, dims=("y", "x")),
-            lat=xr.DataArray(lat, dims=("y", "x")),
-            time=time,
-        ),
+        {
+            "rad": xr.DataArray(rad, dims=("time", "y", "x")),
+            "time_series": xr.DataArray(np.array([1, 2]), dims=("time")),
+        },
+        coords={
+            "lon": xr.DataArray(lon, dims=("y", "x")),
+            "lat": xr.DataArray(lat, dims=("y", "x")),
+            "time": time,
+        },
     )
 
 
 def create_8x6_dataset_with_regular_coords():
     res = 0.1
     return xr.Dataset(
-        data_vars=dict(
-            refl=xr.DataArray(
+        data_vars={
+            "refl": xr.DataArray(
                 np.array(
                     [
                         [0, 1, 0, 2, 0, 3, 0, 4],
@@ -75,7 +75,7 @@ def create_8x6_dataset_with_regular_coords():
                 ),
                 dims=("lat", "lon"),
             ),
-            ndvi=xr.DataArray(
+            "ndvi": xr.DataArray(
                 np.array(
                     [
                         [0, 1, 0, 2, 0, 3, 0, 4],
@@ -89,11 +89,11 @@ def create_8x6_dataset_with_regular_coords():
                 ),
                 dims=("lat", "lon"),
             ),
-        ),
-        coords=dict(
-            lon=xr.DataArray(50.0 + res * np.arange(0, 8) + 0.5 * res, dims="lon"),
-            lat=xr.DataArray(10.6 - res * np.arange(0, 6) - 0.5 * res, dims="lat"),
-        ),
+        },
+        coords={
+            "lon": xr.DataArray(50.0 + res * np.arange(0, 8) + 0.5 * res, dims="lon"),
+            "lat": xr.DataArray(10.6 - res * np.arange(0, 6) - 0.5 * res, dims="lat"),
+        },
     )
 
 
@@ -101,7 +101,7 @@ def create_2x8x6_dataset_with_regular_coords():
     ds = create_8x6_dataset_with_regular_coords()
     array_3d = np.repeat(ds.refl.values[np.newaxis, :, :], 2, axis=0)
     time = pd.date_range("2025-08-01", periods=2)
-    ds_3d = xr.Dataset(coords=dict(time=time, lat=ds.lat, lon=ds.lon))
+    ds_3d = xr.Dataset(coords={"time": time, "lat": ds.lat, "lon": ds.lon})
     ds_3d["refl"] = (("time", "lat", "lon"), array_3d)
     return ds_3d
 
@@ -112,12 +112,12 @@ def create_5x5_dataset_regular_utm():
     spatial_ref = np.array(0)
     band_1 = np.arange(25).reshape((5, 5))
     ds = xr.Dataset(
-        dict(
-            band_1=xr.DataArray(
-                band_1, dims=("y", "x"), attrs=dict(grid_mapping="spatial_ref")
+        {
+            "band_1": xr.DataArray(
+                band_1, dims=("y", "x"), attrs={"grid_mapping": "spatial_ref"}
             )
-        ),
-        coords=dict(x=x, y=y, spatial_ref=spatial_ref),
+        },
+        coords={"x": x, "y": y, "spatial_ref": spatial_ref},
     )
     ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32632").to_cf()
     return ds
@@ -132,18 +132,18 @@ def create_5x5_dataset_regular_utm_antimeridian():
     band_1 = np.arange(25).reshape((5, 5))
 
     ds = xr.Dataset(
-        dict(
-            band_1=xr.DataArray(
+        {
+            "band_1": xr.DataArray(
                 band_1,
                 dims=("y", "x"),
-                attrs=dict(grid_mapping="spatial_ref"),
+                attrs={"grid_mapping": "spatial_ref"},
             )
-        ),
-        coords=dict(
-            x=x,
-            y=y,
-            spatial_ref=spatial_ref,
-        ),
+        },
+        coords={
+            "x": x,
+            "y": y,
+            "spatial_ref": spatial_ref,
+        },
     )
 
     # Attach UTM zone 60N CRS
@@ -160,12 +160,12 @@ def create_2x5x5_dataset_regular_utm():
     band_1 = np.arange(25).reshape((5, 5))
     band_1 = np.repeat(band_1[np.newaxis, :, :], 2, axis=0)
     ds = xr.Dataset(
-        dict(
-            band_1=xr.DataArray(
-                band_1, dims=("time", "y", "x"), attrs=dict(grid_mapping="spatial_ref")
+        {
+            "band_1": xr.DataArray(
+                band_1, dims=("time", "y", "x"), attrs={"grid_mapping": "spatial_ref"}
             )
-        ),
-        coords=dict(time=time, x=x, y=y, spatial_ref=spatial_ref),
+        },
+        coords={"time": time, "x": x, "y": y, "spatial_ref": spatial_ref},
     )
     ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32632").to_cf()
     return ds
@@ -186,15 +186,15 @@ def create_large_dataset_for_reproject():
     onedim_data = da.from_array(np.arange(nt), chunks=(chunks["time"]))
     spatial_ref = np.array(0)
     ds = xr.Dataset(
-        dict(
-            temperature=xr.DataArray(
+        {
+            "temperature": xr.DataArray(
                 temp_data,
                 dims=("time", "y", "x"),
-                attrs=dict(grid_mapping="spatial_ref"),
+                attrs={"grid_mapping": "spatial_ref"},
             ),
-            onedim_data=xr.DataArray(onedim_data, dims="time"),
-        ),
-        coords=dict(time=times, x=x, y=y, spatial_ref=spatial_ref),
+            "onedim_data": xr.DataArray(onedim_data, dims="time"),
+        },
+        coords={"time": times, "x": x, "y": y, "spatial_ref": spatial_ref},
     )
     ds.spatial_ref.attrs = pyproj.CRS.from_epsg("3035").to_cf()
     return ds
@@ -205,13 +205,13 @@ def create_2x2_dataset_with_irregular_coords_antimeridian():
     lat = np.array([[56.0, 53.0], [52.0, 50.0]])
     rad = np.array([[1.0, 2.0], [3.0, 4.0]])
     return xr.Dataset(
-        dict(
-            rad=xr.DataArray(rad, dims=("y", "x")),
-        ),
-        coords=dict(
-            lon=xr.DataArray(lon, dims=("y", "x")),
-            lat=xr.DataArray(lat, dims=("y", "x")),
-        ),
+        {
+            "rad": xr.DataArray(rad, dims=("y", "x")),
+        },
+        coords={
+            "lon": xr.DataArray(lon, dims=("y", "x")),
+            "lat": xr.DataArray(lat, dims=("y", "x")),
+        },
     )
 
 
@@ -241,13 +241,13 @@ def create_4x4_dataset_with_irregular_coords():
         ]
     )
     return xr.Dataset(
-        dict(
-            rad=xr.DataArray(rad, dims=("y", "x")),
-        ),
-        coords=dict(
-            lon=xr.DataArray(lon, dims=("y", "x")),
-            lat=xr.DataArray(lat, dims=("y", "x")),
-        ),
+        {
+            "rad": xr.DataArray(rad, dims=("y", "x")),
+        },
+        coords={
+            "lon": xr.DataArray(lon, dims=("y", "x")),
+            "lat": xr.DataArray(lat, dims=("y", "x")),
+        },
     )
 
 
@@ -255,7 +255,7 @@ def create_2x4x4_dataset_with_irregular_coords():
     ds = create_4x4_dataset_with_irregular_coords()
     array_3d = np.repeat(ds.rad.values[np.newaxis, :, :], 2, axis=0)
     time = pd.date_range("2025-08-01", periods=2)
-    ds_3d = xr.Dataset(coords=dict(time=time, lat=ds.lat, lon=ds.lon))
+    ds_3d = xr.Dataset(coords={"time": time, "lat": ds.lat, "lon": ds.lon})
     ds_3d["rad"] = (("time", "lat", "lon"), array_3d)
     return ds_3d
 
@@ -264,12 +264,12 @@ def create_s2plus_dataset():
     x = xr.DataArray(
         [310005.0, 310015.0, 310025.0, 310035.0, 310045.0],
         dims=["x"],
-        attrs=dict(units="m", standard_name="projection_x_coordinate"),
+        attrs={"units": "m", "standard_name": "projection_x_coordinate"},
     )
     y = xr.DataArray(
         [5689995.0, 5689985.0, 5689975.0, 5689965.0, 5689955.0],
         dims=["y"],
-        attrs=dict(units="m", standard_name="projection_y_coordinate"),
+        attrs={"units": "m", "standard_name": "projection_y_coordinate"},
     )
     lon = xr.DataArray(
         [
@@ -280,7 +280,7 @@ def create_s2plus_dataset():
             [0.272784, 0.272927, 0.273071, 0.273214, 0.273358],
         ],
         dims=["y", "x"],
-        attrs=dict(units="degrees_east", standard_name="longitude"),
+        attrs={"units": "degrees_east", "standard_name": "longitude"},
     )
     lat = xr.DataArray(
         [
@@ -291,7 +291,7 @@ def create_s2plus_dataset():
             [51.329100, 51.329105, 51.32911, 51.329113, 51.329117],
         ],
         dims=["y", "x"],
-        attrs=dict(units="degrees_north", standard_name="latitude"),
+        attrs={"units": "degrees_north", "standard_name": "latitude"},
     )
     rrs_443 = xr.DataArray(
         [
@@ -302,7 +302,7 @@ def create_s2plus_dataset():
             [0.019001, 0.019001, 0.016998, 0.016998, 0.016998],
         ],
         dims=["y", "x"],
-        attrs=dict(units="sr-1", grid_mapping="transverse_mercator"),
+        attrs={"units": "sr-1", "grid_mapping": "transverse_mercator"},
     )
     rrs_665 = xr.DataArray(
         [
@@ -313,24 +313,24 @@ def create_s2plus_dataset():
             [0.033001, 0.018002, 0.007999, 0.008999, 0.021000],
         ],
         dims=["y", "x"],
-        attrs=dict(units="sr-1", grid_mapping="transverse_mercator"),
+        attrs={"units": "sr-1", "grid_mapping": "transverse_mercator"},
     )
     transverse_mercator = xr.DataArray(
         np.array([0xFFFFFFFF], dtype=np.uint32),
-        attrs=dict(
-            grid_mapping_name="transverse_mercator",
-            scale_factor_at_central_meridian=0.9996,
-            longitude_of_central_meridian=3.0,
-            latitude_of_projection_origin=0.0,
-            false_easting=500000.0,
-            false_northing=0.0,
-            semi_major_axis=6378137.0,
-            inverse_flattening=298.257223563,
-        ),
+        attrs={
+            "grid_mapping_name": "transverse_mercator",
+            "scale_factor_at_central_meridian": 0.9996,
+            "longitude_of_central_meridian": 3.0,
+            "latitude_of_projection_origin": 0.0,
+            "false_easting": 500000.0,
+            "false_northing": 0.0,
+            "semi_major_axis": 6378137.0,
+            "inverse_flattening": 298.257223563,
+        },
     )
     return xr.Dataset(
-        dict(rrs_443=rrs_443, rrs_665=rrs_665, transverse_mercator=transverse_mercator),
-        coords=dict(x=x, y=y, lon=lon, lat=lat),
+        {"rrs_443": rrs_443, "rrs_665": rrs_665, "transverse_mercator": transverse_mercator},
+        coords={"x": x, "y": y, "lon": lon, "lat": lat},
         attrs={
             "title": "T31UCS_20180802T105621",
             "conventions": "CF-1.6",
@@ -398,26 +398,26 @@ def create_highroc_dataset(no_spectra=False):
             lon=(
                 ("y", "x"),
                 lon,
-                dict(
-                    long_name="longitude",
-                    units="degrees_east",
-                ),
+                {
+                    "long_name": "longitude",
+                    "units": "degrees_east",
+                },
             ),
             lat=(
                 ("y", "x"),
                 lat,
-                dict(
-                    long_name="latitude",
-                    units="degrees_north",
-                ),
+                {
+                    "long_name": "latitude",
+                    "units": "degrees_north",
+                },
             ),
             **rtoa_vars,
             **rrs_vars,
         ),
-        attrs=dict(
-            start_date="14-APR-2017 10:27:50.183264",
-            stop_date="14-APR-2017 10:31:42.736226",
-        ),
+        attrs={
+            "start_date": "14-APR-2017 10:27:50.183264",
+            "stop_date": "14-APR-2017 10:31:42.736226",
+        },
     )
 
 
@@ -428,15 +428,15 @@ def create_waveband(index, wavelength, units, long_name=None):
     return (
         ("y", "x"),
         data,
-        dict(
-            long_name=long_name,
-            units=units,
-            spectral_band_index=index,
-            wavelength=wavelength,
-            bandwidth=15.0,
-            valid_pixel_expression="c2rcc_flags.F1",
-            _FillValue=np.nan,
-        ),
+        {
+            "long_name": long_name,
+            "units": units,
+            "spectral_band_index": index,
+            "wavelength": wavelength,
+            "bandwidth": 15.0,
+            "valid_pixel_expression": "c2rcc_flags.F1",
+            "_FillValue": np.nan,
+        },
     )
 
 
@@ -447,12 +447,12 @@ def create_conc_chl():
     return (
         ("y", "x"),
         data,
-        dict(
-            long_name="Chlorophyll concentration",
-            units="mg m^-3",
-            _FillValue=np.nan,
-            valid_pixel_expression="c2rcc_flags.F1",
-        ),
+        {
+            "long_name": "Chlorophyll concentration",
+            "units": "mg m^-3",
+            "_FillValue": np.nan,
+            "valid_pixel_expression": "c2rcc_flags.F1",
+        },
     )
 
 
@@ -462,14 +462,14 @@ def create_c2rcc_flag_var():
         data,
         dims=("y", "x"),
         name="c2rcc_flags",
-        attrs=dict(
-            long_name="C2RCC quality flags",
-            _Unsigned="true",
-            flag_meanings="F1 F2 F3 F4",
-            flag_masks=np.array([1, 2, 4, 8], np.int32),
-            flag_coding_name="c2rcc_flags",
-            flag_descriptions="D1 D2 D3 D4",
-        ),
+        attrs={
+            "long_name": "C2RCC quality flags",
+            "_Unsigned": "true",
+            "flag_meanings": "F1 F2 F3 F4",
+            "flag_masks": np.array([1, 2, 4, 8], np.int32),
+            "flag_coding_name": "c2rcc_flags",
+            "flag_descriptions": "D1 D2 D3 D4",
+        },
     )
 
 
@@ -492,13 +492,13 @@ def create_cmems_sst_flag_var():
         data,
         dims=("time", "lat", "lon"),
         name="mask",
-        attrs=dict(
-            long_name="land sea ice lake bit mask",
-            flag_masks="0b, 1b, 2b, 3b",
-            flag_meanings="sea land lake ice",
-            valid_min=0,
-            valid_max=12,
-        ),
+        attrs={
+            "long_name": "land sea ice lake bit mask",
+            "flag_masks": "0b, 1b, 2b, 3b",
+            "flag_meanings": "sea land lake ice",
+            "valid_min": 0,
+            "valid_max": 12,
+        },
     )
 
 
@@ -577,11 +577,11 @@ def create_nx8x6_dataset_with_regular_coords(days: int):
         ndvi_array_3d[d] = ndvi_base + a
 
     ds_3d = xr.Dataset(
-        data_vars=dict(
-            refl=(("time", "lat", "lon"), refl_array_3d),
-            ndvi=(("time", "lat", "lon"), ndvi_array_3d),
-        ),
-        coords=dict(time=time, lat=ds.lat, lon=ds.lon),
+        data_vars={
+            "refl": (("time", "lat", "lon"), refl_array_3d),
+            "ndvi": (("time", "lat", "lon"), ndvi_array_3d),
+        },
+        coords={"time": time, "lat": ds.lat, "lon": ds.lon},
     )
 
     return ds_3d

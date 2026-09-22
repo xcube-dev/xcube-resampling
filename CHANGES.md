@@ -1,3 +1,9 @@
+## Changes in 0.3.6 (in development)
+
+- Add `mosaic_datasets` for creating spatial mosaics from multiple `xarray.Dataset` 
+  objects, including support for overlapping tiles.
+- Add `extend_dataset` for extending a dataset to cover a given bounding box.
+
 ## Changes in 0.3.5
 
 - Fixed a bug in `rectify_dataset` where the conversion from block-space indices to 

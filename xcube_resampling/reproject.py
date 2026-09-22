@@ -253,7 +253,7 @@ def _downscale_source_dataset(
 
     w = np.floor(x_scale * (source_gm.width - 1))
     h = np.floor(y_scale * (source_gm.height - 1))
-    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+    downscaled_size = (max(w, 2), max(h, 2))
     downscale_target_gm = GridMapping.regular(
         size=downscaled_size,
         xy_min=(
@@ -354,8 +354,8 @@ def _reproject_block(
     src_data: np.ndarray,
     x_coord: np.ndarray,
     y_coord: np.ndarray,
-    src_x_res: int | float,
-    src_y_res: int | float,
+    src_x_res: float,
+    src_y_res: float,
     interp_method: SpatialInterpMethodStr,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / src_x_res

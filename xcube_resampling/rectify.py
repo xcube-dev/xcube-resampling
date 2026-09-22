@@ -298,7 +298,7 @@ def _downscale_source_dataset(
 
     w = np.floor(x_scale * (source_gm.width - 1))
     h = np.floor(y_scale * (source_gm.height - 1))
-    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+    downscaled_size = (max(w, 2), max(h, 2))
     source_ds = resample_dataset(
         source_ds,
         ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),

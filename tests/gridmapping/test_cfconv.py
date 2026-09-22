@@ -41,21 +41,21 @@ CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
 CRS_UTM_33N = pyproj.crs.CRS(32633)
 
 CRS_ROTATED_POLE = pyproj.crs.CRS.from_cf(
-    dict(
-        grid_mapping_name="rotated_latitude_longitude",
-        grid_north_pole_latitude=32.5,
-        grid_north_pole_longitude=170.0,
-    )
+    {
+        "grid_mapping_name": "rotated_latitude_longitude",
+        "grid_north_pole_latitude": 32.5,
+        "grid_north_pole_longitude": 170.0,
+    }
 )
 
 
 class GetDatasetGridMappingsTest(unittest.TestCase):
     def test_no_crs_lon_lat_common_names(self):
         dataset = xr.Dataset(
-            coords=dict(
-                lon=xr.DataArray(np.linspace(10, 12, 11), dims="lon"),
-                lat=xr.DataArray(np.linspace(50, 52, 11), dims="lat"),
-            )
+            coords={
+                "lon": xr.DataArray(np.linspace(10, 12, 11), dims="lon"),
+                "lat": xr.DataArray(np.linspace(50, 52, 11), dims="lat"),
+            }
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -72,18 +72,18 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_no_crs_lon_lat_standard_names(self):
         dataset = xr.Dataset(
-            coords=dict(
-                weird_x=xr.DataArray(
+            coords={
+                "weird_x": xr.DataArray(
                     np.linspace(10, 12, 11),
                     dims="i",
-                    attrs=dict(standard_name="longitude"),
+                    attrs={"standard_name": "longitude"},
                 ),
-                weird_y=xr.DataArray(
+                "weird_y": xr.DataArray(
                     np.linspace(50, 52, 11),
                     dims="j",
-                    attrs=dict(standard_name="latitude"),
+                    attrs={"standard_name": "latitude"},
                 ),
-            )
+            }
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -100,11 +100,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_crs_x_y_with_common_names(self):
         dataset = xr.Dataset(
-            dict(crs=xr.DataArray(0, attrs=CRS_UTM_33N.to_cf())),
-            coords=dict(
-                x=xr.DataArray(np.linspace(1000, 12000, 11), dims="x"),
-                y=xr.DataArray(np.linspace(5000, 52000, 11), dims="y"),
-            ),
+            {"crs": xr.DataArray(0, attrs=CRS_UTM_33N.to_cf())},
+            coords={
+                "x": xr.DataArray(np.linspace(1000, 12000, 11), dims="x"),
+                "y": xr.DataArray(np.linspace(5000, 52000, 11), dims="y"),
+            },
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -121,19 +121,19 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_crs_x_y_with_standard_names(self):
         dataset = xr.Dataset(
-            dict(crs=xr.DataArray(0, attrs=CRS_UTM_33N.to_cf())),
-            coords=dict(
-                myx=xr.DataArray(
+            {"crs": xr.DataArray(0, attrs=CRS_UTM_33N.to_cf())},
+            coords={
+                "myx": xr.DataArray(
                     np.linspace(1000, 12000, 11),
                     dims="x",
-                    attrs=dict(standard_name="projection_x_coordinate"),
+                    attrs={"standard_name": "projection_x_coordinate"},
                 ),
-                myy=xr.DataArray(
+                "myy": xr.DataArray(
                     np.linspace(5000, 52000, 11),
                     dims="y",
-                    attrs=dict(standard_name="projection_y_coordinate"),
+                    attrs={"standard_name": "projection_y_coordinate"},
                 ),
-            ),
+            },
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -151,14 +151,14 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
     def test_latitude_longitude_with_x_y(self):
         # This is what we get when opening a CRS-84 GeoTIFF using rioxarray
         dataset = xr.Dataset(
-            dict(
-                band_1=xr.DataArray(np.zeros((11, 11)), dims=["y", "x"]),
-                spatial_ref=xr.DataArray(0, attrs=CRS_CRS84.to_cf()),
-            ),
-            coords=dict(
-                x=xr.DataArray(np.linspace(10, 20, 11), dims="x"),
-                y=xr.DataArray(np.linspace(50, 40, 11), dims="y"),
-            ),
+            {
+                "band_1": xr.DataArray(np.zeros((11, 11)), dims=["y", "x"]),
+                "spatial_ref": xr.DataArray(0, attrs=CRS_CRS84.to_cf()),
+            },
+            coords={
+                "x": xr.DataArray(np.linspace(10, 20, 11), dims="x"),
+                "y": xr.DataArray(np.linspace(50, 40, 11), dims="y"),
+            },
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -175,10 +175,10 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_crs_in_attrs(self):
         dataset = xr.Dataset(
-            coords=dict(
-                lon=xr.DataArray(np.linspace(10, 12, 11), dims="lon"),
-                lat=xr.DataArray(np.linspace(50, 52, 11), dims="lat"),
-            ),
+            coords={
+                "lon": xr.DataArray(np.linspace(10, 12, 11), dims="lon"),
+                "lat": xr.DataArray(np.linspace(50, 52, 11), dims="lat"),
+            },
             attrs={
                 "crs_wkt": (
                     'GEOGCRS["WGS 84",ENSEMBLE["World Geodetic System 1984 ensemble",'
@@ -223,10 +223,10 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_emit_warning(self):
         dataset = xr.Dataset(
-            coords=dict(
-                lon=xr.DataArray([10], dims="lon"),
-                lat=xr.DataArray([50], dims="lat"),
-            ),
+            coords={
+                "lon": xr.DataArray([10], dims="lon"),
+                "lat": xr.DataArray([50], dims="lat"),
+            },
         )
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -236,11 +236,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_rotated_pole_with_common_names(self):
         dataset = xr.Dataset(
-            dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
-            coords=dict(
-                rlon=xr.DataArray(np.linspace(-180, 180, 11), dims="rlon"),
-                rlat=xr.DataArray(np.linspace(0, 90, 11), dims="rlat"),
-            ),
+            {"rotated_pole": xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())},
+            coords={
+                "rlon": xr.DataArray(np.linspace(-180, 180, 11), dims="rlon"),
+                "rlat": xr.DataArray(np.linspace(0, 90, 11), dims="rlat"),
+            },
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -256,19 +256,19 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
 
     def test_rotated_pole_with_standard_names(self):
         dataset = xr.Dataset(
-            dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
-            coords=dict(
-                u=xr.DataArray(
+            {"rotated_pole": xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())},
+            coords={
+                "u": xr.DataArray(
                     np.linspace(-180, 180, 11),
                     dims="u",
-                    attrs=dict(standard_name="grid_longitude"),
+                    attrs={"standard_name": "grid_longitude"},
                 ),
-                v=xr.DataArray(
+                "v": xr.DataArray(
                     np.linspace(0, 90, 11),
                     dims="v",
-                    attrs=dict(standard_name="grid_latitude"),
+                    attrs={"standard_name": "grid_latitude"},
                 ),
-            ),
+            },
         )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
@@ -359,12 +359,12 @@ class XarrayDecodeCfTest(unittest.TestCase):
 
     @classmethod
     def _write_coords(cls, noise, crs, lon, lat):
-        dataset = xr.Dataset(dict(noise=noise, crs=crs), coords=dict(lon=lon, lat=lat))
+        dataset = xr.Dataset({"noise": noise, "crs": crs}, coords={"lon": lon, "lat": lat})
         dataset.to_zarr("noise.zarr", mode="w")
 
     @classmethod
     def _write_data_vars(cls, noise, crs, lon, lat):
-        dataset = xr.Dataset(dict(noise=noise, crs=crs, lon=lon, lat=lat))
+        dataset = xr.Dataset({"noise": noise, "crs": crs, "lon": lon, "lat": lat})
         dataset.to_zarr("noise.zarr", mode="w")
 
     @classmethod

@@ -107,7 +107,7 @@ class RoundToFractionTest(unittest.TestCase):
             [1143506.2928512183, 1100000.0, Fraction(1100000, 1)],
             [217971970.75235566, 220000000.0, Fraction(220000000, 1)],
         ]
-        self._assert_values(values, dict())
+        self._assert_values(values, {})
 
     def test_3_025(self):
         actual = round_to_fraction(1, digits=1, resolution=0.25)
@@ -133,7 +133,7 @@ class RoundToFractionTest(unittest.TestCase):
             [1143506.2928512183, 1142500.0, Fraction(1142500, 1)],
             [217971970.75235566, 218000000.0, Fraction(218000000, 1)],
         ]
-        self._assert_values(values, dict(digits=3, resolution=0.25))
+        self._assert_values(values, {"digits": 3, "resolution": 0.25})
 
     def test_2_5(self):
         values = [
@@ -157,7 +157,7 @@ class RoundToFractionTest(unittest.TestCase):
             [1143506.2928512183, 1150000.0, Fraction(1150000, 1)],
             [217971970.75235566, 220000000.0, Fraction(220000000, 1)],
         ]
-        self._assert_values(values, dict(digits=2, resolution=0.5))
+        self._assert_values(values, {"digits": 2, "resolution": 0.5})
 
     def _assert_values(self, values, kwargs):
         if self.dump:

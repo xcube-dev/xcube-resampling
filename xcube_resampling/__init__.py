@@ -21,6 +21,8 @@
 
 
 from .affine import affine_transform_dataset
+from .extend import extend_dataset
+from .mosaic import mosaic_datasets
 from .rectify import rectify_dataset
 from .reproject import reproject_dataset
 from .spatial import resample_in_space
@@ -29,9 +31,11 @@ from .version import __version__
 
 __all__ = [
     "__version__",
-    "resample_in_space",
     "affine_transform_dataset",
+    "extend_dataset",
+    "mosaic_datasets",
     "rectify_dataset",
     "reproject_dataset",
+    "resample_in_space",
     "resample_in_time",
 ]

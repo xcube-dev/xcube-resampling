@@ -102,7 +102,7 @@ def new_regular_grid_mapping(
     xy_res: float | tuple[float, float],
     crs: str | pyproj.crs.CRS,
     *,
-    tile_size: int | tuple[int, int] = None,
+    tile_size: int | tuple[int, int] | None = None,
     is_j_axis_up: bool = False,
 ) -> GridMapping:
     width, height = _normalize_int_pair(size, name="size")
@@ -143,7 +143,7 @@ def new_regular_grid_mapping(
 def to_regular_grid_mapping(
     grid_mapping: GridMapping,
     *,
-    tile_size: int | tuple[int, int] = None,
+    tile_size: int | tuple[int, int] | None = None,
     is_j_axis_up: bool = False,
 ) -> GridMapping:
     if grid_mapping.is_regular:
@@ -159,8 +159,8 @@ def to_regular_grid_mapping(
 
     width = round((x_max - x_min + x_res) / x_res)
     height = round((y_max - y_min + y_res) / y_res)
-    width = width if width >= 2 else 2
-    height = height if height >= 2 else 2
+    width = max(width, 2)
+    height = max(height, 2)
 
     if tile_size is None:
         tile_size = grid_mapping.tile_size

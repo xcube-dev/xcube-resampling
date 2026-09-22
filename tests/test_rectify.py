@@ -536,7 +536,7 @@ class RectifyDatasetTest(unittest.TestCase):
 
     def test_rectify_different_crs_dask(self):
         source_ds = create_4x4_dataset_with_irregular_coords()
-        source_ds = source_ds.chunk(dict(y=2, x=2))
+        source_ds = source_ds.chunk({"y": 2, "x": 2})
         target_gm = GridMapping.regular(
             size=(3, 3), xy_min=(3650000, 3250000), xy_res=100000, crs="epsg:3035"
         )

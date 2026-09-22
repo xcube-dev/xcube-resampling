@@ -150,10 +150,10 @@ class GridMapping(abc.ABC):
     def derive(
         self,
         /,
-        xy_var_names: tuple[str, str] = None,
-        xy_dim_names: tuple[str, str] = None,
-        tile_size: int | tuple[int, int] = None,
-        is_j_axis_up: bool = None,
+        xy_var_names: tuple[str, str] | None = None,
+        xy_dim_names: tuple[str, str] | None = None,
+        tile_size: int | tuple[int, int] | None = None,
+        is_j_axis_up: bool | None = None,
     ) -> "GridMapping":
         """Derive a new grid mapping from this one with some properties changed.
 
@@ -578,8 +578,8 @@ class GridMapping(abc.ABC):
 
     def to_coords(
         self,
-        xy_var_names: tuple[str, str] = None,
-        xy_dim_names: tuple[str, str] = None,
+        xy_var_names: tuple[str, str] | None = None,
+        xy_dim_names: tuple[str, str] | None = None,
         exclude_bounds: bool = False,
         reuse_coords: bool = False,
     ) -> Mapping[str, xr.DataArray]:
@@ -616,8 +616,8 @@ class GridMapping(abc.ABC):
         self,
         crs: str | pyproj.crs.CRS,
         *,
-        tile_size: int | tuple[int, int] = None,
-        xy_var_names: tuple[str, str] = None,
+        tile_size: int | tuple[int, int] | None = None,
+        xy_var_names: tuple[str, str] | None = None,
         tolerance: float = DEFAULT_TOLERANCE,
     ) -> "GridMapping":
         """Transform this grid mapping so it uses the given
@@ -652,7 +652,7 @@ class GridMapping(abc.ABC):
         xy_res: float | tuple[float, float],
         crs: str | pyproj.crs.CRS,
         *,
-        tile_size: int | tuple[int, int] = None,
+        tile_size: int | tuple[int, int] | None = None,
         is_j_axis_up: bool = False,
     ) -> "GridMapping":
         """Create a new regular grid mapping.
@@ -686,7 +686,7 @@ class GridMapping(abc.ABC):
         bbox: Sequence[FloatInt],
         xy_res: float | tuple[float, float],
         crs: str | pyproj.crs.CRS,
-        tile_size: int | tuple[int, int] = None,
+        tile_size: int | tuple[int, int] | None = None,
         is_j_axis_up: bool = False,
     ) -> "GridMapping":
         """Creates a regular grid mapping for a given coordinate reference system based
@@ -849,7 +849,7 @@ class GridMapping(abc.ABC):
         return False
 
     @classmethod
-    def assert_regular(cls, value: Any, name: str = None):
+    def assert_regular(cls, value: Any, name: str | None = None):
         assert_instance(value, GridMapping, name=name)
         if not value.is_regular:
             raise ValueError(f"{name or 'value'} must be a regular grid mapping")

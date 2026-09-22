@@ -19,8 +19,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from collections.abc import Hashable
-from typing import Iterable, Literal, Mapping, Sequence
+from collections.abc import Hashable, Iterable, Mapping, Sequence
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -203,7 +203,7 @@ def _apply_interpolation(
             skipna=True, closed="left", label="left", time=frequency, offset=offset
         )
         for method in var_methods:
-            func = getattr(resampler, "interpolate")
+            func = resampler.interpolate
             if interp_methods is None or isinstance(interp_methods, str):
                 var_name_out = var_name
             else:
@@ -246,7 +246,7 @@ def _guess_resampling_operation(
     frequency: str,
     interp_methods: TemporalInterpMethods | None = None,
     agg_methods: TemporalAggMethods | None = None,
-) -> Literal["agg", "interp", None]:
+) -> Literal["agg", "interp"] | None:
 
     if agg_methods and interp_methods:
         raise ValueError(
@@ -295,7 +295,7 @@ def _get_temporal_interp_method(
                 f"{var.dtype!r}. Defaults are assigned."
             )
             interp_method = assign_defaults(var.dtype)
-    elif isinstance(interp_methods, str) or isinstance(interp_methods, Sequence):
+    elif isinstance(interp_methods, (str, Sequence)):
         interp_method = interp_methods
     else:
         interp_method = assign_defaults(var.dtype)
@@ -322,7 +322,7 @@ def _get_temporal_agg_method(
                 f"{var.dtype!r}. Defaults are assigned."
             )
             agg_method = assign_defaults(var.dtype)
-    elif isinstance(agg_methods, str) or isinstance(agg_methods, Sequence):
+    elif isinstance(agg_methods, (str, Sequence)):
         agg_method = agg_methods
     else:
         agg_method = assign_defaults(var.dtype)

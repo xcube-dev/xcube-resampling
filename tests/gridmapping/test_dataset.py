@@ -47,11 +47,11 @@ class DatasetGridMappingTest(unittest.TestCase):
         rad = np.random.random(3 * 4).reshape((3, 4))
         dims = ("y", "x")
         dataset = xr.Dataset(
-            dict(
-                lon=xr.DataArray(lon, dims=dims),
-                lat=xr.DataArray(lat, dims=dims),
-                rad=xr.DataArray(rad, dims=dims),
-            )
+            {
+                "lon": xr.DataArray(lon, dims=dims),
+                "lat": xr.DataArray(lat, dims=dims),
+                "rad": xr.DataArray(rad, dims=dims),
+            }
         )
         gm = GridMapping.from_dataset(dataset)
         self.assertEqual((4, 3), gm.size)

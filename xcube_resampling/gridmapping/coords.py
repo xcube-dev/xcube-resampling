@@ -101,8 +101,8 @@ def new_grid_mapping_from_coords(
     y_coords: xr.DataArray,
     crs: str | pyproj.crs.CRS,
     *,
-    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] = None,
-    tile_size: int | tuple[int, int] = None,
+    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] | None = None,
+    tile_size: int | tuple[int, int] | None = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
     crs = _normalize_crs(crs)
@@ -150,8 +150,8 @@ def new_1d_grid_mapping_from_coords(
     crs: str | pyproj.crs.CRS,
     xy_var_names: tuple[str, str],
     *,
-    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] = None,
-    tile_size: int | tuple[int, int] = None,
+    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] | None = None,
+    tile_size: int | tuple[int, int] | None = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> Coords1DGridMapping:
 
@@ -229,8 +229,8 @@ def new_2d_grid_mapping_from_coords(
     crs: str | pyproj.crs.CRS,
     xy_var_names: tuple[str, str],
     *,
-    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] = None,
-    tile_size: int | tuple[int, int] = None,
+    xy_bbox: tuple[FloatInt, FloatInt, FloatInt, FloatInt] | None = None,
+    tile_size: int | tuple[int, int] | None = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> Coords2DGridMapping:
 
@@ -341,8 +341,8 @@ def new_2d_grid_mapping_from_coords(
 
 def grid_mapping_to_coords(
     grid_mapping: GridMapping,
-    xy_var_names: tuple[str, str] = None,
-    xy_dim_names: tuple[str, str] = None,
+    xy_var_names: tuple[str, str] | None = None,
+    xy_dim_names: tuple[str, str] | None = None,
     reuse_coords: bool = False,
     exclude_bounds: bool = False,
 ) -> dict[str, xr.DataArray]:
@@ -410,25 +410,25 @@ def grid_mapping_to_coords(
         y_data = np.linspace(y2 - y_res_05, y1 + y_res_05, h, dtype=dtype)
 
     if grid_mapping.crs.is_geographic:
-        x_attrs = dict(
-            long_name="longitude coordinate",
-            standard_name="longitude",
-            units="degrees_east",
-        )
-        y_attrs = dict(
-            long_name="latitude coordinate",
-            standard_name="latitude",
-            units="degrees_north",
-        )
+        x_attrs = {
+            "long_name": "longitude coordinate",
+            "standard_name": "longitude",
+            "units": "degrees_east",
+        }
+        y_attrs = {
+            "long_name": "latitude coordinate",
+            "standard_name": "latitude",
+            "units": "degrees_north",
+        }
     else:
-        x_attrs = dict(
-            long_name="x coordinate of projection",
-            standard_name="projection_x_coordinate",
-        )
-        y_attrs = dict(
-            long_name="y coordinate of projection",
-            standard_name="projection_y_coordinate",
-        )
+        x_attrs = {
+            "long_name": "x coordinate of projection",
+            "standard_name": "projection_x_coordinate",
+        }
+        y_attrs = {
+            "long_name": "y coordinate of projection",
+            "standard_name": "projection_y_coordinate",
+        }
 
     x_coords = xr.DataArray(x_data, dims=x_dim_name, attrs=x_attrs)
     y_coords = xr.DataArray(y_data, dims=y_dim_name, attrs=y_attrs)
