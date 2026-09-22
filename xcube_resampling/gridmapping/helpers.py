@@ -68,7 +68,7 @@ def _normalize_crs(crs: str | pyproj.CRS) -> pyproj.CRS:
 
 
 def _normalize_int_pair(
-    value: Any, name: str = None, default: tuple[int, int] | None = UNDEFINED
+    value: Any, name: str | None = None, default: tuple[int, int] | None = UNDEFINED
 ) -> tuple[int, int]:
     if isinstance(value, int):
         return value, value
@@ -83,7 +83,9 @@ def _normalize_int_pair(
 
 
 def _normalize_number_pair(
-    value: Any, name: str = None, default: tuple[FloatInt, FloatInt] | None = UNDEFINED
+    value: Any,
+    name: str | None = None,
+    default: tuple[FloatInt, FloatInt] | None = UNDEFINED,
 ) -> tuple[FloatInt, FloatInt]:
     if isinstance(value, (float, int)):
         x, y = value, value
@@ -130,7 +132,7 @@ def get_dataset_chunks(dataset: xr.Dataset) -> dict[Hashable, int]:
     # Record the frequencies of chunk sizes for
     # each dimension d in each data variable var
     dim_size_counts: dict[Hashable, dict[int, int]] = {}
-    for var_name, var in dataset.data_vars.items():
+    for var in dataset.data_vars.values():
         if var.chunks:
             for d, c in zip(var.dims, var.chunks):
                 # compute max chunk size max_c from
@@ -173,7 +175,7 @@ def _default_xy_dim_names(crs: pyproj.crs.CRS) -> tuple[str, str]:
     return _default_xy_var_names(crs)
 
 
-def _assert_valid_xy_names(value: Any, name: str = None):
+def _assert_valid_xy_names(value: Any, name: str | None = None):
     assert_instance(value, tuple, name=name)
     assert_true(
         len(value) == 2 and all(value) and value[0] != value[1],
@@ -201,7 +203,7 @@ _RESOLUTIONS = {
     100: (1, -1),
 }
 
-_RESOLUTION_SET = {k / 100 for k in _RESOLUTIONS.keys()}
+_RESOLUTION_SET = {k / 100 for k in _RESOLUTIONS}
 
 
 def round_to_fraction(value: float, digits: int = 2, resolution: float = 1) -> Fraction:
@@ -255,5 +257,5 @@ def scale_xy_res_and_size(
     w, h = round(x_scale * w), round(y_scale * h)
     return (
         (x_res / x_scale, y_res / y_scale),
-        (w if w >= 2 else 2, h if h >= 2 else 2),
+        (max(w, 2), max(h, 2)),
     )

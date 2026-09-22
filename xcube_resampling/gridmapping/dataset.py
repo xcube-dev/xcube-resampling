@@ -32,9 +32,9 @@ def new_grid_mapping_from_dataset(
     dataset: xr.Dataset,
     *,
     crs: str | pyproj.crs.CRS = None,
-    tile_size: int | tuple[str, str] = None,
+    tile_size: int | tuple[str, str] | None = None,
     prefer_crs: str | pyproj.crs.CRS = None,
-    prefer_is_regular: bool = None,
+    prefer_is_regular: bool | None = None,
     emit_warnings: bool = False,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:

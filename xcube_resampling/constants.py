@@ -21,33 +21,33 @@
 
 
 import logging
-from collections.abc import Callable, Hashable, Mapping
-from typing import Annotated, Literal, Sequence, TypeAlias
+from collections.abc import Callable, Hashable, Mapping, Sequence
+from typing import Annotated, Literal, TypeAlias
 
 import numpy as np
 
 from .coarsen import center, first, last, mean, median, mode, std, var
 
 __all__ = [
-    "FloatInt",
+    "FILLVALUE_FLOAT",
+    "FILLVALUE_INT",
+    "FILLVALUE_UINT8",
+    "FILLVALUE_UINT16",
+    "LOG",
     "AffineTransformMatrix",
+    "FillValues",
+    "FloatInt",
+    "PreventNaNPropagations",
     "SpatialAggMethod",
     "SpatialAggMethods",
+    "SpatialInterpMethod",
     "SpatialInterpMethodInt",
     "SpatialInterpMethodStr",
-    "SpatialInterpMethod",
     "SpatialInterpMethods",
     "TemporalAggMethod",
     "TemporalAggMethods",
-    "TemporalInterpMethods",
     "TemporalInterpMethod",
-    "PreventNaNPropagations",
-    "FillValues",
-    "FILLVALUE_UINT8",
-    "FILLVALUE_UINT16",
-    "FILLVALUE_INT",
-    "FILLVALUE_FLOAT",
-    "LOG",
+    "TemporalInterpMethods",
 ]
 
 FloatInt = int | float
@@ -163,6 +163,9 @@ FILLVALUE_UINT16 = 65535
 
 FILLVALUE_UINT32 = 4294967295
 """Default fill value for uint32 arrays."""
+
+FILLVALUE_UINT64 = 18446744073709551615
+"""Default fill value for uint64 arrays."""
 
 FILLVALUE_INT = -1
 """Default fill value for integer arrays."""

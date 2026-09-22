@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import dask.array as da
 import numpy as np
@@ -10,19 +11,25 @@ from xcube_resampling.constants import (
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
     FILLVALUE_UINT32,
+    FILLVALUE_UINT64,
 )
 from xcube_resampling.gridmapping import GridMapping
 
 # noinspection PyProtectedMember
 from xcube_resampling.utils import (
+    SourceTileIndexing,
+    _clip_if_needed,
     _create_empty_dataset,
     _get_fill_value,
     _get_grid_mapping_name,
     _get_prevent_nan_propagation,
     _get_spatial_agg_method,
     _get_spatial_interp_method,
+    _grid_spacing,
     _prep_spatial_interp_methods_downscale,
+    _reorganize_tiled_array,
     _select_variables,
+    _validate_bbox,
     bbox_overlap,
     clip_dataset_by_bbox,
     get_spatial_coords,
@@ -33,10 +40,74 @@ from xcube_resampling.utils import (
     transform_resolution,
 )
 
-from .sampledata import create_2x4x4_dataset_with_irregular_coords
+from .sampledata import (
+    create_2x4x4_dataset_with_irregular_coords,
+    create_5x5_dataset_regular_utm,
+)
 
 
 class TestUtils(unittest.TestCase):
+
+    def test_validate_bbox(self):
+        self.assertEqual(_validate_bbox([0, 1, 2, 3]), (0.0, 1.0, 2.0, 3.0))
+
+        with self.assertRaisesRegex(ValueError, "must be a sequence of 4 numbers"):
+            _validate_bbox(None)
+        with self.assertRaisesRegex(ValueError, "must consist of 4 numbers"):
+            _validate_bbox((0, 1, 2))
+        with self.assertRaisesRegex(ValueError, "only numeric values"):
+            _validate_bbox((0, "invalid", 2, 3))
+        with self.assertRaisesRegex(ValueError, "only finite values"):
+            _validate_bbox((0, np.nan, 2, 3))
+        with self.assertRaisesRegex(ValueError, "xmin < xmax and ymin < ymax"):
+            _validate_bbox((2, 1, 0, 3))
+
+    def test_grid_spacing_increasing(self):
+        self.assertEqual(_grid_spacing(np.array([0.5, 1.5, 2.5]), "x"), 1.0)
+
+    def test_grid_spacing_decreasing(self):
+        self.assertEqual(_grid_spacing(np.array([2.5, 1.5, 0.5]), "y"), -1.0)
+
+    def test_grid_spacing_repeated_coordinate(self):
+        with self.assertRaisesRegex(ValueError, "'x' must be strictly monotonic"):
+            _grid_spacing(np.array([0.5, 0.5, 1.5]), "x")
+
+    def test_grid_spacing_irregular_coordinate(self):
+        with self.assertRaisesRegex(ValueError, "'y' must be regularly spaced"):
+            _grid_spacing(np.array([0.5, 1.5, 3.0]), "y")
+
+    def test_reorganize_tiled_array_empty_tile(self):
+        array = da.arange(4, chunks=4).reshape((2, 2))
+        indexing = SourceTileIndexing(
+            ij_bboxes=np.full((4, 1, 1), -1, dtype=np.int32),
+            pad_width=((0, 0), (0, 0)),
+            output_size=(2, 2),
+            tile_size=(2, 2),
+        )
+
+        actual = _reorganize_tiled_array(array, indexing, fill_value=99).compute()
+
+        np.testing.assert_array_equal(actual, np.full((2, 2), 99))
+
+    def test_clip_if_needed_returns_empty_for_tiny_clipped_overlap(self):
+        source_ds = create_5x5_dataset_regular_utm()
+        source_gm = GridMapping.from_dataset(source_ds)
+        target_gm = GridMapping.regular(
+            size=(5, 5),
+            xy_min=(565600.0, 5933800.0),
+            xy_res=100.0,
+            crs="epsg:32632",
+        )
+        clipped = source_ds.isel(x=slice(0, 1))
+
+        with patch("xcube_resampling.utils.clip_dataset_by_bbox", return_value=clipped):
+            actual, actual_gm, is_empty = _clip_if_needed(
+                source_ds, source_gm, target_gm, fill_values=None
+            )
+
+        self.assertTrue(is_empty)
+        self.assertIs(actual_gm, target_gm)
+        self.assertEqual(actual.sizes["x"], target_gm.width)
 
     def test_get_spatial_coords_lon_lat(self):
         # Dataset with "lon" and "lat"
@@ -296,6 +367,7 @@ class TestUtils(unittest.TestCase):
         uint8_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint8), dims=["x"])
         uint16_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint16), dims=["x"])
         uint32_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint32), dims=["x"])
+        uint64_var = xr.DataArray(np.array([1, 2, 3], dtype=np.uint64), dims=["x"])
         int_var = xr.DataArray(np.array([1, 2, 3], dtype=np.int32), dims=["x"])
         bool_var = xr.DataArray(
             np.array([True, False, True], dtype=np.bool_), dims=["x"]
@@ -330,6 +402,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(_get_fill_value(None, "var", uint8_var), FILLVALUE_UINT8)
         self.assertEqual(_get_fill_value(None, "var", uint16_var), FILLVALUE_UINT16)
         self.assertEqual(_get_fill_value(None, "var", uint32_var), FILLVALUE_UINT32)
+        self.assertEqual(_get_fill_value(None, "var", uint64_var), FILLVALUE_UINT64)
         self.assertEqual(_get_fill_value(None, "var", int_var), FILLVALUE_INT)
         self.assertEqual(_get_fill_value(None, "var", bool_var), 0)
         self.assertTrue(np.isnan(_get_fill_value(None, "var", float_var)))
@@ -532,7 +605,7 @@ class TestClipDatasetByBBox(unittest.TestCase):
     def test_clip_dataset_by_bbox_invalid_bbox(self):
         with self.assertRaises(ValueError) as context:
             clip_dataset_by_bbox(self.ds_1d, bbox=[0, 0, 1])
-        self.assertIn("Expected bbox of length 4", str(context.exception))
+        self.assertIn("must consist of 4 numbers", str(context.exception))
 
     def test_unsupported_coord_dims(self):
         ds = self.ds_1d.copy()
@@ -562,7 +635,7 @@ class TestClipDatasetByBBox(unittest.TestCase):
 
     def test_create_empty_dataset_3d(self):
         source_ds = create_2x4x4_dataset_with_irregular_coords()
-        source_ds = source_ds.chunk(dict(y=2, x=2))
+        source_ds = source_ds.chunk({"y": 2, "x": 2})
         source_gm = GridMapping.from_dataset(source_ds)
         target_gm = GridMapping.regular(
             size=(3, 3), xy_min=(0.0, 0.0), xy_res=0.1, crs="epsg:4326"

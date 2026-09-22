@@ -197,8 +197,8 @@ def resample_dataset(
             geometry. Non-spatial variables are preserved. Variables with only one
             spatial dimension are excluded.
     """
-    data_vars = dict()
-    coords = dict()
+    data_vars = {}
+    coords = {}
     for var_name, data_array in dataset.variables.items():
         data_array = xr.DataArray(data_array)
         new_data_array = None
@@ -302,7 +302,7 @@ def _downscale(
     prevent_nan_propagation: bool,
     fill_value: FloatInt,
 ) -> da.Array:
-    (i_scale, _, i_off), (_, j_scale, j_off) = affine_matrix
+    (i_scale, _, _i_off), (_, j_scale, _j_off) = affine_matrix
     j_divisor = math.ceil(abs(j_scale))
     i_divisor = math.ceil(abs(i_scale))
     affine_matrix = (
@@ -350,14 +350,14 @@ def _upscale(
             "as it causes unintended blending across the non-spatial (e.g., time) "
             "dimension."
         )
-    kwargs = dict(
-        offset=offset,
-        order=interp_method,
-        output_shape=output_shape[-2:],
-        output_chunks=output_chunks[-2:],
-        mode="constant",
-        cval=fill_value,
-    )
+    kwargs = {
+        "offset": offset,
+        "order": interp_method,
+        "output_shape": output_shape[-2:],
+        "output_chunks": output_chunks[-2:],
+        "mode": "constant",
+        "cval": fill_value,
+    }
 
     def _transform_slice(slice_2d: da.Array):
         if prevent_nan_propagation and interp_method > 0:

@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import warnings
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
@@ -35,6 +34,7 @@ from .constants import (
     FILLVALUE_UINT8,
     FILLVALUE_UINT16,
     FILLVALUE_UINT32,
+    FILLVALUE_UINT64,
     INTERP_METHOD_MAPPING,
     LOG,
     FillValues,
@@ -143,15 +143,15 @@ def clip_dataset_by_bbox(
         A spatial subset of the input dataset clipped to the bounding box.
 
     Raises:
-        ValueError: If `bbox` does not contain exactly four elements.
+        ValueError: If `bbox` is not a finite, numeric bounding box with
+            ``xmin < xmax`` and ``ymin < ymax``.
         KeyError: If spatial coordinate names cannot be determined from the dataset.
 
     Notes:
         If the bounding box does not overlap with the dataset extent, the returned
         dataset may contain one or more zero-sized dimensions.
     """
-    if len(bbox) != 4:
-        raise ValueError(f"Expected bbox of length 4, got: {bbox}")
+    bbox = _validate_bbox(bbox)
 
     if spatial_coords is None:
         spatial_coords = get_spatial_coords(ds)
@@ -173,6 +173,27 @@ def clip_dataset_by_bbox(
             f"Check if the bounding box {bbox} overlaps with the dataset extent."
         )
     return ds
+
+
+def _validate_bbox(bbox: Sequence[FloatInt]) -> tuple[float, float, float, float]:
+    """Validate and normalize a bounding box."""
+    try:
+        bbox_length = len(bbox)
+    except TypeError as exc:
+        raise ValueError("`bbox` argument must be a sequence of 4 numbers.") from exc
+    if bbox_length != 4:
+        raise ValueError(
+            f"`bbox` argument must consist of 4 numbers, but is {bbox_length}."
+        )
+    try:
+        bbox = tuple(float(value) for value in bbox)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("`bbox` argument must contain only numeric values.") from exc
+    if not np.all(np.isfinite(bbox)):
+        raise ValueError("`bbox` argument must contain only finite values.")
+    if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
+        raise ValueError("`bbox` argument must satisfy xmin < xmax and ymin < ymax.")
+    return bbox
 
 
 def _clip_2dcoord_dataset_by_bbox(
@@ -287,20 +308,20 @@ def bbox_overlap(
     target_bboxes = _split_bbox_antimeridian(target_bbox)
 
     inter_area = 0.0
-    for source_bbox in source_bboxes:
-        for target_bbox in target_bboxes:
-            inter_min_x = max(source_bbox[0], target_bbox[0])
-            inter_min_y = max(source_bbox[1], target_bbox[1])
-            inter_max_x = min(source_bbox[2], target_bbox[2])
-            inter_max_y = min(source_bbox[3], target_bbox[3])
+    for source_part in source_bboxes:
+        for target_part in target_bboxes:
+            inter_min_x = max(source_part[0], target_part[0])
+            inter_min_y = max(source_part[1], target_part[1])
+            inter_max_x = min(source_part[2], target_part[2])
+            inter_max_y = min(source_part[3], target_part[3])
 
             inter_w = max(0, inter_max_x - inter_min_x)
             inter_h = max(0, inter_max_y - inter_min_y)
             inter_area += inter_w * inter_h
     area_source = 0.0
-    for source_bbox in source_bboxes:
-        area_source += (source_bbox[2] - source_bbox[0]) * (
-            source_bbox[3] - source_bbox[1]
+    for source_part in source_bboxes:
+        area_source += (source_part[2] - source_part[0]) * (
+            source_part[3] - source_part[1]
         )
 
     return inter_area / area_source
@@ -494,7 +515,7 @@ def _get_spatial_interp_method(
                 f"{var.dtype!r}. Defaults are assigned."
             )
             interp_method = assign_defaults(var.dtype)
-    elif isinstance(interp_methods, int) or isinstance(interp_methods, str):
+    elif isinstance(interp_methods, (int, str)):
         interp_method = interp_methods
     else:
         interp_method = assign_defaults(var.dtype)
@@ -602,7 +623,7 @@ def _get_prevent_nan_propagation(
 
 
 def _get_fill_value(
-    fill_values: int | float | Mapping[np.dtype | str, int | float] | None,
+    fill_values: float | Mapping[np.dtype | str, int | float] | None,
     key: Hashable,
     var: xr.DataArray,
 ) -> int:
@@ -614,6 +635,8 @@ def _get_fill_value(
             fill_value = FILLVALUE_UINT16
         elif data_type == np.uint32:
             fill_value = FILLVALUE_UINT32
+        elif data_type == np.uint64:
+            fill_value = FILLVALUE_UINT64
         elif np.issubdtype(data_type, np.integer):
             fill_value = FILLVALUE_INT
         elif np.issubdtype(data_type, np.bool_):
@@ -637,6 +660,23 @@ def _get_fill_value(
         fill_value = assign_defaults(var.dtype)
 
     return fill_value
+
+
+def _grid_spacing(values: np.ndarray, name: str) -> float:
+    """Return and validate the spacing of a regular coordinate."""
+    values = np.asarray(values)
+
+    diffs = np.diff(values)
+
+    if not np.all(diffs != 0):
+        raise ValueError(f"Coordinate {name!r} must be strictly monotonic.")
+
+    spacing = float(diffs[0])
+
+    if not np.allclose(diffs, spacing):
+        raise ValueError(f"Coordinate {name!r} must be regularly spaced.")
+
+    return spacing
 
 
 def _sample_array_at_indices(
