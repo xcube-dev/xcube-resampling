@@ -329,7 +329,11 @@ def create_s2plus_dataset():
         },
     )
     return xr.Dataset(
-        {"rrs_443": rrs_443, "rrs_665": rrs_665, "transverse_mercator": transverse_mercator},
+        {
+            "rrs_443": rrs_443,
+            "rrs_665": rrs_665,
+            "transverse_mercator": transverse_mercator,
+        },
         coords={"x": x, "y": y, "lon": lon, "lat": lat},
         attrs={
             "title": "T31UCS_20180802T105621",

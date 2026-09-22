@@ -42,7 +42,7 @@ class TestMosaicDatasets(unittest.TestCase):
             [[1, 2], [3, 4]],
         ).chunk(x=1, y=1)
 
-        lazy = mosaic_datasets([ds], chunk_size=(1, 1))
+        lazy = mosaic_datasets([ds], tile_size=(1, 1))
         self.assertEqual(lazy.value.chunks, ((1, 1), (1, 1)))
         actual = lazy.compute()
 
@@ -77,7 +77,7 @@ class TestMosaicDatasets(unittest.TestCase):
         left = _tile([0.0, 1.0], [1.0, 0.0], [[1, 1], [1, 1]])
         right = _tile([4.0, 5.0], [1.0, 0.0], [[2, 2], [2, 2]])
 
-        actual = mosaic_datasets([left, right], chunk_size=(2, 2)).compute()
+        actual = mosaic_datasets([left, right], tile_size=(2, 2)).compute()
 
         np.testing.assert_allclose(
             actual.value,
@@ -88,7 +88,7 @@ class TestMosaicDatasets(unittest.TestCase):
         first = _tile([0.0, 1.0], [1.0, 0.0], [[1.0, np.nan], [3.0, 4.0]])
         second = _tile([1.0, 2.0], [1.0, 0.0], [[20.0, 30.0], [40.0, 50.0]])
 
-        actual = mosaic_datasets([first, second], chunk_size=(3, 2)).compute()
+        actual = mosaic_datasets([first, second], tile_size=(3, 2)).compute()
 
         np.testing.assert_allclose(
             actual.value,
@@ -101,7 +101,7 @@ class TestMosaicDatasets(unittest.TestCase):
         second = _tile([1.0, 2.0], [1.0, 0.0], [[20, 30], [40, 50]], dtype=np.int16)
 
         actual = mosaic_datasets(
-            [first, second], fill_values=99, chunk_size=(3, 2)
+            [first, second], fill_values=99, tile_size=(3, 2)
         ).compute()
 
         np.testing.assert_array_equal(actual.value, [[1, 20, 30], [3, 4, 50]])
@@ -114,7 +114,7 @@ class TestMosaicDatasets(unittest.TestCase):
         )
 
         actual = mosaic_datasets(
-            [ds], x_dim="lon", y_dim="lat", chunk_size=(2, 2)
+            [ds], x_dim="lon", y_dim="lat", tile_size=(2, 2)
         ).compute()
 
         np.testing.assert_array_equal(actual.value, data)
@@ -124,7 +124,7 @@ class TestMosaicDatasets(unittest.TestCase):
         ds = _tile([0.0, 1.0], [1.0, 0.0], [[1, 2], [3, 4]], dtype=np.uint64)
         other = _tile([3.0, 4.0], [1.0, 0.0], [[5, 6], [7, 8]], dtype=np.uint64)
 
-        actual = mosaic_datasets([ds, other], chunk_size=(2, 2)).compute()
+        actual = mosaic_datasets([ds, other], tile_size=(2, 2)).compute()
 
         self.assertEqual(actual.value.dtype, np.dtype(np.uint64))
         self.assertEqual(actual.value.values[0, 2], np.iinfo(np.uint64).max)
@@ -135,7 +135,7 @@ class TestMosaicDatasets(unittest.TestCase):
 
         ds = _tile([0.0, 1.0], [1.0, 0.0], [[1, 2], [3, 4]])
         with self.assertRaisesRegex(ValueError, "Chunk sizes must be positive"):
-            mosaic_datasets([ds], chunk_size=(0, 2))
+            mosaic_datasets([ds], tile_size=(0, 2))
 
     def test_invalid_dataset_coordinates(self):
         ds = _tile([0.0, 1.0], [1.0, 0.0], [[1, 2], [3, 4]])
@@ -229,7 +229,7 @@ class TestMosaicHelpers(unittest.TestCase):
                 x_dim="x",
                 y_dim="y",
                 fill_values=None,
-                chunk_size=(2, 2),
+                tile_size=(2, 2),
             )
 
     def test_validate_grid(self):

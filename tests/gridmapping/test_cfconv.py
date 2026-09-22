@@ -359,7 +359,9 @@ class XarrayDecodeCfTest(unittest.TestCase):
 
     @classmethod
     def _write_coords(cls, noise, crs, lon, lat):
-        dataset = xr.Dataset({"noise": noise, "crs": crs}, coords={"lon": lon, "lat": lat})
+        dataset = xr.Dataset(
+            {"noise": noise, "crs": crs}, coords={"lon": lon, "lat": lat}
+        )
         dataset.to_zarr("noise.zarr", mode="w")
 
     @classmethod

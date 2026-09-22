@@ -83,7 +83,9 @@ def _normalize_int_pair(
 
 
 def _normalize_number_pair(
-    value: Any, name: str | None = None, default: tuple[FloatInt, FloatInt] | None = UNDEFINED
+    value: Any,
+    name: str | None = None,
+    default: tuple[FloatInt, FloatInt] | None = UNDEFINED,
 ) -> tuple[FloatInt, FloatInt]:
     if isinstance(value, (float, int)):
         x, y = value, value

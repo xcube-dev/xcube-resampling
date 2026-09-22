@@ -143,15 +143,15 @@ def clip_dataset_by_bbox(
         A spatial subset of the input dataset clipped to the bounding box.
 
     Raises:
-        ValueError: If `bbox` does not contain exactly four elements.
+        ValueError: If `bbox` is not a finite, numeric bounding box with
+            ``xmin < xmax`` and ``ymin < ymax``.
         KeyError: If spatial coordinate names cannot be determined from the dataset.
 
     Notes:
         If the bounding box does not overlap with the dataset extent, the returned
         dataset may contain one or more zero-sized dimensions.
     """
-    if len(bbox) != 4:
-        raise ValueError(f"Expected bbox of length 4, got: {bbox}")
+    bbox = _validate_bbox(bbox)
 
     if spatial_coords is None:
         spatial_coords = get_spatial_coords(ds)
@@ -173,6 +173,27 @@ def clip_dataset_by_bbox(
             f"Check if the bounding box {bbox} overlaps with the dataset extent."
         )
     return ds
+
+
+def _validate_bbox(bbox: Sequence[FloatInt]) -> tuple[float, float, float, float]:
+    """Validate and normalize a bounding box."""
+    try:
+        bbox_length = len(bbox)
+    except TypeError as exc:
+        raise ValueError("`bbox` argument must be a sequence of 4 numbers.") from exc
+    if bbox_length != 4:
+        raise ValueError(
+            f"`bbox` argument must consist of 4 numbers, but is {bbox_length}."
+        )
+    try:
+        bbox = tuple(float(value) for value in bbox)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("`bbox` argument must contain only numeric values.") from exc
+    if not np.all(np.isfinite(bbox)):
+        raise ValueError("`bbox` argument must contain only finite values.")
+    if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
+        raise ValueError("`bbox` argument must satisfy xmin < xmax and ymin < ymax.")
+    return bbox
 
 
 def _clip_2dcoord_dataset_by_bbox(

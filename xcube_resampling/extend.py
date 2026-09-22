@@ -19,36 +19,40 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from collections.abc import Sequence
+
 import numpy as np
 import xarray as xr
 
-from .utils import _grid_spacing, clip_dataset_by_bbox
+from .constants import FloatInt
+from .utils import _grid_spacing, _validate_bbox, clip_dataset_by_bbox
 
 
 def extend_dataset(
     ds: xr.Dataset,
+    bbox: Sequence[FloatInt],
     *,
-    x_dim: str = "x",
-    y_dim: str = "y",
-    bbox: tuple[float, float, float, float],
-    chunk_size: tuple[int, int] | None = None,
+    x_dim: str | None = "x",
+    y_dim: str | None = "y",
+    tile_size: tuple[int, int] | None = None,
 ) -> xr.Dataset:
     """Extend a dataset to cover the requested bounding box.
 
-    The dataset is assumed to have regular `x_dim` and `y_dim` coordinates.
-    The requested bounding box may differ from the dataset extent by less
-    than one pixel. Missing pixels are padded with NaN.
+    The dataset is assumed to have regular one-dimensional spatial coordinates.
+    The requested bounding box may differ from the dataset extent by less than
+    one pixel. Missing pixels are padded with NaN.
 
     Args:
-        ds: Dataset with `x_dim` and `y_dim` coordinates in a given CRS.
-        x_dim: Name of the horizontal coordinate.
-        y_dim: Name of the vertical coordinate.
         bbox: Bounding box `(xmin, ymin, xmax, ymax)` in the same CRS.
-        chunk_size: Optional spatial output chunk size as `(x, y)`.
+        ds: Dataset with `x_dim` and `y_dim` coordinates in a given CRS.
+        x_dim: Optional name of the horizontal coordinate. Defaults to ``"x"``.
+        y_dim: Optional name of the vertical coordinate. Defaults to ``"y"``.
+        tile_size: Optional spatial output chunk size as `(x, y)`.
 
     Returns:
         Dataset extended to cover `bbox`.
     """
+    bbox = _validate_bbox(bbox)
     if x_dim not in ds.coords or y_dim not in ds.coords:
         raise ValueError(
             f"First dataset must contain coordinates {x_dim!r} and {y_dim!r}."
@@ -81,8 +85,8 @@ def extend_dataset(
 
     if nx_left == nx_right == ny_bottom == ny_top == 0:
         ds = clip_dataset_by_bbox(ds, bbox, spatial_coords=(x_dim, y_dim))
-        if chunk_size is not None:
-            ds = ds.chunk({x_dim: chunk_size[0], y_dim: chunk_size[1]})
+        if tile_size is not None:
+            ds = ds.chunk({x_dim: tile_size[0], y_dim: tile_size[1]})
         return ds
 
     # Build the target coordinate vectors by extending the existing ones
@@ -103,7 +107,7 @@ def extend_dataset(
         tolerance=min(x_res, y_res) * 1e-3,
     )
     extended = clip_dataset_by_bbox(extended, bbox, spatial_coords=(x_dim, y_dim))
-    if chunk_size is not None:
-        extended = extended.chunk({x_dim: chunk_size[0], y_dim: chunk_size[1]})
+    if tile_size is not None:
+        extended = extended.chunk({x_dim: tile_size[0], y_dim: tile_size[1]})
 
     return extended

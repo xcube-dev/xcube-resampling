@@ -29,6 +29,7 @@ from xcube_resampling.utils import (
     _prep_spatial_interp_methods_downscale,
     _reorganize_tiled_array,
     _select_variables,
+    _validate_bbox,
     bbox_overlap,
     clip_dataset_by_bbox,
     get_spatial_coords,
@@ -46,6 +47,20 @@ from .sampledata import (
 
 
 class TestUtils(unittest.TestCase):
+
+    def test_validate_bbox(self):
+        self.assertEqual(_validate_bbox([0, 1, 2, 3]), (0.0, 1.0, 2.0, 3.0))
+
+        with self.assertRaisesRegex(ValueError, "must be a sequence of 4 numbers"):
+            _validate_bbox(None)
+        with self.assertRaisesRegex(ValueError, "must consist of 4 numbers"):
+            _validate_bbox((0, 1, 2))
+        with self.assertRaisesRegex(ValueError, "only numeric values"):
+            _validate_bbox((0, "invalid", 2, 3))
+        with self.assertRaisesRegex(ValueError, "only finite values"):
+            _validate_bbox((0, np.nan, 2, 3))
+        with self.assertRaisesRegex(ValueError, "xmin < xmax and ymin < ymax"):
+            _validate_bbox((2, 1, 0, 3))
 
     def test_grid_spacing_increasing(self):
         self.assertEqual(_grid_spacing(np.array([0.5, 1.5, 2.5]), "x"), 1.0)
@@ -590,7 +605,7 @@ class TestClipDatasetByBBox(unittest.TestCase):
     def test_clip_dataset_by_bbox_invalid_bbox(self):
         with self.assertRaises(ValueError) as context:
             clip_dataset_by_bbox(self.ds_1d, bbox=[0, 0, 1])
-        self.assertIn("Expected bbox of length 4", str(context.exception))
+        self.assertIn("must consist of 4 numbers", str(context.exception))
 
     def test_unsupported_coord_dims(self):
         ds = self.ds_1d.copy()

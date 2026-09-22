@@ -36,7 +36,7 @@ def mosaic_datasets(
     x_dim: str = "x",
     y_dim: str = "y",
     fill_values: FillValues | None = None,
-    chunk_size: tuple[int, int] | None = None,
+    tile_size: tuple[int, int] | None = None,
 ) -> xr.Dataset:
     """Create a 2-D spatial mosaic from multiple datasets.
 
@@ -57,14 +57,12 @@ def mosaic_datasets(
             - uint16: 65535
             - other integers: -1
 
-        chunk_size: Optional spatial output chunk size as `(x, y)`.
+        tile_size: Optional spatial output tile size as `(x, y)`.
             Defaults to the chunk size of the first dataset, or its spatial
             dimensions when the input datasets are not Dask-backed.
 
     Returns:
-        A Dask-backed dataset when at least wetter.com
-        wetter.com
-        dsgffgfone input is Dask-backed;
+        A Dask-backed dataset when at least one input is Dask-backed;
         otherwise, a computed dataset backed by NumPy arrays.
 
     Raises:
@@ -73,7 +71,7 @@ def mosaic_datasets(
     if not datasets:
         raise ValueError("At least one dataset is required.")
 
-    if chunk_size is not None and (chunk_size[0] <= 0 or chunk_size[1] <= 0):
+    if tile_size is not None and (tile_size[0] <= 0 or tile_size[1] <= 0):
         raise ValueError("Chunk sizes must be positive.")
 
     for i, ds in enumerate(datasets):
@@ -103,14 +101,14 @@ def mosaic_datasets(
         for ds in datasets
         for data in ds.data_vars.values()
     )
-    if chunk_size is None:
+    if tile_size is None:
         if is_dask_backed:
-            chunk_size = (
+            tile_size = (
                 first.chunksizes.get(x_dim, (first.sizes[x_dim],))[0],
                 first.chunksizes.get(y_dim, (first.sizes[y_dim],))[0],
             )
         else:
-            chunk_size = (first.sizes[x_dim], first.sizes[y_dim])
+            tile_size = (first.sizes[x_dim], first.sizes[y_dim])
     x0 = np.asarray(first[x_dim].values)
     y0 = np.asarray(first[y_dim].values)
     dx = _grid_spacing(x0, x_dim)
@@ -166,7 +164,7 @@ def mosaic_datasets(
             x_dim=x_dim,
             y_dim=y_dim,
             fill_values=fill_values,
-            chunk_size=chunk_size,
+            tile_size=tile_size,
         )
 
     result_ds = xr.Dataset(result)
@@ -182,7 +180,7 @@ def _mosaic_variable(
     x_dim: str,
     y_dim: str,
     fill_values: FillValues,
-    chunk_size: tuple[int, int],
+    tile_size: tuple[int, int],
 ) -> xr.DataArray:
     """Build one mosaicked data variable."""
 
@@ -214,8 +212,8 @@ def _mosaic_variable(
     fill_value = _get_fill_value(fill_values, name, first)
 
     # Construct output chunk boundaries.
-    x_chunks = _chunk_boundaries(len(x), chunk_size[0])
-    y_chunks = _chunk_boundaries(len(y), chunk_size[1])
+    x_chunks = _chunk_boundaries(len(x), tile_size[0])
+    y_chunks = _chunk_boundaries(len(y), tile_size[1])
 
     block_rows = []
     for y0, y1 in y_chunks:
@@ -398,11 +396,11 @@ def _grid_size(
 
 def _chunk_boundaries(
     size: int,
-    chunk_size: int,
+    tile_size: int,
 ) -> list[tuple[int, int]]:
     """Create half-open chunk boundaries."""
     return [
-        (start, min(start + chunk_size, size)) for start in range(0, size, chunk_size)
+        (start, min(start + tile_size, size)) for start in range(0, size, tile_size)
     ]
 
 

@@ -74,9 +74,7 @@ class TestExtendDataset(unittest.TestCase):
             with self.subTest(y_increasing=y_increasing):
                 ds = self._create_dataset(y_increasing)
 
-                actual = extend_dataset(
-                    ds, bbox=(1.0, 1.0, 2.0, 2.0), chunk_size=(1, 1)
-                )
+                actual = extend_dataset(ds, bbox=(1.0, 1.0, 2.0, 2.0), tile_size=(1, 1))
 
                 y_slice = slice(1.0, 2.0) if y_increasing else slice(2.0, 1.0)
                 expected = ds.sel(x=slice(1.0, 2.0), y=y_slice)
@@ -92,7 +90,7 @@ class TestExtendDataset(unittest.TestCase):
             x_dim="lon",
             y_dim="lat",
             bbox=(-1.0, -1.0, 4.0, 4.0),
-            chunk_size=(2, 3),
+            tile_size=(2, 3),
         )
 
         self.assertEqual(actual.chunksizes["lon"], (2, 2, 1))
@@ -120,3 +118,9 @@ class TestExtendDataset(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "must contain at least two values"):
             extend_dataset(ds, bbox=(0.0, 0.0, 2.0, 2.0))
+
+    def test_none_coordinate_name_is_not_allowed(self):
+        ds = self._create_dataset(y_increasing=True)
+
+        with self.assertRaisesRegex(ValueError, "coordinates None and 'y'"):
+            extend_dataset(ds, (0.0, 0.0, 2.0, 2.0), x_dim=None)
