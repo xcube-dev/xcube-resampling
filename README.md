@@ -28,3 +28,4 @@ The package is independent of the core *xcube* framework and has minimal depende
 `affine, dask, dask-image, numba, numpy, pyproj, xarray`.
 
 Find out more in the [xcube-resampling Documentation](https://xcube-dev.github.io/xcube-resampling/).
+ 
