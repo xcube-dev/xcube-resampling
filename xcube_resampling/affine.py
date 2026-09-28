@@ -97,9 +97,12 @@ def affine_transform_dataset(
             to fill values. If not provided, defaults are:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
-            - other integers: -1
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
+            - other ints: -1
 
     Returns:
         A new dataset resampled and aligned to the target grid mapping.
@@ -188,9 +191,12 @@ def resample_dataset(
             to specific fill values. If not provided, defaults are:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
-            - other integers: -1
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
+            - other ints: -1
 
     Returns:
         A new dataset with spatial variables resampled to the target

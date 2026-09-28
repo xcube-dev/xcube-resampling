@@ -115,8 +115,11 @@ def rectify_dataset(
             defaults based on data type are used:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
             - other ints: -1
 
         tile_size: Optional tile size for inferring a regular grid, if `target_gm` is

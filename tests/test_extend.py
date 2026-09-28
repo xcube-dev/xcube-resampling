@@ -69,6 +69,49 @@ class TestExtendDataset(unittest.TestCase):
                 expected = ds.reindex(x=[-0.5, 0.5, 1.5], y=expected_y)
                 xr.testing.assert_identical(actual, expected)
 
+    def test_auto_detected_coordinate_names(self):
+        ds = xr.Dataset(
+            {"temperature": (("lat", "lon"), np.arange(9).reshape(3, 3))},
+            coords={
+                "lon": ("lon", [0.5, 1.5, 2.5], {"standard_name": "longitude"}),
+                "lat": ("lat", [2.5, 1.5, 0.5], {"standard_name": "latitude"}),
+            },
+        )
+
+        actual = extend_dataset(ds, bbox=(-1.0, -1.0, 4.0, 4.0))
+
+        self.assertEqual(actual.sizes["lon"], 5)
+        self.assertEqual(actual.sizes["lat"], 5)
+
+    def test_custom_fill_value(self):
+        ds = self._create_dataset(y_increasing=True)
+
+        actual = extend_dataset(ds, bbox=(-1.0, -1.0, 4.0, 4.0), fill_values=-999.0)
+
+        expected = ds.reindex(
+            x=[-0.5, 0.5, 1.5, 2.5, 3.5],
+            y=[-0.5, 0.5, 1.5, 2.5, 3.5],
+            fill_value=-999.0,
+        )
+        xr.testing.assert_identical(actual, expected)
+
+    def test_fill_values_by_variable(self):
+        ds = self._create_dataset(y_increasing=True)
+        ds["quality"] = (("y", "x"), np.ones((3, 3), dtype=np.uint8))
+
+        actual = extend_dataset(
+            ds,
+            bbox=(-1.0, -1.0, 4.0, 4.0),
+            fill_values={"temperature": -999.0, "quality": 42},
+        )
+
+        expected = ds.reindex(
+            x=[-0.5, 0.5, 1.5, 2.5, 3.5],
+            y=[-0.5, 0.5, 1.5, 2.5, 3.5],
+            fill_value={"temperature": -999.0, "quality": 42},
+        )
+        xr.testing.assert_identical(actual, expected)
+
     def test_bbox_smaller_than_dataset(self):
         for y_increasing in (True, False):
             with self.subTest(y_increasing=y_increasing):
@@ -119,8 +162,8 @@ class TestExtendDataset(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must contain at least two values"):
             extend_dataset(ds, bbox=(0.0, 0.0, 2.0, 2.0))
 
-    def test_none_coordinate_name_is_not_allowed(self):
+    def test_missing_explicit_coordinate_name(self):
         ds = self._create_dataset(y_increasing=True)
 
-        with self.assertRaisesRegex(ValueError, "coordinates None and 'y'"):
-            extend_dataset(ds, (0.0, 0.0, 2.0, 2.0), x_dim=None)
+        with self.assertRaisesRegex(ValueError, "coordinates 'missing' and 'y'"):
+            extend_dataset(ds, (0.0, 0.0, 2.0, 2.0), x_dim="missing")

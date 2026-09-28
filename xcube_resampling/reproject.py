@@ -106,9 +106,12 @@ def reproject_dataset(
             defaults are:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
-            - other integers: -1
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
+            - other ints: -1
 
     Returns:
         A new dataset with variables reprojected to the target CRS and

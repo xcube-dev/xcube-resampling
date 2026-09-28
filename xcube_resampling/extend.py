@@ -24,16 +24,22 @@ from collections.abc import Sequence
 import numpy as np
 import xarray as xr
 
-from .constants import FloatInt
-from .utils import _grid_spacing, _validate_bbox, clip_dataset_by_bbox
+from .constants import FillValues, FloatInt
+from .utils import (
+    _grid_spacing,
+    _validate_bbox,
+    clip_dataset_by_bbox,
+    get_spatial_coords,
+)
 
 
 def extend_dataset(
-    ds: xr.Dataset,
+    dataset: xr.Dataset,
     bbox: Sequence[FloatInt],
     *,
-    x_dim: str | None = "x",
-    y_dim: str | None = "y",
+    x_dim: str | None = None,
+    y_dim: str | None = None,
+    fill_values: FillValues | None = None,
     tile_size: tuple[int, int] | None = None,
 ) -> xr.Dataset:
     """Extend a dataset to cover the requested bounding box.
@@ -44,28 +50,49 @@ def extend_dataset(
 
     Args:
         bbox: Bounding box `(xmin, ymin, xmax, ymax)` in the same CRS.
-        ds: Dataset with `x_dim` and `y_dim` coordinates in a given CRS.
-        x_dim: Optional name of the horizontal coordinate. Defaults to ``"x"``.
-        y_dim: Optional name of the vertical coordinate. Defaults to ``"y"``.
+        dataset: Dataset with `x_dim` and `y_dim` coordinates in a given CRS.
+        x_dim: Optional name of the horizontal coordinate. If None, the name is inferred
+            from from dataset `ds`.
+        y_dim: Optional name of the vertical coordinate. If None, the name is inferred
+            from from dataset `ds`.
+        fill_values: Optional fill value(s). Can be a single value or dictionary
+            by variable or type. If not set, defaults are:
+
+            - float: NaN
+            - boolean: False
+            - uint8: 255
+            - uint16: 65535
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
+            - other ints: -1
+
         tile_size: Optional spatial output chunk size as `(x, y)`.
 
     Returns:
         Dataset extended to cover `bbox`.
     """
     bbox = _validate_bbox(bbox)
-    if x_dim not in ds.coords or y_dim not in ds.coords:
+
+    if x_dim is None or y_dim is None:
+        detected_x_dim, detected_y_dim = get_spatial_coords(dataset)
+        if x_dim is None:
+            x_dim = detected_x_dim
+        if y_dim is None:
+            y_dim = detected_y_dim
+
+    if x_dim not in dataset.coords or y_dim not in dataset.coords:
         raise ValueError(
             f"First dataset must contain coordinates {x_dim!r} and {y_dim!r}."
         )
-    if ds[x_dim].ndim != 1 or ds[y_dim].ndim != 1:
+    if dataset[x_dim].ndim != 1 or dataset[y_dim].ndim != 1:
         raise ValueError(f"Only 1-D {x_dim!r} and {y_dim!r} coordinates are supported.")
-    if ds.sizes[x_dim] < 2 or ds.sizes[y_dim] < 2:
+    if dataset.sizes[x_dim] < 2 or dataset.sizes[y_dim] < 2:
         raise ValueError(
             f"{x_dim!r} and {y_dim!r} coordinates must contain at least two values."
         )
 
-    x = ds[x_dim].values
-    y = ds[y_dim].values
+    x = dataset[x_dim].values
+    y = dataset[y_dim].values
     x_res = _grid_spacing(x, x_dim)
     y_res = _grid_spacing(y, y_dim)
     y_increasing = y_res > 0
@@ -84,7 +111,7 @@ def extend_dataset(
     ny_top = max(0, int(np.ceil((ymax - y_max) / y_res)) - 1)
 
     if nx_left == nx_right == ny_bottom == ny_top == 0:
-        ds = clip_dataset_by_bbox(ds, bbox, spatial_coords=(x_dim, y_dim))
+        ds = clip_dataset_by_bbox(dataset, bbox, spatial_coords=(x_dim, y_dim))
         if tile_size is not None:
             ds = ds.chunk({x_dim: tile_size[0], y_dim: tile_size[1]})
         return ds
@@ -101,10 +128,11 @@ def extend_dataset(
         new_y = new_y[::-1]
 
     # Allow for small floating-point errors when matching the original grid.
-    extended = ds.reindex(
+    extended = dataset.reindex(
         {x_dim: new_x, y_dim: new_y},
         method="nearest",
         tolerance=min(x_res, y_res) * 1e-3,
+        fill_value=fill_values,
     )
     extended = clip_dataset_by_bbox(extended, bbox, spatial_coords=(x_dim, y_dim))
     if tile_size is not None:

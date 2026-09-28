@@ -61,6 +61,43 @@ class TestMosaicDatasets(unittest.TestCase):
 
         self.assertEqual(actual.value.chunks, ((2, 1), (2, 1)))
 
+    def test_auto_detected_coordinate_names(self):
+        ds = xr.Dataset(
+            {"value": (("lat", "lon"), np.arange(9).reshape(3, 3))},
+            coords={
+                "lon": ("lon", [0.5, 1.5, 2.5], {"standard_name": "longitude"}),
+                "lat": ("lat", [2.5, 1.5, 0.5], {"standard_name": "latitude"}),
+            },
+        )
+
+        actual = mosaic_datasets([ds, ds])
+
+        self.assertEqual(actual.value.dims, ("lat", "lon"))
+        np.testing.assert_array_equal(actual.value, ds.value)
+
+    def test_partial_coordinate_name_override(self):
+        ds = xr.Dataset(
+            {"value": (("lat", "lon"), np.arange(9).reshape(3, 3))},
+            coords={
+                "lon": ("lon", [0.5, 1.5, 2.5]),
+                "lat": ("lat", [2.5, 1.5, 0.5]),
+            },
+        )
+
+        actual = mosaic_datasets([ds, ds], x_dim="lon")
+
+        self.assertEqual(actual.value.dims, ("lat", "lon"))
+
+    def test_non_spatial_chunks_are_preserved(self):
+        ds = xr.Dataset(
+            {"value": (("time", "y", "x"), np.arange(16).reshape(4, 2, 2))},
+            coords={"time": [0, 1, 2, 3], "x": [0.0, 1.0], "y": [1.0, 0.0]},
+        ).chunk(time=2, y=1, x=1)
+
+        actual = mosaic_datasets([ds], tile_size=(1, 1))
+
+        self.assertEqual(actual.value.chunks, ((2, 2), (1, 1), (1, 1)))
+
     def test_numpy_backed_inputs_return_computed_output(self):
         left = _tile([0.0, 1.0], [1.0, 0.0], [[1, 2], [3, 4]])
         right = _tile([2.0, 3.0], [1.0, 0.0], [[5, 6], [7, 8]])
@@ -141,7 +178,7 @@ class TestMosaicDatasets(unittest.TestCase):
         ds = _tile([0.0, 1.0], [1.0, 0.0], [[1, 2], [3, 4]])
 
         missing = ds.drop_vars("x")
-        with self.assertRaisesRegex(ValueError, "Dataset 0 must contain coordinates"):
+        with self.assertRaisesRegex(KeyError, "No standard spatial coordinates found"):
             mosaic_datasets([missing])
 
         two_dimensional = ds.assign_coords(x=(("y", "x"), [[0.0, 1.0], [0.0, 1.0]]))

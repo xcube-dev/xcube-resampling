@@ -27,14 +27,14 @@ import numpy as np
 import xarray as xr
 
 from .constants import FillValues, FloatInt
-from .utils import _get_fill_value, _grid_spacing
+from .utils import _get_fill_value, _grid_spacing, get_spatial_coords
 
 
 def mosaic_datasets(
     datasets: Sequence[xr.Dataset],
     *,
-    x_dim: str = "x",
-    y_dim: str = "y",
+    x_dim: str | None = None,
+    y_dim: str | None = None,
     fill_values: FillValues | None = None,
     tile_size: tuple[int, int] | None = None,
 ) -> xr.Dataset:
@@ -47,15 +47,20 @@ def mosaic_datasets(
     Args:
         datasets: Input datasets. All datasets must contain `x_dim` and
             `y_dim` coordinates with the same spatial resolution.
-        x_dim: Name of the horizontal coordinate.
-        y_dim: Name of the vertical coordinate.
+        x_dim: Optional name of the horizontal coordinate. If None, the name is inferred
+            from from the first dataset.
+        y_dim: Optional name of the vertical coordinate. If None, the name is inferred
+            from from the first dataset.
         fill_values: Optional fill value(s). Can be a single value or dictionary
             by variable or type. If not set, defaults are:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
-            - other integers: -1
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
+            - other ints: -1
 
         tile_size: Optional spatial output tile size as `(x, y)`.
             Defaults to the chunk size of the first dataset, or its spatial
@@ -73,6 +78,14 @@ def mosaic_datasets(
 
     if tile_size is not None and (tile_size[0] <= 0 or tile_size[1] <= 0):
         raise ValueError("Chunk sizes must be positive.")
+
+    first_dataset = datasets[0]
+    if x_dim is None or y_dim is None:
+        detected_x_dim, detected_y_dim = get_spatial_coords(first_dataset)
+        if x_dim is None:
+            x_dim = detected_x_dim
+        if y_dim is None:
+            y_dim = detected_y_dim
 
     for i, ds in enumerate(datasets):
         if x_dim not in ds.coords or y_dim not in ds.coords:
@@ -248,7 +261,8 @@ def _mosaic_variable(
     mosaic = da.block(block_rows)
 
     # Add non-spatial dimensions back to the DataArray.
-    coords = {dim: first.coords[dim] for dim in other_dims}
+    coords = first.coords
+    coords = coords.drop_vars((x_dim, y_dim), errors="ignore")
     coords[y_dim] = y
     coords[x_dim] = x
 
@@ -283,13 +297,18 @@ def _make_output_block(
     other_dims = [dim for dim in ref_array.dims if dim not in (y_dim, x_dim)]
     other_shape = tuple(ref_array.sizes[dim] for dim in other_dims)
     block_shape = other_shape + (height, width)
+    other_chunks = tuple(
+        ref_array.chunksizes.get(dim, (ref_array.sizes[dim],))[0] for dim in other_dims
+    )
+    block_chunks = other_chunks + (height, width)
 
-    # One chunk representing this output block.
+    # Keep existing chunks on non-spatial dimensions while using one chunk
+    # for each spatial extent represented by this output block.
     result = da.full(
         block_shape,
         fill_value,
         dtype=ref_array.dtype,
-        chunks=block_shape,
+        chunks=block_chunks,
     )
 
     for spec in tile_specs:
@@ -341,7 +360,7 @@ def _make_output_block(
             local,
         )
 
-    return result.rechunk(block_shape)
+    return result.rechunk(block_chunks)
 
 
 def _validate_grid(

@@ -71,20 +71,19 @@ def get_spatial_coords(ds: xr.Dataset) -> tuple[str, str]:
     Raises:
         KeyError: If no recognized spatial dimension pair is found in the dataset.
     """
+    if "y" in ds and "x" in ds:
+        return "x", "y"
+    if "lat" in ds and "lon" in ds:
+        return "lon", "lat"
+    if "latitude" in ds and "longitude" in ds:
+        return "longitude", "latitude"
     if "transformed_x" in ds and "transformed_y" in ds:
-        x_coord, y_coord = "transformed_x", "transformed_y"
-    elif "latitude" in ds and "longitude" in ds:
-        x_coord, y_coord = "longitude", "latitude"
-    elif "lat" in ds and "lon" in ds:
-        x_coord, y_coord = "lon", "lat"
-    elif "y" in ds and "x" in ds:
-        x_coord, y_coord = "x", "y"
-    else:
-        raise KeyError(
-            f"No standard spatial coordinates found in dataset. "
-            f"Expected pairs ('lon', 'lat') or ('x', 'y'), but found: {list(ds.dims)}."
-        )
-    return x_coord, y_coord
+        return "transformed_x", "transformed_y"
+    try:
+        gm = GridMapping.from_dataset(ds)
+    except ValueError as e:
+        raise KeyError("No standard spatial coordinates found") from e
+    return gm.xy_var_names
 
 
 def get_utm_crs(lon: float, lat: float) -> pyproj.CRS:
