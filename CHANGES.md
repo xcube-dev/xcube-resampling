@@ -1,4 +1,4 @@
-## Changes in 0.3.6 (in development)
+## Changes in 0.3.6
 
 - Add `mosaic_datasets` for creating spatial mosaics from multiple `xarray.Dataset` 
   objects, including support for overlapping tiles.
