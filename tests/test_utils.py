@@ -127,6 +127,25 @@ class TestUtils(unittest.TestCase):
         x_dim, y_dim = get_spatial_coords(ds)
         self.assertEqual((x_dim, y_dim), ("x", "y"))
 
+    def test_get_spatial_coords_from_cf_metadata(self):
+        ds = xr.Dataset(
+            {"value": (("latitude", "longitude"), np.ones((2, 2)))},
+            coords={
+                "longitude": (
+                    "longitude",
+                    [0.0, 1.0],
+                    {"standard_name": "longitude", "units": "degrees_east"},
+                ),
+                "latitude": (
+                    "latitude",
+                    [0.0, 1.0],
+                    {"standard_name": "latitude", "units": "degrees_north"},
+                ),
+            },
+        ).rename(longitude="x_coord", latitude="y_coord")
+
+        self.assertEqual(get_spatial_coords(ds), ("x_coord", "y_coord"))
+
     def test_get_spatial_coords_missing_dims(self):
         # Dataset with no recognized spatial dimensions
         ds = xr.Dataset(coords={"time": [0, 1]})

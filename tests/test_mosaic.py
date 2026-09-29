@@ -87,6 +87,26 @@ class TestMosaicDatasets(unittest.TestCase):
         actual = mosaic_datasets([ds, ds], x_dim="lon")
 
         self.assertEqual(actual.value.dims, ("lat", "lon"))
+        np.testing.assert_array_equal(actual.lon, ds.lon)
+        np.testing.assert_array_equal(actual.lat, ds.lat)
+        np.testing.assert_array_equal(actual.value, ds.value)
+
+    def test_non_spatial_coordinates_are_preserved(self):
+        ds = xr.Dataset(
+            {"value": (("time", "y", "x"), np.arange(8).reshape(2, 2, 2))},
+            coords={
+                "time": ["morning", "evening"],
+                "time_label": ("time", ["AM", "PM"]),
+                "x": [0.0, 1.0],
+                "y": [1.0, 0.0],
+            },
+        )
+
+        actual = mosaic_datasets([ds])
+
+        np.testing.assert_array_equal(actual.time, ds.time)
+        np.testing.assert_array_equal(actual.time_label, ds.time_label)
+        np.testing.assert_array_equal(actual.value, ds.value)
 
     def test_non_spatial_chunks_are_preserved(self):
         ds = xr.Dataset(

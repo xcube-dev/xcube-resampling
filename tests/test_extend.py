@@ -142,7 +142,7 @@ class TestExtendDataset(unittest.TestCase):
     def test_missing_spatial_coordinate(self):
         ds = xr.Dataset(coords={"x": [0.5, 1.5]})
 
-        with self.assertRaisesRegex(ValueError, "must contain coordinates 'x' and 'y'"):
+        with self.assertRaisesRegex(KeyError, "No standard spatial coordinates found"):
             extend_dataset(ds, bbox=(0.0, 0.0, 2.0, 2.0))
 
     def test_two_dimensional_spatial_coordinate(self):

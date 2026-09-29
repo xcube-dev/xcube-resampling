@@ -31,6 +31,7 @@ from .affine import affine_transform_dataset
 from .constants import (
     SCALE_LIMIT,
     FillValues,
+    FloatInt,
     PreventNaNPropagations,
     SpatialAggMethods,
     SpatialInterpMethod,
@@ -357,8 +358,8 @@ def _reproject_block(
     src_data: np.ndarray,
     x_coord: np.ndarray,
     y_coord: np.ndarray,
-    src_x_res: float,
-    src_y_res: float,
+    src_x_res: FloatInt,
+    src_y_res: FloatInt,
     interp_method: SpatialInterpMethodStr,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / src_x_res

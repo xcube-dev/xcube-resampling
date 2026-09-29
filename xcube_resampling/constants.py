@@ -33,6 +33,8 @@ __all__ = [
     "FILLVALUE_INT",
     "FILLVALUE_UINT8",
     "FILLVALUE_UINT16",
+    "FILLVALUE_UINT32",
+    "FILLVALUE_UINT64",
     "LOG",
     "AffineTransformMatrix",
     "FillValues",
