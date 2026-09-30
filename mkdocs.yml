@@ -2,7 +2,7 @@ site_name: xcube-resampling
 repo_url: https://github.com/xcube-dev/xcube-resampling
 repo_name: xcube-dev/xcube-resampling
 
-copyright: Copyright &copy; 2025 Brockmann Consult
+copyright: Copyright &copy; 2026 Brockmann Consult
 
 nav:
   - Overview: index.md
@@ -14,6 +14,7 @@ nav:
       - Rectification of a Sentinel-3 tile: examples/rectify_sentinel3.ipynb
       - Demonstration of the function resample_in_space: examples/resample_in_space.ipynb
       - Reprojection of large Land Cover Map: examples/resample_in_space_large_example_reproject_dataset.ipynb
+      - Mosaic multiple Tiles: examples/mosaic_datasets.ipynb
   - Python API: api.md
   - About: about.md
 

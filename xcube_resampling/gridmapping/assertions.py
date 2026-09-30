@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,7 +26,7 @@ _DEFAULT_NAME = "value"
 
 
 def assert_given(
-    value: Any, name: str = None, exception_type: type[Exception] = ValueError
+    value: Any, name: str | None = None, exception_type: type[Exception] = ValueError
 ):
     """Assert *value* is not False when converted into a Boolean value.
     Otherwise, raise *exception_type*.
@@ -64,7 +64,7 @@ def assert_instance(
 def assert_in(
     value: Any,
     container: Container,
-    name: str = None,
+    name: str | None = None,
     exception_type: type[Exception] = ValueError,
 ):
     """Assert *value* is a member of *container*.

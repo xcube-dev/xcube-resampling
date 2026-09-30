@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -31,6 +31,7 @@ from .affine import affine_transform_dataset
 from .constants import (
     SCALE_LIMIT,
     FillValues,
+    FloatInt,
     PreventNaNPropagations,
     SpatialAggMethods,
     SpatialInterpMethod,
@@ -106,9 +107,12 @@ def reproject_dataset(
             defaults are:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
-            - other integers: -1
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
+            - other ints: -1
 
     Returns:
         A new dataset with variables reprojected to the target CRS and
@@ -253,7 +257,7 @@ def _downscale_source_dataset(
 
     w = np.floor(x_scale * (source_gm.width - 1))
     h = np.floor(y_scale * (source_gm.height - 1))
-    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+    downscaled_size = (max(w, 2), max(h, 2))
     downscale_target_gm = GridMapping.regular(
         size=downscaled_size,
         xy_min=(
@@ -354,8 +358,8 @@ def _reproject_block(
     src_data: np.ndarray,
     x_coord: np.ndarray,
     y_coord: np.ndarray,
-    src_x_res: int | float,
-    src_y_res: int | float,
+    src_x_res: FloatInt,
+    src_y_res: FloatInt,
     interp_method: SpatialInterpMethodStr,
 ) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / src_x_res

@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
+from typing import ClassVar
 
 import affine
 import numpy as np
@@ -58,18 +59,18 @@ class _TestGridMapping(GridMapping):
 
 # noinspection PyMethodMayBeStatic
 class GridMappingTest(unittest.TestCase):
-    _kwargs = dict(
-        size=(720, 360),
-        tile_size=(360, 180),
-        xy_bbox=(-180.0, -90.0, 180.0, 90.0),
-        xy_res=(360 / 720, 360 / 720),
-        crs=GEO_CRS,
-        xy_var_names=("x", "y"),
-        xy_dim_names=("x", "y"),
-        is_regular=True,
-        is_lon_360=False,
-        is_j_axis_up=False,
-    )
+    _kwargs: ClassVar[dict] = {
+        "size": (720, 360),
+        "tile_size": (360, 180),
+        "xy_bbox": (-180.0, -90.0, 180.0, 90.0),
+        "xy_res": (360 / 720, 360 / 720),
+        "crs": GEO_CRS,
+        "xy_var_names": ("x", "y"),
+        "xy_dim_names": ("x", "y"),
+        "is_regular": True,
+        "is_lon_360": False,
+        "is_j_axis_up": False,
+    }
 
     def kwargs(self, **kwargs):
         orig_kwargs = dict(self._kwargs)

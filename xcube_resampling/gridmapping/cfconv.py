@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -81,7 +81,7 @@ def get_dataset_grid_mapping_proxies(
     Returns:
 
     """
-    grid_mapping_proxies: dict[Hashable | None, GridMappingProxy] = dict()
+    grid_mapping_proxies: dict[Hashable | None, GridMappingProxy] = {}
 
     # Find any grid mapping variables by CF 'grid_mapping' attribute
     for var_name, var in dataset.variables.items():
@@ -177,7 +177,7 @@ def get_dataset_grid_mapping_proxies(
     )
 
     # Collect complete grid mappings
-    complete_grid_mappings = dict()
+    complete_grid_mappings = {}
     for var_name, gmp in grid_mapping_proxies.items():
         if (
             gmp.coords is not None

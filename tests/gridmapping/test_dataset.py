@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -47,11 +47,11 @@ class DatasetGridMappingTest(unittest.TestCase):
         rad = np.random.random(3 * 4).reshape((3, 4))
         dims = ("y", "x")
         dataset = xr.Dataset(
-            dict(
-                lon=xr.DataArray(lon, dims=dims),
-                lat=xr.DataArray(lat, dims=dims),
-                rad=xr.DataArray(rad, dims=dims),
-            )
+            {
+                "lon": xr.DataArray(lon, dims=dims),
+                "lat": xr.DataArray(lat, dims=dims),
+                "rad": xr.DataArray(rad, dims=dims),
+            }
         )
         gm = GridMapping.from_dataset(dataset)
         self.assertEqual((4, 3), gm.size)

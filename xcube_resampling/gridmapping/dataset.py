@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -32,9 +32,9 @@ def new_grid_mapping_from_dataset(
     dataset: xr.Dataset,
     *,
     crs: str | pyproj.crs.CRS = None,
-    tile_size: int | tuple[str, str] = None,
+    tile_size: int | tuple[str, str] | None = None,
     prefer_crs: str | pyproj.crs.CRS = None,
-    prefer_is_regular: bool = None,
+    prefer_is_regular: bool | None = None,
     emit_warnings: bool = False,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:

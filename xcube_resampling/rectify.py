@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -115,8 +115,11 @@ def rectify_dataset(
             defaults based on data type are used:
 
             - float: NaN
+            - boolean: False
             - uint8: 255
             - uint16: 65535
+            - uint32: 4294967295
+            - uint64: 18446744073709551615
             - other ints: -1
 
         tile_size: Optional tile size for inferring a regular grid, if `target_gm` is
@@ -298,7 +301,7 @@ def _downscale_source_dataset(
 
     w = np.floor(x_scale * (source_gm.width - 1))
     h = np.floor(y_scale * (source_gm.height - 1))
-    downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+    downscaled_size = (max(w, 2), max(h, 2))
     source_ds = resample_dataset(
         source_ds,
         ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),

@@ -3,6 +3,8 @@
 ::: xcube_resampling.affine_transform_dataset
 ::: xcube_resampling.reproject_dataset
 ::: xcube_resampling.rectify_dataset
+::: xcube_resampling.extend_dataset
+::: xcube_resampling.mosaic_datasets
 ::: xcube_resampling.resample_in_time
 ::: xcube_resampling.utils
 ::: xcube_resampling.gridmapping.GridMapping

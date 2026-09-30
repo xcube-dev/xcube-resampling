@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -38,8 +38,8 @@ def transform_grid_mapping(
     grid_mapping: GridMapping,
     crs: str | pyproj.crs.CRS,
     *,
-    tile_size: int | tuple[int, int] = None,
-    xy_var_names: tuple[str, str] = None,
+    tile_size: int | tuple[int, int] | None = None,
+    xy_var_names: tuple[str, str] | None = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
     target_crs = _normalize_crs(crs)
