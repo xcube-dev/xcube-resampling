@@ -100,15 +100,15 @@ def extend_dataset(
 
     # Number of pixels to add at each side.
     bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax = bbox
-    y_max = max(y[0], y[-1])
-    y_min = min(y[0], y[-1])
-    x_min = x[0]
-    x_max = x[-1]
+    grid_ymax = max(y[0], y[-1])
+    grid_ymin = min(y[0], y[-1])
+    grid_xmin = x[0]
+    grid_xmax = x[-1]
 
-    nx_left = max(0, int(np.ceil((x_min - bbox_xmin) / x_res)) - 1)
-    nx_right = max(0, int(np.ceil((bbox_xmax - x_max) / x_res)) - 1)
-    ny_bottom = max(0, int(np.ceil((y_min - bbox_ymin) / y_res)) - 1)
-    ny_top = max(0, int(np.ceil((bbox_ymax - y_max) / y_res)) - 1)
+    nx_left = max(0, int(np.ceil((grid_xmin - bbox_xmin) / x_res)) - 1)
+    nx_right = max(0, int(np.ceil((bbox_xmax - grid_xmax) / x_res)) - 1)
+    ny_bottom = max(0, int(np.ceil((grid_ymin - bbox_ymin) / y_res)) - 1)
+    ny_top = max(0, int(np.ceil((bbox_ymax - grid_ymax) / y_res)) - 1)
 
     if nx_left == nx_right == ny_bottom == ny_top == 0:
         ds = clip_dataset_by_bbox(dataset, bbox, spatial_coords=(x_dim, y_dim))
@@ -117,10 +117,10 @@ def extend_dataset(
         return ds
 
     # Build the target coordinate vectors by extending the existing ones
-    x_start = x_min - x_res * nx_left
-    x_end = x_max + x_res * nx_right
-    y_start = y_min - y_res * ny_bottom
-    y_end = y_max + y_res * ny_top
+    x_start = grid_xmin - x_res * nx_left
+    x_end = grid_xmax + x_res * nx_right
+    y_start = grid_ymin - y_res * ny_bottom
+    y_end = grid_ymax + y_res * ny_top
 
     new_x = np.arange(x_start, x_end + (x_res / 2), x_res)
     new_y = np.arange(y_start, y_end + (y_res / 2), y_res)
