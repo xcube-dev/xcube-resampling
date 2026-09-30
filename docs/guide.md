@@ -267,6 +267,63 @@ where *V1*, *V2*, *V3*, *V4* are the pixel values of the points in the source da
 
 ---
 
+### Extending a grid and mosaicking tiles
+
+`extend_dataset` and `mosaic_datasets` are spatial dataset utilities for preparing
+regular-grid datasets. They complement resampling: they do not change the CRS or
+interpolate values onto a different resolution.
+
+#### Extend a dataset to a bounding box
+
+[`extend_dataset`](api.md/#xcube_resampling.extend_dataset) crops a dataset to a
+requested bounding box and, when needed, adds grid cells so the output covers that
+box. It expects one-dimensional, regularly spaced spatial coordinates and a bounding
+box `(xmin, ymin, xmax, ymax)` in the dataset's coordinate reference system. The
+requested extent can exceed the current extent by less than one pixel; newly added
+cells are initialized with the configured fill values (NaN for floating point data
+by default). Coordinate names are inferred when `x_dim` and `y_dim` are omitted.
+
+```python
+from xcube_resampling import extend_dataset
+
+extended = extend_dataset(
+    dataset,
+    bbox=(xmin, ymin, xmax, ymax),
+    tile_size=(512, 512),  # optional output chunks (x, y)
+)
+```
+
+Pass `fill_values` to override the defaults, either with a single value or a mapping
+by variable or dtype. If the dataset already covers the requested box, the function
+returns its clipped extent. The dataset must have at least two coordinate values on
+each spatial axis so the grid spacing can be determined.
+
+#### Combine tiles into a mosaic
+
+[`mosaic_datasets`](api.md/#xcube_resampling.mosaic_datasets) places multiple datasets
+on their shared regular grid and returns a dataset spanning their combined extent.
+Spatial coordinates may be increasing or decreasing; the output uses increasing x
+and decreasing y. Tiles may overlap: for each variable and pixel, the first
+non-fill value in input order is retained, and later tiles fill only cells that
+still contain the fill value.
+
+```python
+from xcube_resampling import mosaic_datasets
+
+mosaic = mosaic_datasets(
+    [tile_west, tile_east],
+    tile_size=(512, 512),  # optional output chunks (x, y)
+)
+```
+
+All tiles need matching spatial resolutions and grid alignment. They must provide
+the same data variables. Variables present in the first dataset define
+the output. If any input is Dask-backed, the mosaic remains lazy and Dask-backed;
+otherwise it is computed with NumPy-backed arrays. The default output chunk size is
+taken from the first input when it is chunked, or from its spatial dimensions for
+in-memory inputs. Fill values use the same defaults as `extend_dataset` and can be
+customized with `fill_values`.
+
 ### Temporal Resampling
 
 The function [`resample_in_time`](api.md/#xcube_resampling.resample_in_time)

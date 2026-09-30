@@ -17,6 +17,8 @@ spatial and temporal domains.
     - **Affine resampling** – simple resampling using affine transformations
     - **Reprojection** – convert datasets between different coordinate reference systems (CRS)
     - **Rectification** – transform irregular grids into regular, well-structured grids
+    - **Grid extension** – extend a regular grid to a requested bounding box, padding uncovered pixels
+    - **Mosaicking** – combine tiles on a common regular grid, with deterministic overlap handling
 
 - #### Temporal Resampling
     - **Time-based resampling** – upsample or downsample data along the time dimension
