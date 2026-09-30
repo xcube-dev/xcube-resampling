@@ -2,7 +2,7 @@ site_name: xcube-resampling
 repo_url: https://github.com/xcube-dev/xcube-resampling
 repo_name: xcube-dev/xcube-resampling
 
-copyright: Copyright &copy; 2025 Brockmann Consult
+copyright: Copyright &copy; 2026 Brockmann Consult
 
 nav:
   - Overview: index.md

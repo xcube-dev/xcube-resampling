@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2025 by the xcube development team and contributors
+# Copyright (c) 2025-2026 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -99,16 +99,16 @@ def extend_dataset(
     y_res = abs(y_res)
 
     # Number of pixels to add at each side.
-    xmin, ymin, xmax, ymax = bbox
+    bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax = bbox
     y_max = max(y[0], y[-1])
     y_min = min(y[0], y[-1])
     x_min = x[0]
     x_max = x[-1]
 
-    nx_left = max(0, int(np.ceil((x_min - xmin) / x_res)) - 1)
-    nx_right = max(0, int(np.ceil((xmax - x_max) / x_res)) - 1)
-    ny_bottom = max(0, int(np.ceil((y_min - ymin) / y_res)) - 1)
-    ny_top = max(0, int(np.ceil((ymax - y_max) / y_res)) - 1)
+    nx_left = max(0, int(np.ceil((x_min - bbox_xmin) / x_res)) - 1)
+    nx_right = max(0, int(np.ceil((bbox_xmax - x_max) / x_res)) - 1)
+    ny_bottom = max(0, int(np.ceil((y_min - bbox_ymin) / y_res)) - 1)
+    ny_top = max(0, int(np.ceil((bbox_ymax - y_max) / y_res)) - 1)
 
     if nx_left == nx_right == ny_bottom == ny_top == 0:
         ds = clip_dataset_by_bbox(dataset, bbox, spatial_coords=(x_dim, y_dim))
