@@ -3714,8 +3714,7 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/reproject.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 56</span>
-<span class="normal"> 57</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 57</span>
 <span class="normal"> 58</span>
 <span class="normal"> 59</span>
 <span class="normal"> 60</span>
@@ -3839,7 +3838,8 @@ grid. Variables without 2D spatial dimensions are copied as-is.
 <span class="normal">178</span>
 <span class="normal">179</span>
 <span class="normal">180</span>
-<span class="normal">181</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_dataset</span><span class="p">(</span>
+<span class="normal">181</span>
+<span class="normal">182</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_dataset</span><span class="p">(</span>
     <span class="n">source_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -4518,7 +4518,7 @@ pixel indices for the last and second-last dimension, respectively.</p>
 
 
 <h2 id="xcube_resampling.extend_dataset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">extend_dataset</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x_dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">y_dim</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">extend_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -4564,7 +4564,7 @@ one pixel. Missing pixels are padded with NaN.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>ds</code>
+                <code>dataset</code>
             </td>
             <td>
                   <code><span title="xarray.Dataset">Dataset</span></code>
@@ -4587,11 +4587,12 @@ one pixel. Missing pixels are padded with NaN.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional name of the horizontal coordinate. Defaults to <code>"x"</code>.</p>
+                <p>Optional name of the horizontal coordinate. If None, the name is inferred
+from from dataset <code>ds</code>.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;x&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -4603,11 +4604,12 @@ one pixel. Missing pixels are padded with NaN.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional name of the vertical coordinate. Defaults to <code>"y"</code>.</p>
+                <p>Optional name of the vertical coordinate. If None, the name is inferred
+from from dataset <code>ds</code>.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;y&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -4685,12 +4687,7 @@ by variable or type. If not set, defaults are:</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/extend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 31</span>
-<span class="normal"> 32</span>
-<span class="normal"> 33</span>
-<span class="normal"> 34</span>
-<span class="normal"> 35</span>
-<span class="normal"> 36</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 36</span>
 <span class="normal"> 37</span>
 <span class="normal"> 38</span>
 <span class="normal"> 39</span>
@@ -4780,12 +4777,27 @@ by variable or type. If not set, defaults are:</p>
 <span class="normal">123</span>
 <span class="normal">124</span>
 <span class="normal">125</span>
-<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extend_dataset</span><span class="p">(</span>
-    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extend_dataset</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">x_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span>
-    <span class="n">y_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span>
+    <span class="n">x_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">y_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tile_size</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
@@ -4797,9 +4809,11 @@ by variable or type. If not set, defaults are:</p>
 
 <span class="sd">    Args:</span>
 <span class="sd">        bbox: Bounding box `(xmin, ymin, xmax, ymax)` in the same CRS.</span>
-<span class="sd">        ds: Dataset with `x_dim` and `y_dim` coordinates in a given CRS.</span>
-<span class="sd">        x_dim: Optional name of the horizontal coordinate. Defaults to ``&quot;x&quot;``.</span>
-<span class="sd">        y_dim: Optional name of the vertical coordinate. Defaults to ``&quot;y&quot;``.</span>
+<span class="sd">        dataset: Dataset with `x_dim` and `y_dim` coordinates in a given CRS.</span>
+<span class="sd">        x_dim: Optional name of the horizontal coordinate. If None, the name is inferred</span>
+<span class="sd">            from from dataset `ds`.</span>
+<span class="sd">        y_dim: Optional name of the vertical coordinate. If None, the name is inferred</span>
+<span class="sd">            from from dataset `ds`.</span>
 <span class="sd">        fill_values: Optional fill value(s). Can be a single value or dictionary</span>
 <span class="sd">            by variable or type. If not set, defaults are:</span>
 
@@ -4817,47 +4831,55 @@ by variable or type. If not set, defaults are:</p>
 <span class="sd">        Dataset extended to cover `bbox`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">bbox</span> <span class="o">=</span> <span class="n">_validate_bbox</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span> <span class="ow">or</span> <span class="n">y_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">y_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">detected_x_dim</span><span class="p">,</span> <span class="n">detected_y_dim</span> <span class="o">=</span> <span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_dim</span> <span class="o">=</span> <span class="n">detected_x_dim</span>
+        <span class="k">if</span> <span class="n">y_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y_dim</span> <span class="o">=</span> <span class="n">detected_y_dim</span>
+
+    <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coords</span> <span class="ow">or</span> <span class="n">y_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;First dataset must contain coordinates </span><span class="si">{</span><span class="n">x_dim</span><span class="si">!r}</span><span class="s2"> and </span><span class="si">{</span><span class="n">y_dim</span><span class="si">!r}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
-    <span class="k">if</span> <span class="n">ds</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">ds</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">dataset</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Only 1-D </span><span class="si">{</span><span class="n">x_dim</span><span class="si">!r}</span><span class="s2"> and </span><span class="si">{</span><span class="n">y_dim</span><span class="si">!r}</span><span class="s2"> coordinates are supported.&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">dataset</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x_dim</span><span class="si">!r}</span><span class="s2"> and </span><span class="si">{</span><span class="n">y_dim</span><span class="si">!r}</span><span class="s2"> coordinates must contain at least two values.&quot;</span>
         <span class="p">)</span>
 
-    <span class="n">x</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
     <span class="n">x_res</span> <span class="o">=</span> <span class="n">_grid_spacing</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x_dim</span><span class="p">)</span>
     <span class="n">y_res</span> <span class="o">=</span> <span class="n">_grid_spacing</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_dim</span><span class="p">)</span>
     <span class="n">y_increasing</span> <span class="o">=</span> <span class="n">y_res</span> <span class="o">&gt;</span> <span class="mi">0</span>
     <span class="n">y_res</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y_res</span><span class="p">)</span>
 
     <span class="c1"># Number of pixels to add at each side.</span>
-    <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">bbox</span>
-    <span class="n">y_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">y_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">x_min</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">x_max</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">bbox_xmin</span><span class="p">,</span> <span class="n">bbox_ymin</span><span class="p">,</span> <span class="n">bbox_xmax</span><span class="p">,</span> <span class="n">bbox_ymax</span> <span class="o">=</span> <span class="n">bbox</span>
+    <span class="n">grid_ymax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">grid_ymin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">grid_xmin</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">grid_xmax</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-    <span class="n">nx_left</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">x_min</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">x_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">nx_right</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">x_max</span><span class="p">)</span> <span class="o">/</span> <span class="n">x_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">ny_bottom</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">y_min</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">ny_top</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">y_max</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">nx_left</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">grid_xmin</span> <span class="o">-</span> <span class="n">bbox_xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">x_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">nx_right</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">bbox_xmax</span> <span class="o">-</span> <span class="n">grid_xmax</span><span class="p">)</span> <span class="o">/</span> <span class="n">x_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">ny_bottom</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">grid_ymin</span> <span class="o">-</span> <span class="n">bbox_ymin</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">ny_top</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">bbox_ymax</span> <span class="o">-</span> <span class="n">grid_ymax</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_res</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">nx_left</span> <span class="o">==</span> <span class="n">nx_right</span> <span class="o">==</span> <span class="n">ny_bottom</span> <span class="o">==</span> <span class="n">ny_top</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">ds</span> <span class="o">=</span> <span class="n">clip_dataset_by_bbox</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">spatial_coords</span><span class="o">=</span><span class="p">(</span><span class="n">x_dim</span><span class="p">,</span> <span class="n">y_dim</span><span class="p">))</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">clip_dataset_by_bbox</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">spatial_coords</span><span class="o">=</span><span class="p">(</span><span class="n">x_dim</span><span class="p">,</span> <span class="n">y_dim</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">tile_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">chunk</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="n">tile_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y_dim</span><span class="p">:</span> <span class="n">tile_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
         <span class="k">return</span> <span class="n">ds</span>
 
     <span class="c1"># Build the target coordinate vectors by extending the existing ones</span>
-    <span class="n">x_start</span> <span class="o">=</span> <span class="n">x_min</span> <span class="o">-</span> <span class="n">x_res</span> <span class="o">*</span> <span class="n">nx_left</span>
-    <span class="n">x_end</span> <span class="o">=</span> <span class="n">x_max</span> <span class="o">+</span> <span class="n">x_res</span> <span class="o">*</span> <span class="n">nx_right</span>
-    <span class="n">y_start</span> <span class="o">=</span> <span class="n">y_min</span> <span class="o">-</span> <span class="n">y_res</span> <span class="o">*</span> <span class="n">ny_bottom</span>
-    <span class="n">y_end</span> <span class="o">=</span> <span class="n">y_max</span> <span class="o">+</span> <span class="n">y_res</span> <span class="o">*</span> <span class="n">ny_top</span>
+    <span class="n">x_start</span> <span class="o">=</span> <span class="n">grid_xmin</span> <span class="o">-</span> <span class="n">x_res</span> <span class="o">*</span> <span class="n">nx_left</span>
+    <span class="n">x_end</span> <span class="o">=</span> <span class="n">grid_xmax</span> <span class="o">+</span> <span class="n">x_res</span> <span class="o">*</span> <span class="n">nx_right</span>
+    <span class="n">y_start</span> <span class="o">=</span> <span class="n">grid_ymin</span> <span class="o">-</span> <span class="n">y_res</span> <span class="o">*</span> <span class="n">ny_bottom</span>
+    <span class="n">y_end</span> <span class="o">=</span> <span class="n">grid_ymax</span> <span class="o">+</span> <span class="n">y_res</span> <span class="o">*</span> <span class="n">ny_top</span>
 
     <span class="n">new_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_end</span> <span class="o">+</span> <span class="p">(</span><span class="n">x_res</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">x_res</span><span class="p">)</span>
     <span class="n">new_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y_start</span><span class="p">,</span> <span class="n">y_end</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_res</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">y_res</span><span class="p">)</span>
@@ -4865,7 +4887,7 @@ by variable or type. If not set, defaults are:</p>
         <span class="n">new_y</span> <span class="o">=</span> <span class="n">new_y</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># Allow for small floating-point errors when matching the original grid.</span>
-    <span class="n">extended</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span>
+    <span class="n">extended</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span>
         <span class="p">{</span><span class="n">x_dim</span><span class="p">:</span> <span class="n">new_x</span><span class="p">,</span> <span class="n">y_dim</span><span class="p">:</span> <span class="n">new_y</span><span class="p">},</span>
         <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
         <span class="n">tolerance</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">x_res</span><span class="p">,</span> <span class="n">y_res</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e-3</span><span class="p">,</span>
@@ -4886,7 +4908,7 @@ by variable or type. If not set, defaults are:</p>
 
 
 <h2 id="xcube_resampling.mosaic_datasets" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">mosaic_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x_dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">y_dim</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">xcube_resampling</span><span class="o">.</span><span class="n">mosaic_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tile_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -4932,15 +4954,16 @@ In overlapping regions, the first non-fill value encountered in
                 <code>x_dim</code>
             </td>
             <td>
-                  <code><span title="str">str</span></code>
+                  <code><span title="str">str</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Name of the horizontal coordinate.</p>
+                <p>Optional name of the horizontal coordinate. If None, the name is inferred
+from from the first dataset.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;x&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -4948,15 +4971,16 @@ In overlapping regions, the first non-fill value encountered in
                 <code>y_dim</code>
             </td>
             <td>
-                  <code><span title="str">str</span></code>
+                  <code><span title="str">str</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Name of the vertical coordinate.</p>
+                <p>Optional name of the vertical coordinate. If None, the name is inferred
+from from the first dataset.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;y&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -5210,11 +5234,21 @@ dimensions when the input datasets are not Dask-backed.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span>
-<span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mosaic_datasets</span><span class="p">(</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mosaic_datasets</span><span class="p">(</span>
     <span class="n">datasets</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">x_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span>
-    <span class="n">y_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span>
+    <span class="n">x_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">y_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">fill_values</span><span class="p">:</span> <span class="n">FillValues</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tile_size</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
@@ -5227,8 +5261,10 @@ dimensions when the input datasets are not Dask-backed.</p>
 <span class="sd">    Args:</span>
 <span class="sd">        datasets: Input datasets. All datasets must contain `x_dim` and</span>
 <span class="sd">            `y_dim` coordinates with the same spatial resolution.</span>
-<span class="sd">        x_dim: Name of the horizontal coordinate.</span>
-<span class="sd">        y_dim: Name of the vertical coordinate.</span>
+<span class="sd">        x_dim: Optional name of the horizontal coordinate. If None, the name is inferred</span>
+<span class="sd">            from from the first dataset.</span>
+<span class="sd">        y_dim: Optional name of the vertical coordinate. If None, the name is inferred</span>
+<span class="sd">            from from the first dataset.</span>
 <span class="sd">        fill_values: Optional fill value(s). Can be a single value or dictionary</span>
 <span class="sd">            by variable or type. If not set, defaults are:</span>
 
@@ -5256,6 +5292,14 @@ dimensions when the input datasets are not Dask-backed.</p>
 
     <span class="k">if</span> <span class="n">tile_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tile_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">tile_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Chunk sizes must be positive.&quot;</span><span class="p">)</span>
+
+    <span class="n">first_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">y_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">detected_x_dim</span><span class="p">,</span> <span class="n">detected_y_dim</span> <span class="o">=</span> <span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">first_dataset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_dim</span> <span class="o">=</span> <span class="n">detected_x_dim</span>
+        <span class="k">if</span> <span class="n">y_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y_dim</span> <span class="o">=</span> <span class="n">detected_y_dim</span>
 
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">x_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span> <span class="ow">or</span> <span class="n">y_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
@@ -5977,8 +6021,7 @@ spatial referencing: either, ("longitude", "latitude"), ("lon", "lat") or
 <span class="normal">83</span>
 <span class="normal">84</span>
 <span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_spatial_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_spatial_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Identify the names of horizontal spatial coordinate in an xarray dataset.</span>
 
@@ -5996,20 +6039,19 @@ spatial referencing: either, ("longitude", "latitude"), ("lon", "lat") or
 <span class="sd">    Raises:</span>
 <span class="sd">        KeyError: If no recognized spatial dimension pair is found in the dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;y&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;x&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;lat&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;lon&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;latitude&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;longitude&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;latitude&quot;</span>
     <span class="k">if</span> <span class="s2">&quot;transformed_x&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;transformed_y&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;transformed_x&quot;</span><span class="p">,</span> <span class="s2">&quot;transformed_y&quot;</span>
-    <span class="k">elif</span> <span class="s2">&quot;latitude&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;longitude&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;latitude&quot;</span>
-    <span class="k">elif</span> <span class="s2">&quot;lat&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;lon&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span>
-    <span class="k">elif</span> <span class="s2">&quot;y&quot;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">and</span> <span class="s2">&quot;x&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;No standard spatial coordinates found in dataset. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Expected pairs (&#39;lon&#39;, &#39;lat&#39;) or (&#39;x&#39;, &#39;y&#39;), but found: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span>
+        <span class="k">return</span> <span class="s2">&quot;transformed_x&quot;</span><span class="p">,</span> <span class="s2">&quot;transformed_y&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">gm</span> <span class="o">=</span> <span class="n">GridMapping</span><span class="o">.</span><span class="n">from_dataset</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No standard spatial coordinates found&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+    <span class="k">return</span> <span class="n">gm</span><span class="o">.</span><span class="n">xy_var_names</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6102,7 +6144,8 @@ spatial referencing: either, ("longitude", "latitude"), ("lon", "lat") or
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 90</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 89</span>
+<span class="normal"> 90</span>
 <span class="normal"> 91</span>
 <span class="normal"> 92</span>
 <span class="normal"> 93</span>
@@ -6131,8 +6174,7 @@ spatial referencing: either, ("longitude", "latitude"), ("lon", "lat") or
 <span class="normal">116</span>
 <span class="normal">117</span>
 <span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_utm_crs</span><span class="p">(</span><span class="n">lon</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span><span class="p">:</span>
+<span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_utm_crs</span><span class="p">(</span><span class="n">lon</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns the UTM CRS for a given latitude and longitude as a pyproj.CRS object.</span>
 
@@ -6320,7 +6362,8 @@ dataset may contain one or more zero-sized dimensions.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">123</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">122</span>
+<span class="normal">123</span>
 <span class="normal">124</span>
 <span class="normal">125</span>
 <span class="normal">126</span>
@@ -6371,8 +6414,7 @@ dataset may contain one or more zero-sized dimensions.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clip_dataset_by_bbox</span><span class="p">(</span>
+<span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clip_dataset_by_bbox</span><span class="p">(</span>
     <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
     <span class="n">spatial_coords</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6561,7 +6603,8 @@ width/height) can be applied to expand the resulting bounding box.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">259</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">258</span>
+<span class="normal">259</span>
 <span class="normal">260</span>
 <span class="normal">261</span>
 <span class="normal">262</span>
@@ -6591,8 +6634,7 @@ width/height) can be applied to expand the resulting bounding box.</p>
 <span class="normal">286</span>
 <span class="normal">287</span>
 <span class="normal">288</span>
-<span class="normal">289</span>
-<span class="normal">290</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_bbox</span><span class="p">(</span>
+<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reproject_bbox</span><span class="p">(</span>
     <span class="n">source_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span>
     <span class="n">source_crs</span><span class="p">:</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">target_crs</span><span class="p">:</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
@@ -6725,7 +6767,8 @@ bounding box relative to the area of the source bounding box.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">293</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">292</span>
+<span class="normal">293</span>
 <span class="normal">294</span>
 <span class="normal">295</span>
 <span class="normal">296</span>
@@ -6758,8 +6801,7 @@ bounding box relative to the area of the source bounding box.</p>
 <span class="normal">323</span>
 <span class="normal">324</span>
 <span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bbox_overlap</span><span class="p">(</span>
+<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bbox_overlap</span><span class="p">(</span>
     <span class="n">source_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">],</span> <span class="n">target_bbox</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -6948,7 +6990,8 @@ finite differences.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">338</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">337</span>
+<span class="normal">338</span>
 <span class="normal">339</span>
 <span class="normal">340</span>
 <span class="normal">341</span>
@@ -6983,8 +7026,7 @@ finite differences.</p>
 <span class="normal">370</span>
 <span class="normal">371</span>
 <span class="normal">372</span>
-<span class="normal">373</span>
-<span class="normal">374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform_resolution</span><span class="p">(</span>
+<span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform_resolution</span><span class="p">(</span>
     <span class="n">ref_point</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span>
     <span class="n">resolution</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span>
     <span class="n">src_crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span><span class="p">,</span>
@@ -7157,7 +7199,8 @@ at a given geographic latitude.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">377</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">376</span>
+<span class="normal">377</span>
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
@@ -7181,8 +7224,7 @@ at a given geographic latitude.</p>
 <span class="normal">398</span>
 <span class="normal">399</span>
 <span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_meters_to_degrees</span><span class="p">(</span>
+<span class="normal">401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_meters_to_degrees</span><span class="p">(</span>
     <span class="n">resolution</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span> <span class="n">latitude</span><span class="p">:</span> <span class="n">FloatInt</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert spatial resolution from meters to degrees in longitude and latitude</span>
@@ -7343,7 +7385,8 @@ at a given geographic latitude.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">405</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">404</span>
+<span class="normal">405</span>
 <span class="normal">406</span>
 <span class="normal">407</span>
 <span class="normal">408</span>
@@ -7366,8 +7409,7 @@ at a given geographic latitude.</p>
 <span class="normal">425</span>
 <span class="normal">426</span>
 <span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_degrees_to_meters</span><span class="p">(</span>
+<span class="normal">428</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolution_degrees_to_meters</span><span class="p">(</span>
     <span class="n">resolution</span><span class="p">:</span> <span class="n">FloatInt</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">],</span> <span class="n">latitude</span><span class="p">:</span> <span class="n">FloatInt</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatInt</span><span class="p">,</span> <span class="n">FloatInt</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert spatial resolution from degrees to meters at a given geographic latitude.</span>
@@ -7489,7 +7531,8 @@ removes the original grid mapping variable (if present), and adds a new
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>xcube_resampling/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">432</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">431</span>
+<span class="normal">432</span>
 <span class="normal">433</span>
 <span class="normal">434</span>
 <span class="normal">435</span>
@@ -7512,8 +7555,7 @@ removes the original grid mapping variable (if present), and adds a new
 <span class="normal">452</span>
 <span class="normal">453</span>
 <span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="normal">455</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_grid_mapping</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">gm</span><span class="p">:</span> <span class="n">GridMapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Normalize the grid mapping of a dataset to use a standard &quot;spatial_ref&quot; coordinate.</span>
 
@@ -12789,7 +12831,7 @@ or dtype.</p>
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright &copy; 2025 Brockmann Consult
+      Copyright &copy; 2026 Brockmann Consult
     </div>
   
   

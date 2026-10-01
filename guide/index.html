@@ -569,6 +569,45 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#extending-a-grid-and-mosaicking-tiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending a grid and mosaicking tiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extending a grid and mosaicking tiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extend-a-dataset-to-a-bounding-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extend a dataset to a bounding box
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combine-tiles-into-a-mosaic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Combine tiles into a mosaic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#temporal-resampling" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1129,6 +1168,45 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#extending-a-grid-and-mosaicking-tiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending a grid and mosaicking tiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extending a grid and mosaicking tiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extend-a-dataset-to-a-bounding-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extend a dataset to a bounding box
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combine-tiles-into-a-mosaic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Combine tiles into a mosaic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#temporal-resampling" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1472,6 +1550,51 @@ y' = 2y / π
 </li>
 </ol>
 <hr />
+<h3 id="extending-a-grid-and-mosaicking-tiles">Extending a grid and mosaicking tiles</h3>
+<p><code>extend_dataset</code> and <code>mosaic_datasets</code> are spatial dataset utilities for preparing
+regular-grid datasets. They complement resampling: they do not change the CRS or
+interpolate values onto a different resolution.</p>
+<h4 id="extend-a-dataset-to-a-bounding-box">Extend a dataset to a bounding box</h4>
+<p><a href="../api/#xcube_resampling.extend_dataset"><code>extend_dataset</code></a> crops a dataset to a
+requested bounding box and, when needed, adds grid cells so the output covers that
+box. It expects one-dimensional, regularly spaced spatial coordinates and a bounding
+box <code>(xmin, ymin, xmax, ymax)</code> in the dataset's coordinate reference system. The
+requested extent can exceed the current extent by less than one pixel; newly added
+cells are initialized with the configured fill values (NaN for floating point data
+by default). Coordinate names are inferred when <code>x_dim</code> and <code>y_dim</code> are omitted.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">xcube_resampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">extend_dataset</span>
+
+<span class="n">extended</span> <span class="o">=</span> <span class="n">extend_dataset</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">bbox</span><span class="o">=</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">),</span>
+    <span class="n">tile_size</span><span class="o">=</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span>  <span class="c1"># optional output chunks (x, y)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Pass <code>fill_values</code> to override the defaults, either with a single value or a mapping
+by variable or dtype. If the dataset already covers the requested box, the function
+returns its clipped extent. The dataset must have at least two coordinate values on
+each spatial axis so the grid spacing can be determined.</p>
+<h4 id="combine-tiles-into-a-mosaic">Combine tiles into a mosaic</h4>
+<p><a href="../api/#xcube_resampling.mosaic_datasets"><code>mosaic_datasets</code></a> places multiple datasets
+on their shared regular grid and returns a dataset spanning their combined extent.
+Spatial coordinates may be increasing or decreasing; the output uses increasing x
+and decreasing y. Tiles may overlap: for each variable and pixel, the first
+non-fill value in input order is retained, and later tiles fill only cells that
+still contain the fill value.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">xcube_resampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">mosaic_datasets</span>
+
+<span class="n">mosaic</span> <span class="o">=</span> <span class="n">mosaic_datasets</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">tile_west</span><span class="p">,</span> <span class="n">tile_east</span><span class="p">],</span>
+    <span class="n">tile_size</span><span class="o">=</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span>  <span class="c1"># optional output chunks (x, y)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>All tiles need matching spatial resolutions and grid alignment. They must provide
+the same data variables. Variables present in the first dataset define
+the output. If any input is Dask-backed, the mosaic remains lazy and Dask-backed;
+otherwise it is computed with NumPy-backed arrays. The default output chunk size is
+taken from the first input when it is chunked, or from its spatial dimensions for
+in-memory inputs. Fill values use the same defaults as <code>extend_dataset</code> and can be
+customized with <code>fill_values</code>.</p>
 <h3 id="temporal-resampling">Temporal Resampling</h3>
 <p>The function <a href="../api/#xcube_resampling.resample_in_time"><code>resample_in_time</code></a>
 allows resampling of a dataset along its <strong>time axis</strong>. Under the hood, it applies
@@ -1545,7 +1668,7 @@ documentation for detailed descriptions of supported aggregation operations.</p>
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright &copy; 2025 Brockmann Consult
+      Copyright &copy; 2026 Brockmann Consult
     </div>
   
   
