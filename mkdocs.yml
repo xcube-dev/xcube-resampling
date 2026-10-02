@@ -20,8 +20,10 @@ nav:
 
 theme:
   name: material
-  # logo: assets/logo.png
-  # favicon: assets/logo-small.png
+  logo: https://www.brockmann-consult.de/logos/xcube-no_text-dark.png
+  favicon: https://www.brockmann-consult.de/logos/xcube.ico
+  font: false
+  custom_dir: docs/overrides
   palette:
     # Palette toggle for light mode
     - scheme: default
@@ -49,11 +51,18 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/xcube-dev/xcube-resampling
-    #- icon: fontawesome/brands/python
-    #  link: https://pypi.org/project/xcube-resampling/
+  footer_links:
+    - text: Imprint
+      href: https://www.brockmann-consult.de/imprint/
+    - text: Privacy Policy
+      href: https://www.brockmann-consult.de/privacy-policy-documentation-pages/
 
 extra_css:
-  - stylesheets/xarray_dataset.css
+  - stylesheet/extra.css
+  - stylesheet/xarray_dataset.css
+
+hooks:
+  - docs/hooks/download_fonts.py
 
 plugins:
   - search
